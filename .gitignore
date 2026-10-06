@@ -1,0 +1,72 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+.venv
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Test artifacts
+*.db
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Uploads (test files)
+backend/uploads/*
+uploads/*
+
+# Node
+node_modules/
+npm-debug.log
+
+# Build output
+frontend/dist/
+frontend/tsconfig.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.production
+.env.production.local
+.env.*.local
+!.env.example
+!.env.production.example
+
+# Playwright
+frontend/playwright-report/
+frontend/test-results/
+/test-results/
+
+# Local scratch / audit artifacts
+tmp/
+backups/**/*.sql
+/backups/migrations/
+/backups/
+/secrets/
+/site-content.json
+/output/
+/docs/reviews/
+/docs/plans/
+/docs/releases/
+/security_best_practices_report.md
+
+# Git worktrees (per-task checkouts live here)
+.worktrees/

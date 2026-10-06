@@ -1,0 +1,20 @@
+# Add after one base Compose file when both local PDF capabilities are needed.
+services:
+  backend:
+    build:
+      context: ./backend
+      target: structured_ocr
+      args:
+        OCR_LANGUAGE_PACKAGES: ${OCR_LANGUAGE_PACKAGES:-tesseract-ocr-eng}
+    environment:
+      PDF_STRUCTURE_ENGINE: opendataloader
+      OCR_ENABLED: "true"
+  celery:
+    build:
+      context: ./backend
+      target: structured_ocr
+      args:
+        OCR_LANGUAGE_PACKAGES: ${OCR_LANGUAGE_PACKAGES:-tesseract-ocr-eng}
+    environment:
+      PDF_STRUCTURE_ENGINE: opendataloader
+      OCR_ENABLED: "true"

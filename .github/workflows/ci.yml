@@ -1,0 +1,300 @@
+name: Verify
+on:
+  push:
+    branches: [main]
+  pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  application_checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+        env:
+          POSTGRES_USER: cap_test
+          POSTGRES_PASSWORD: disposable-ci-only
+          POSTGRES_DB: cap_e2e
+        ports: ['25489:5432']
+        options: >-
+          --health-cmd "pg_isready -U cap_test -d cap_e2e"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+      redis:
+        image: redis:7.2-alpine@sha256:29e8589c3f9ba699b5f7aa4b3c7733c58852a3626439e619aa0ee78de08c6ca0
+        ports: ['25490:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 5s --health-retries 12
+    env:
+      E2E_REDIS_URL: redis://127.0.0.1:25490/0
+      APP_ENV: test
+      AI_PROVIDER: none
+      EMAIL_MODE: disabled
+      E2E_DATABASE_URL: postgresql+asyncpg://cap_test:disposable-ci-only@127.0.0.1:25489/cap_e2e
+      CAP_TEST_POSTGRES_URL: postgresql+asyncpg://cap_test:disposable-ci-only@127.0.0.1:25489/cap_e2e
+      SECRET_KEY: disposable-ci-fixture-secret-never-for-deployment
+      E2E_ADMIN_PASSWORD: disposable-ci-fixture-password
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            backend/requirements*.lock
+            backend/pyproject.toml
+      - name: Install locked dependencies
+        run: |
+          uv venv
+          uv pip sync --require-hashes backend/requirements-dev.lock
+          uv pip install --no-deps -e backend
+          npm ci --ignore-scripts --prefix frontend
+      - name: Fresh PostgreSQL migrations
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ env.E2E_DATABASE_URL }}
+        run: ../.venv/bin/python -m alembic upgrade head
+      - name: Backend including concurrency
+        run: |
+          .venv/bin/ruff check --config backend/pyproject.toml --select E9,F63,F7,F82 backend/app backend/tests
+          .venv/bin/python -m pytest backend/tests -q
+          .venv/bin/python -m unittest discover -s scripts/tests -p 'test_*.py'
+          uvx --from pip-audit==2.10.1 pip-audit -r backend/requirements.lock --disable-pip --no-deps
+      - name: Frontend
+        working-directory: frontend
+        run: |
+          npm test -- --run
+          npm run lint
+          npm run build
+          npm audit --omit=dev --audit-level=high
+      - name: Background job delivery and recovery
+        env:
+          CAP_TEST_JOB_SERVICES: '1'
+        run: .venv/bin/python -m pytest backend/tests/test_extraction_delivery.py -q
+      - name: Browser workflows
+        run: |
+          cd frontend
+          npx playwright install --with-deps chromium
+          cd ..
+          .venv/bin/python scripts/run-e2e.py
+  container_checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: astral-sh/setup-uv@d0d8abe699bfb85fec6de9f7adb5ae17292296ff # v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: |
+            backend/requirements*.lock
+            backend/pyproject.toml
+      - name: Install locked dependencies
+        run: |
+          uv venv
+          uv pip sync --require-hashes backend/requirements-dev.lock
+          uv pip install --no-deps -e backend
+          npm ci --ignore-scripts --prefix frontend
+      - name: Public snapshot checks
+        run: .venv/bin/python scripts/export-public.py --check-tracked --draft --output tmp/public-draft
+      - name: Check pinned container references in public snapshot
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('tmp/public-draft')
+          files = [root / 'backend/Dockerfile', root / 'frontend/Dockerfile']
+          files += sorted(root.glob('docker-compose*.yml'))
+          files += sorted(root.glob('deploy/docker-compose*.yml'))
+          files += sorted(root.glob('.github/workflows/*.yml'))
+          pinned = re.compile(r'[^\s@]+@sha256:[0-9a-f]{64}\Z')
+          errors = []
+          checked = 0
+          for path in files:
+              if not path.is_file():
+                  errors.append(f'{path}: missing from public snapshot')
+                  continue
+              stages = set()
+              for number, line in enumerate(path.read_text().splitlines(), 1):
+                  if path.name == 'Dockerfile':
+                      match = re.match(r'\s*FROM\s+(?:--platform=\S+\s+)?(\S+)(?:\s+AS\s+(\S+))?', line, re.I)
+                      if match:
+                          image, stage = match.groups()
+                          if image not in stages:
+                              checked += 1
+                              if not pinned.fullmatch(image):
+                                  errors.append(f'{path}:{number}: unpinned FROM {image}')
+                          if stage:
+                              stages.add(stage)
+                  else:
+                      match = re.match(r'\s*image:\s*([^\s#]+)', line)
+                      if match:
+                          checked += 1
+                          if not pinned.fullmatch(match.group(1)):
+                              errors.append(f'{path}:{number}: unpinned image {match.group(1)}')
+          if checked == 0:
+              errors.append('no external container references found')
+          if errors:
+              raise SystemExit('\n'.join(errors))
+          print(f'Checked {checked} digest-pinned external container references')
+          PY
+      - name: Scan exported files for secrets
+        run: |
+          curl --fail --silent --show-error --location https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz --output tmp/gitleaks.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  tmp/gitleaks.tar.gz" | sha256sum --check
+          tar -xzf tmp/gitleaks.tar.gz -C tmp gitleaks
+          tmp/gitleaks dir tmp/public-draft --max-archive-depth 3 --redact=100
+      - name: Container build checks
+        run: |
+          docker build --target runtime -t cap-backend-check tmp/public-draft/backend
+          docker build --target ocr -t cap-ocr-check tmp/public-draft/backend
+          docker build --target structured -t cap-structured-check tmp/public-draft/backend
+          docker build --target structured_ocr -t cap-structured-ocr-check tmp/public-draft/backend
+          docker build -t cap-frontend-check tmp/public-draft/frontend
+          test "$(docker run --rm --entrypoint id cap-backend-check -u)" = 10001
+          test "$(docker run --rm --entrypoint id cap-backend-check -g)" = 10001
+          test "$(docker run --rm --entrypoint id cap-ocr-check -u)" = 10001
+          test "$(docker run --rm --entrypoint id cap-ocr-check -g)" = 10001
+          test "$(docker run --rm --entrypoint id cap-structured-check -u)" = 10001
+          test "$(docker run --rm --entrypoint id cap-structured-check -g)" = 10001
+          test "$(docker run --rm --entrypoint id cap-structured-ocr-check -u)" = 10001
+          test "$(docker run --rm --entrypoint id cap-structured-ocr-check -g)" = 10001
+          docker run --rm --entrypoint python cap-backend-check -c 'import app.main'
+          docker run --rm --entrypoint tesseract cap-ocr-check --list-langs | grep -qx eng
+          docker run --rm --entrypoint python cap-structured-check -c "import opendataloader_pdf; import app.services.structured_pdf"
+          docker run --rm --entrypoint java cap-structured-check -version
+          docker run --rm --entrypoint python cap-structured-ocr-check -c 'import opendataloader_pdf; import app.services.structured_pdf'
+          docker run --rm --entrypoint tesseract cap-structured-ocr-check --list-langs | grep -qx eng
+          docker run --rm --network none --entrypoint python \
+            -v "$PWD/tmp/public-draft/backend/tests/fixtures/sample_requirements.pdf:/tmp/fixture.pdf:ro" \
+            cap-structured-check -c 'import tempfile; from app.services.structured_pdf import read_structured_pdf; from app.services.structured_requirements import parse_structured_requirements; payload = read_structured_pdf("/tmp/fixture.pdf", tempfile.mkdtemp(), timeout=45); references = [item["reference_id"] for item in parse_structured_requirements(payload)]; assert payload["number of pages"] == 1 and references == ["4.2", "4.2.1", "4.2.2", "4.2.3", "4.3", "4.3.1", "4.3.2"], references'
+          docker run --rm --network none --entrypoint python \
+            -v "$PWD/tmp/public-draft/backend/tests/fixtures/sample_requirements.pdf:/tmp/fixture.pdf:ro" \
+            cap-structured-check -c 'import asyncio; from app.services.pdf_worker import bounded_preprocess; result = asyncio.run(bounded_preprocess("/tmp/fixture.pdf", "Custom certification", structure_engine="opendataloader")); references = [item["reference_id"] for item in result.structured_requirements]; assert len(result.pages) == 1 and references == ["4.2", "4.2.1", "4.2.2", "4.2.3", "4.3", "4.3.1", "4.3.2"], references'
+          docker run --rm --network none --entrypoint python \
+            -e CAP_OCR_SMOKE_ENGINE=native -e PYTHONPATH=/app \
+            -v "$PWD/tmp/public-draft/backend/tests/test_pdf_ocr_smoke.py:/tmp/test_pdf_ocr_smoke.py:ro" \
+            cap-ocr-check /tmp/test_pdf_ocr_smoke.py
+          docker run --rm --network none --entrypoint python \
+            -e CAP_OCR_SMOKE_ENGINE=opendataloader -e PYTHONPATH=/app \
+            -v "$PWD/tmp/public-draft/backend/tests/test_pdf_ocr_smoke.py:/tmp/test_pdf_ocr_smoke.py:ro" \
+            cap-structured-ocr-check /tmp/test_pdf_ocr_smoke.py
+          docker run --rm --entrypoint nginx cap-frontend-check -t
+      - name: Rehearse installation and backup restoration
+        run: .venv/bin/python scripts/check-release-lifecycle.py --backend-image cap-backend-check
+      - name: Build and verify public image SBOMs
+        run: |
+          mkdir -p tmp/release-sboms
+          docker run --rm --network none --entrypoint cat cap-ocr-check \
+            /usr/local/share/cap/ocr-build.json > tmp/release-sboms/ocr-build.json
+          docker buildx create --name cap-public-sbom --driver docker-container \
+            --driver-opt image=moby/buildkit@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8
+          trap 'docker buildx rm cap-public-sbom' EXIT
+          docker buildx build --builder cap-public-sbom --platform linux/amd64 \
+            --target runtime --provenance=false \
+            --sbom=generator=docker/buildkit-syft-scanner@sha256:ae4f3b554449e7e25548e7d8ccc029d17357348e30c6e3df01b92bc93654d6a9 \
+            --output type=oci,dest=tmp/release-sboms/backend.oci.tar tmp/public-draft/backend
+          docker buildx build --builder cap-public-sbom --platform linux/amd64 \
+            --target ocr --provenance=false \
+            --sbom=generator=docker/buildkit-syft-scanner@sha256:ae4f3b554449e7e25548e7d8ccc029d17357348e30c6e3df01b92bc93654d6a9 \
+            --output type=oci,dest=tmp/release-sboms/ocr.oci.tar tmp/public-draft/backend
+          docker buildx build --builder cap-public-sbom --platform linux/amd64 \
+            --target structured --provenance=false \
+            --sbom=generator=docker/buildkit-syft-scanner@sha256:ae4f3b554449e7e25548e7d8ccc029d17357348e30c6e3df01b92bc93654d6a9 \
+            --output type=oci,dest=tmp/release-sboms/structured.oci.tar tmp/public-draft/backend
+          docker buildx build --builder cap-public-sbom --platform linux/amd64 \
+            --target structured_ocr --provenance=false \
+            --sbom=generator=docker/buildkit-syft-scanner@sha256:ae4f3b554449e7e25548e7d8ccc029d17357348e30c6e3df01b92bc93654d6a9 \
+            --output type=oci,dest=tmp/release-sboms/structured-ocr.oci.tar tmp/public-draft/backend
+          docker buildx build --builder cap-public-sbom --platform linux/amd64 \
+            --provenance=false \
+            --sbom=generator=docker/buildkit-syft-scanner@sha256:ae4f3b554449e7e25548e7d8ccc029d17357348e30c6e3df01b92bc93654d6a9 \
+            --output type=oci,dest=tmp/release-sboms/frontend.oci.tar tmp/public-draft/frontend
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          import tarfile
+
+          output = Path('tmp/release-sboms')
+          digests = {}
+          for name in ('backend', 'ocr', 'structured', 'structured-ocr', 'frontend'):
+              with tarfile.open(output / f'{name}.oci.tar') as archive:
+                  def blob(digest):
+                      return json.load(archive.extractfile('blobs/sha256/' + digest.removeprefix('sha256:')))
+
+                  index = json.load(archive.extractfile('index.json'))
+                  while len(index['manifests']) == 1 and 'platform' not in index['manifests'][0]:
+                      index = blob(index['manifests'][0]['digest'])
+                  images = [item for item in index['manifests'] if item.get('platform', {}).get('architecture') == 'amd64']
+                  attestations = [item for item in index['manifests'] if item.get('annotations', {}).get('vnd.docker.reference.type') == 'attestation-manifest']
+                  if len(images) != 1 or len(attestations) != 1:
+                      raise SystemExit(f'{name}: expected one amd64 image and one attestation')
+                  image_digest = images[0]['digest']
+                  attestation = blob(attestations[0]['digest'])
+                  if attestation.get('subject', {}).get('digest') != image_digest:
+                      raise SystemExit(f'{name}: SBOM attestation does not reference built image')
+                  documents = [blob(layer['digest']) for layer in attestation['layers']
+                               if layer.get('annotations', {}).get('in-toto.io/predicate-type') == 'https://spdx.dev/Document']
+                  if len(documents) != 1 or documents[0].get('predicateType') != 'https://spdx.dev/Document':
+                      raise SystemExit(f'{name}: missing SPDX SBOM')
+                  sbom = documents[0]['predicate']
+                  if not sbom.get('spdxVersion', '').startswith('SPDX-2.') or not sbom.get('packages'):
+                      raise SystemExit(f'{name}: empty or invalid SPDX package inventory')
+                  (output / f'{name}.spdx.json').write_text(json.dumps(sbom, indent=2) + '\n')
+                  digests[name] = image_digest
+                  print(f'{name}: {image_digest}, {len(sbom["packages"])} packages')
+          (output / 'image-digests.json').write_text(json.dumps(digests, indent=2) + '\n')
+          PY
+      - name: Scan exact CI image SBOMs for release review
+        run: |
+          curl --fail --silent --show-error --location https://github.com/anchore/grype/releases/download/v0.120.0/grype_0.120.0_linux_amd64.tar.gz --output tmp/grype.tar.gz
+          echo "a5a1218dce63acdac152a6b3b5bb366e7267e36f4069848cf455543b3fa5700e  tmp/grype.tar.gz" | sha256sum --check
+          tar -xzf tmp/grype.tar.gz -C tmp grype
+          for name in backend ocr structured structured-ocr frontend; do
+            tmp/grype "sbom:tmp/release-sboms/$name.spdx.json" \
+              --output json --file "tmp/release-sboms/$name.vulnerabilities.json"
+          done
+          # Source checks retain findings for review. Image publication separately
+          # requires every exact built image to pass the high/critical release gate.
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: public-image-sboms-linux-amd64
+          path: |
+            tmp/release-sboms/*.spdx.json
+            tmp/release-sboms/*.vulnerabilities.json
+            tmp/release-sboms/image-digests.json
+            tmp/release-sboms/ocr-build.json
+          if-no-files-found: error
+          retention-days: 30
+  verify:
+    if: ${{ always() }}
+    needs: [application_checks, container_checks]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require all verification jobs to pass
+        env:
+          APPLICATION_RESULT: ${{ needs.application_checks.result }}
+          CONTAINER_RESULT: ${{ needs.container_checks.result }}
+        run: |
+          test "$APPLICATION_RESULT" = success
+          test "$CONTAINER_RESULT" = success

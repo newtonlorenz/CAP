@@ -1,0 +1,18 @@
+# Add after the development or production Compose file for local scanned-PDF OCR.
+services:
+  backend:
+    build:
+      context: ./backend
+      target: ocr
+      args:
+        OCR_LANGUAGE_PACKAGES: ${OCR_LANGUAGE_PACKAGES:-tesseract-ocr-eng}
+    environment:
+      OCR_ENABLED: "true"
+  celery:
+    build:
+      context: ./backend
+      target: ocr
+      args:
+        OCR_LANGUAGE_PACKAGES: ${OCR_LANGUAGE_PACKAGES:-tesseract-ocr-eng}
+    environment:
+      OCR_ENABLED: "true"

@@ -1,0 +1,10 @@
+{
+  "name": "tesseract",
+  "version": "5.5.3",
+  "license": "Apache-2.0",
+  "source": "https://codeload.github.com/tesseract-ocr/tesseract/tar.gz/refs/tags/5.5.3",
+  "source_sha256": "9218e62793116d42a9f6d14cd9348518b27f382096eea3d0f2d1a24616bb5884",
+  "static_library": true,
+  "disabled_features": ["curl", "archive", "training_tools", "graphics"],
+  "license_path": "/usr/local/share/licenses/tesseract/LICENSE"
+}

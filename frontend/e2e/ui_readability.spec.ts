@@ -1,0 +1,80 @@
+import { test, expect } from '@playwright/test'
+import { loginAsAdmin } from './testCredentials'
+
+test('assessment controls remain readable and usable across themes and mobile', async ({ page }, info) => {
+  await loginAsAdmin(page)
+  const token = (await page.context().cookies()).find(cookie => cookie.name === 'access_token')!.value
+  const headers = { Authorization: `Bearer ${token}` }
+  const jurisdictions = await (await page.request.get('/api/v1/jurisdictions?limit=1000', { headers })).json()
+  const jurisdiction = jurisdictions.items.find((item: { code: string }) => item.code === 'example')
+  const sets = await (await page.request.get(`/api/v1/requirements/sets?jurisdiction_id=${jurisdiction.id}&limit=1000`, { headers })).json()
+  const source = sets.items.find((item: { name: string }) => item.name === 'E2E Document')
+  const created = await page.request.post('/api/v1/review-cycles', { headers, data: { name: `Readability check ${Date.now()}`, jurisdiction_id: jurisdiction.id, document_ids: [source.document_id], scope: 'documents' } })
+  expect(created.status()).toBe(201)
+  const cycle = await created.json()
+  for (const theme of ['light', 'dark']) {
+    await page.evaluate(value => localStorage.setItem('cap:theme', value), theme)
+    await page.goto(`/review-cycles/${cycle.id}`)
+    await expect(page.getByLabel('Evidence for REQ-001', { exact: true })).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+    const ratios = await page.evaluate(() => {
+      const root = getComputedStyle(document.documentElement)
+      const rgb = (name: string) => root.getPropertyValue(`--${name}`).trim().split(/\s+/).map(Number)
+      const luminance = (values: number[]) => values.map(x => x / 255).map(x => x <= .04045 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4).reduce((sum, x, index) => sum + x * [.2126,.7152,.0722][index], 0)
+      const ratio = (foreground: number[], background: number[]) => { const values = [luminance(foreground), luminance(background)].sort((a,b)=>b-a); return (values[0]+.05)/(values[1]+.05) }
+      return ['ink','muted','faint'].flatMap(text => ['canvas','surface','subtle'].map(surface => ({ text, surface, value: ratio(rgb(text),rgb(surface)) })))
+    })
+    for (const check of ratios) expect(check.value, `${theme} ${check.text} on ${check.surface}`).toBeGreaterThanOrEqual(4.5)
+    const next = page.getByRole('button', { name: 'Next needing attention', exact: true })
+    const colours = await next.evaluate(el => { const css=getComputedStyle(el); return { text:css.color,background:css.backgroundColor } })
+    expect(colours.text).not.toBe(colours.background)
+    for (const button of await page.getByRole('button', { name: 'Assign to me', exact: true }).all()) {
+      if (!(await button.isVisible())) continue
+      const box=await button.locator('svg').boundingBox()
+      expect(box!.width).toBeGreaterThanOrEqual(16)
+    }
+    await page.screenshot({ path: info.outputPath(`assessment-${theme}-desktop.png`), fullPage:true })
+    await page.setViewportSize({width:390,height:844})
+    await expect(page.getByRole('button',{name:'Filters and view options',exact:true})).toBeVisible()
+    await expect(page.locator('#assessment-tools')).toBeHidden()
+    await expect(page.locator('.assessment-summary')).not.toHaveAttribute('open')
+    expect((await page.locator('[id^=review-item-]').first().boundingBox())!.y).toBeLessThan(844)
+    await expect(page.getByLabel('Evidence for REQ-001', { exact:true })).toBeVisible()
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+    await page.screenshot({path:info.outputPath(`assessment-${theme}-mobile.png`),fullPage:true})
+    await page.getByRole('button',{name:'Filters and view options',exact:true}).click()
+    await expect(page.locator('#assessment-tools')).toBeVisible()
+    await page.getByRole('button',{name:'Hide filters and view options',exact:true}).click()
+    await page.reload()
+    await expect(page.locator('html')).toHaveAttribute('data-theme',theme)
+    await page.setViewportSize({width:1440,height:1000})
+  }
+})
+
+test('resource collections preserve drafts and navigation preference', async ({page}) => {
+  await loginAsAdmin(page)
+  await page.goto('/library?section=evidence')
+  await expect(page.getByRole('heading',{name:'Evidence',exact:true,level:1})).toBeVisible()
+  await expect(page.getByRole('navigation',{name:'Resource collections'})).toHaveCount(0)
+  await expect(page.getByTestId('desktop-sidebar').getByRole('link',{name:'Evidence',exact:true})).toHaveAttribute('aria-current','page')
+  await page.getByRole('button',{name:'Add evidence',exact:true}).click()
+  await page.getByLabel('Title',{exact:true}).fill('Draft evidence note')
+  await page.getByRole('button',{name:/Back to evidence/}).click()
+  await page.getByRole('button',{name:'Resume evidence draft',exact:true}).click()
+  await expect(page.getByLabel('Title',{exact:true})).toHaveValue('Draft evidence note')
+  await page.getByRole('link',{name:'Form templates',exact:true}).last().click()
+  await expect(page.getByRole('dialog',{name:'Changes are not saved yet'})).toBeVisible()
+  await page.getByRole('button',{name:'Leave with unsaved changes',exact:true}).click()
+  await page.getByRole('button',{name:'New blank form',exact:true}).click()
+  await page.getByLabel('Blank form name',{exact:true}).fill('Draft template')
+  await page.getByRole('button',{name:/Back to templates/}).click()
+  await page.getByRole('button',{name:'Resume draft',exact:true}).click()
+  await expect(page.getByLabel('Blank form name',{exact:true})).toHaveValue('Draft template')
+  const resources=page.getByTestId('desktop-sidebar').getByTestId('nav-resources')
+  await resources.locator('summary').click()
+  await expect(resources).not.toHaveAttribute('open')
+  await page.getByLabel('Blank form name',{exact:true}).fill('')
+  page.on('dialog', dialog => dialog.accept())
+  await page.reload()
+  await expect(resources).not.toHaveAttribute('open')
+})

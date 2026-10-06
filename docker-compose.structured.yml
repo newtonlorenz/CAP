@@ -1,0 +1,14 @@
+# Add after the base Compose file to enable local structured numbered PDF imports.
+services:
+  backend:
+    build:
+      context: ./backend
+      target: structured
+    environment:
+      PDF_STRUCTURE_ENGINE: opendataloader
+  celery:
+    build:
+      context: ./backend
+      target: structured
+    environment:
+      PDF_STRUCTURE_ENGINE: opendataloader

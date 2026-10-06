@@ -1,0 +1,15 @@
+{
+  "brand": {
+    "name": "CAP",
+    "description": ""
+  },
+  "login": {
+    "heading": "Compliance records",
+    "description": "Sign in to view requirements, reviews, and evidence.",
+    "information": [],
+    "formHeading": "Sign in",
+    "formDescription": "Enter your account email and password.",
+    "accessHelp": "Contact an administrator if you need an account.",
+    "footer": "Compliance system"
+  }
+}

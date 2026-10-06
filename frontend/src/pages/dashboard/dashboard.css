@@ -1,0 +1,9 @@
+.dashboard-shell { position: relative; min-width: 0; font-family: var(--dashboard-font-sans); }
+.dashboard-content { position: relative; }
+.dashboard-page-title, .dashboard-card-heading { font-family: var(--dashboard-font-display); letter-spacing: -.025em; }
+.dashboard-surface { border: 1px solid rgb(var(--line)); background: rgb(var(--surface)); box-shadow: none; }
+.dashboard-surface-subtle { background: rgb(var(--surface)); }
+.dashboard-kpi-value, .dashboard-number { font-variant-numeric: tabular-nums; }
+.dashboard-progress-track { background: rgb(var(--line)); }
+.dashboard-progress-fill-cyan { background: rgb(var(--brand)); }
+.dashboard-progress-fill-emerald { background: rgb(var(--success)); }

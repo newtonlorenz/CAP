@@ -1,0 +1,8 @@
+# Mount deployment-specific public text without rebuilding the frontend image.
+services:
+  frontend:
+    volumes:
+      - type: bind
+        source: ${SITE_CONTENT_FILE:-./site-content.json}
+        target: /usr/share/nginx/html${FRONTEND_BASE_PATH:-/}site-content.json
+        read_only: true

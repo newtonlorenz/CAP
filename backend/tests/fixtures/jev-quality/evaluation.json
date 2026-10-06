@@ -1,0 +1,423 @@
+{
+  "synthetic": true,
+  "expectation_review": "synthetic_unreviewed_examples",
+  "description": "Harness smoke fixtures only. Human review is required before using these expected outcomes for model-quality decisions. Recorded results are illustrative; no Jev calls produced them.",
+  "cases": [
+    {
+      "id": "en-exception",
+      "language": "en",
+      "rows": [
+        {
+          "id": "en-1",
+          "reference_id": "1",
+          "text": "Operators must retain records.",
+          "requirement_type": "mandatory",
+          "parent_id": null,
+          "page_number": 1
+        }
+      ],
+      "pages": [
+        {
+          "page_number": 1,
+          "text": "1 Operators must retain records.\n\nExcept where national law prohibits retention."
+        }
+      ],
+      "expected": [
+        {
+          "kind": "accuracy",
+          "requirement_id": "en-1",
+          "after": {
+            "text": "1 Operators must retain records.\n\nExcept where national law prohibits retention."
+          },
+          "auto_eligible": true
+        }
+      ]
+    },
+    {
+      "id": "en-omission",
+      "language": "en",
+      "rows": [],
+      "pages": [
+        {
+          "page_number": 1,
+          "text": "2 Operators must retain records."
+        }
+      ],
+      "expected": [
+        {
+          "kind": "omission",
+          "requirement_id": null,
+          "after": {
+            "reference_id": "2",
+            "text": "2 Operators must retain records.",
+            "requirement_type": "mandatory",
+            "parent_id": null,
+            "page_number": 1
+          },
+          "auto_eligible": true
+        }
+      ]
+    },
+    {
+      "id": "en-type-parent",
+      "language": "en",
+      "rows": [
+        {
+          "id": "en-1",
+          "reference_id": "1",
+          "text": "1 Record management obligations.",
+          "requirement_type": "informational",
+          "parent_id": null,
+          "page_number": 1
+        },
+        {
+          "id": "en-1.1",
+          "reference_id": "1.1",
+          "text": "1.1 Operators must retain records.",
+          "requirement_type": "informational",
+          "parent_id": null,
+          "page_number": 1
+        }
+      ],
+      "pages": [
+        {
+          "page_number": 1,
+          "text": "1 Record management obligations.\n1.1 Operators must retain records."
+        }
+      ],
+      "expected": [
+        {
+          "kind": "accuracy",
+          "requirement_id": "en-1.1",
+          "after": {
+            "requirement_type": "mandatory",
+            "parent_id": "en-1"
+          },
+          "auto_eligible": true
+        }
+      ]
+    },
+    {
+      "id": "en-unchanged",
+      "language": "en",
+      "rows": [
+        {
+          "id": "en-1",
+          "reference_id": "1",
+          "text": "1 Operators must retain records.",
+          "requirement_type": "mandatory",
+          "parent_id": null,
+          "page_number": 1
+        }
+      ],
+      "pages": [
+        {
+          "page_number": 1,
+          "text": "1 Operators must retain records."
+        }
+      ],
+      "expected": []
+    },
+    {
+      "id": "da-exception",
+      "language": "da",
+      "rows": [
+        {
+          "id": "da-1",
+          "reference_id": "1",
+          "text": "Operatører skal opbevare dokumentation.",
+          "requirement_type": "mandatory",
+          "parent_id": null,
+          "page_number": 1
+        }
+      ],
+      "pages": [
+        {
+          "page_number": 1,
+          "text": "1 Operatører skal opbevare dokumentation.\n\nMedmindre national lovgivning forbyder opbevaring."
+        }
+      ],
+      "expected": [
+        {
+          "kind": "accuracy",
+          "requirement_id": "da-1",
+          "after": {
+            "text": "1 Operatører skal opbevare dokumentation.\n\nMedmindre national lovgivning forbyder opbevaring."
+          },
+          "auto_eligible": true
+        }
+      ]
+    },
+    {
+      "id": "da-omission",
+      "language": "da",
+      "rows": [],
+      "pages": [
+        {
+          "page_number": 1,
+          "text": "2 Operatører skal opbevare dokumentation."
+        }
+      ],
+      "expected": [
+        {
+          "kind": "omission",
+          "requirement_id": null,
+          "after": {
+            "reference_id": "2",
+            "text": "2 Operatører skal opbevare dokumentation.",
+            "requirement_type": "mandatory",
+            "parent_id": null,
+            "page_number": 1
+          },
+          "auto_eligible": true
+        }
+      ]
+    },
+    {
+      "id": "da-type-parent",
+      "language": "da",
+      "rows": [
+        {
+          "id": "da-1",
+          "reference_id": "1",
+          "text": "1 Krav til dokumentationsstyring.",
+          "requirement_type": "informational",
+          "parent_id": null,
+          "page_number": 1
+        },
+        {
+          "id": "da-1.1",
+          "reference_id": "1.1",
+          "text": "1.1 Operatører skal opbevare dokumentation.",
+          "requirement_type": "informational",
+          "parent_id": null,
+          "page_number": 1
+        }
+      ],
+      "pages": [
+        {
+          "page_number": 1,
+          "text": "1 Krav til dokumentationsstyring.\n1.1 Operatører skal opbevare dokumentation."
+        }
+      ],
+      "expected": [
+        {
+          "kind": "accuracy",
+          "requirement_id": "da-1.1",
+          "after": {
+            "requirement_type": "mandatory",
+            "parent_id": "da-1"
+          },
+          "auto_eligible": true
+        }
+      ]
+    },
+    {
+      "id": "da-unchanged",
+      "language": "da",
+      "rows": [
+        {
+          "id": "da-1",
+          "reference_id": "1",
+          "text": "1 Operatører skal opbevare dokumentation.",
+          "requirement_type": "mandatory",
+          "parent_id": null,
+          "page_number": 1
+        }
+      ],
+      "pages": [
+        {
+          "page_number": 1,
+          "text": "1 Operatører skal opbevare dokumentation."
+        }
+      ],
+      "expected": []
+    }
+  ],
+  "recorded_results": {
+    "en-exception": {
+      "status": "completed",
+      "findings": [
+        {
+          "kind": "accuracy",
+          "requirement_id": "en-1",
+          "after": {
+            "text": "1 Operators must retain records.\n\nExcept where national law prohibits retention."
+          },
+          "auto_eligible": true
+        }
+      ],
+      "coverage": {
+        "checked": 1,
+        "total": 1,
+        "source_blocks_checked": 1,
+        "source_blocks_total": 1
+      },
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_seconds": null
+    },
+    "en-omission": {
+      "status": "completed",
+      "findings": [
+        {
+          "kind": "omission",
+          "requirement_id": null,
+          "after": {
+            "reference_id": "2",
+            "text": "2 Operators must retain records.",
+            "requirement_type": "mandatory",
+            "parent_id": null,
+            "page_number": 1
+          },
+          "auto_eligible": true
+        }
+      ],
+      "coverage": {
+        "checked": 0,
+        "total": 0,
+        "source_blocks_checked": 1,
+        "source_blocks_total": 1
+      },
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_seconds": null
+    },
+    "en-type-parent": {
+      "status": "completed",
+      "findings": [
+        {
+          "kind": "accuracy",
+          "requirement_id": "en-1.1",
+          "after": {
+            "requirement_type": "mandatory",
+            "parent_id": "en-1"
+          },
+          "auto_eligible": true
+        }
+      ],
+      "coverage": {
+        "checked": 2,
+        "total": 2,
+        "source_blocks_checked": 1,
+        "source_blocks_total": 1
+      },
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_seconds": null
+    },
+    "en-unchanged": {
+      "status": "completed",
+      "findings": [],
+      "coverage": {
+        "checked": 1,
+        "total": 1,
+        "source_blocks_checked": 1,
+        "source_blocks_total": 1
+      },
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_seconds": null
+    },
+    "da-exception": {
+      "status": "completed",
+      "findings": [
+        {
+          "kind": "accuracy",
+          "requirement_id": "da-1",
+          "after": {
+            "text": "1 Operatører skal opbevare dokumentation.\n\nMedmindre national lovgivning forbyder opbevaring."
+          },
+          "auto_eligible": true
+        }
+      ],
+      "coverage": {
+        "checked": 1,
+        "total": 1,
+        "source_blocks_checked": 1,
+        "source_blocks_total": 1
+      },
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_seconds": null
+    },
+    "da-omission": {
+      "status": "completed",
+      "findings": [
+        {
+          "kind": "omission",
+          "requirement_id": null,
+          "after": {
+            "reference_id": "2",
+            "text": "2 Operatører skal opbevare dokumentation.",
+            "requirement_type": "mandatory",
+            "parent_id": null,
+            "page_number": 1
+          },
+          "auto_eligible": true
+        }
+      ],
+      "coverage": {
+        "checked": 0,
+        "total": 0,
+        "source_blocks_checked": 1,
+        "source_blocks_total": 1
+      },
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_seconds": null
+    },
+    "da-type-parent": {
+      "status": "completed",
+      "findings": [
+        {
+          "kind": "accuracy",
+          "requirement_id": "da-1.1",
+          "after": {
+            "requirement_type": "mandatory",
+            "parent_id": "da-1"
+          },
+          "auto_eligible": true
+        }
+      ],
+      "coverage": {
+        "checked": 2,
+        "total": 2,
+        "source_blocks_checked": 1,
+        "source_blocks_total": 1
+      },
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_seconds": null
+    },
+    "da-unchanged": {
+      "status": "completed",
+      "findings": [],
+      "coverage": {
+        "checked": 1,
+        "total": 1,
+        "source_blocks_checked": 1,
+        "source_blocks_total": 1
+      },
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "elapsed_seconds": null
+    }
+  }
+}

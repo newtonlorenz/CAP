@@ -1,0 +1,52 @@
+[
+  {
+    "name": "duplicate heading",
+    "nodes": [["heading", "1 Root", 1], ["heading", "1.1 First control", 1], ["heading", "1.1 Repeated control", 2]],
+    "reason": "duplicate_reference:1.1",
+    "raw": "1.1 Repeated control",
+    "extracted": "Repeated control",
+    "page": 2
+  },
+  {
+    "name": "corrupt table marker",
+    "nodes": [["heading", "2 Root", 1], ["table", "l.2 Page header", "The service shall log events.", 2]],
+    "reason": "malformed_table_marker",
+    "raw": "l.2 Page header\nThe service shall log events.",
+    "page": 2
+  },
+  {
+    "name": "orphan continuation",
+    "nodes": [["heading", "3 Root", 1], ["continuation", "• preserve the source tail", 2]],
+    "reason": "orphan_continuation",
+    "raw": "• preserve the source tail",
+    "page": 2
+  },
+  {
+    "name": "missing table number after complete control",
+    "nodes": [["heading", "3 Root", 1], ["table_pair", "1", "The service shall retain records.", "The service shall report incidents.", 1]],
+    "reason": "ambiguous_unnumbered_table_row",
+    "raw": "The service shall report incidents.",
+    "page": 1
+  },
+  {
+    "name": "scan with corrupt heading",
+    "nodes": [["ocr", "4 Root", 1], ["ocr", "4.1 Valid control", 1], ["ocr", "I.2 Corrupt control", 2]],
+    "reason": "malformed_heading_reference",
+    "raw": "I.2 Corrupt control",
+    "page": 2
+  },
+  {
+    "name": "numbered row without section",
+    "nodes": [["table", "1", "The service shall retain records.", 1]],
+    "reason": "missing_numbered_section",
+    "raw": "1\nThe service shall retain records.",
+    "page": 1
+  },
+  {
+    "name": "one cell table row",
+    "nodes": [["heading", "5 Root", 1], ["one_cell_table", "The service shall preserve this row.", 2]],
+    "reason": "malformed_table_row",
+    "raw": "The service shall preserve this row.",
+    "page": 2
+  }
+]

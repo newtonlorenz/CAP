@@ -1,0 +1,1106 @@
+{
+  "scope": "Locked runtime Python and npm dependencies installed on this host; excludes container OS packages and optional external services",
+  "platform": "Darwin arm64",
+  "packages": [
+    {
+      "ecosystem": "python",
+      "name": "alembic",
+      "version": "1.20.0",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/alembic/alembic-1.20.0.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "amqp",
+      "version": "5.4.0",
+      "licence": "BSD",
+      "notices": [
+        "docs/public/third-party/python/amqp/amqp-5.4.0.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "annotated-doc",
+      "version": "0.0.5",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/annotated-doc/annotated_doc-0.0.5.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/annotated-types/annotated_types-0.8.0.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "anyio",
+      "version": "4.15.1",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/anyio/anyio-4.15.1.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "asyncpg",
+      "version": "0.31.0",
+      "licence": "Apache-2.0",
+      "notices": [
+        "docs/public/third-party/python/asyncpg/asyncpg-0.31.0.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "bcrypt",
+      "version": "4.0.1",
+      "licence": "Apache License, Version 2.0",
+      "notices": [
+        "docs/public/third-party/python/bcrypt/bcrypt-4.0.1.dist-info/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "billiard",
+      "version": "4.3.0",
+      "licence": "BSD",
+      "notices": [
+        "docs/public/third-party/python/billiard/billiard-4.3.0.dist-info/licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "celery",
+      "version": "5.6.3",
+      "licence": "BSD-3-Clause",
+      "notices": [
+        "docs/public/third-party/python/celery/celery-5.6.3.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "certifi",
+      "version": "2026.7.22",
+      "licence": "MPL-2.0",
+      "notices": [
+        "docs/public/third-party/python/certifi/certifi-2026.7.22.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "cffi",
+      "version": "2.1.1",
+      "licence": "MIT-0",
+      "notices": [
+        "docs/public/third-party/python/cffi/cffi-2.1.1.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "charset-normalizer",
+      "version": "3.5.1",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/charset-normalizer/charset_normalizer-3.5.1.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "click",
+      "version": "8.5.0",
+      "licence": "BSD-3-Clause",
+      "notices": [
+        "docs/public/third-party/python/click/click-8.5.0.dist-info/licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "click-didyoumean",
+      "version": "0.3.1",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/click-didyoumean/click_didyoumean-0.3.1.dist-info/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "click-plugins",
+      "version": "1.1.1.2",
+      "licence": "New BSD",
+      "notices": [
+        "docs/public/third-party/python/click-plugins/click_plugins-1.1.1.2.dist-info/licenses/AUTHORS.txt",
+        "docs/public/third-party/python/click-plugins/click_plugins-1.1.1.2.dist-info/licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "click-repl",
+      "version": "0.4.0",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/click-repl/click_repl-0.4.0.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "cryptography",
+      "version": "50.0.1",
+      "licence": "Apache-2.0 OR BSD-3-Clause",
+      "notices": [
+        "docs/public/third-party/python/cryptography/cryptography-50.0.1.dist-info/licenses/LICENSE",
+        "docs/public/third-party/python/cryptography/cryptography-50.0.1.dist-info/licenses/LICENSE.APACHE",
+        "docs/public/third-party/python/cryptography/cryptography-50.0.1.dist-info/licenses/LICENSE.BSD"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "dnspython",
+      "version": "2.8.0",
+      "licence": "ISC",
+      "notices": [
+        "docs/public/third-party/python/dnspython/dnspython-2.8.0.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "email-validator",
+      "version": "2.3.0",
+      "licence": "Unlicense",
+      "notices": [
+        "docs/public/third-party/python/email-validator/email_validator-2.3.0.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "et-xmlfile",
+      "version": "2.0.0",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/et-xmlfile/et_xmlfile-2.0.0.dist-info/AUTHORS.txt",
+        "docs/public/third-party/python/et-xmlfile/et_xmlfile-2.0.0.dist-info/LICENCE.python",
+        "docs/public/third-party/python/et-xmlfile/et_xmlfile-2.0.0.dist-info/LICENCE.rst"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "fastapi",
+      "version": "0.141.1",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/fastapi/fastapi-0.141.1.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "greenlet",
+      "version": "3.5.6",
+      "licence": "MIT AND PSF-2.0",
+      "notices": [
+        "docs/public/third-party/python/greenlet/greenlet-3.5.6.dist-info/licenses/LICENSE",
+        "docs/public/third-party/python/greenlet/greenlet-3.5.6.dist-info/licenses/LICENSE.PSF"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "h11",
+      "version": "0.16.0",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/h11/h11-0.16.0.dist-info/licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "httpcore",
+      "version": "1.0.9",
+      "licence": "BSD-3-Clause",
+      "notices": [
+        "docs/public/third-party/python/httpcore/httpcore-1.0.9.dist-info/licenses/LICENSE.md"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "httptools",
+      "version": "0.8.0",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/httptools/httptools-0.8.0.dist-info/licenses/LICENSE",
+        "docs/public/third-party/python/httptools/httptools-0.8.0.dist-info/licenses/vendor/http-parser/LICENSE-MIT",
+        "docs/public/third-party/python/httptools/httptools-0.8.0.dist-info/licenses/vendor/llhttp/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "httpx",
+      "version": "0.28.1",
+      "licence": "BSD-3-Clause",
+      "notices": [
+        "docs/public/third-party/python/httpx/httpx-0.28.1.dist-info/licenses/LICENSE.md"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "idna",
+      "version": "3.20",
+      "licence": "BSD-3-Clause",
+      "notices": [
+        "docs/public/third-party/python/idna/idna-3.20.dist-info/licenses/LICENSE.md"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "kombu",
+      "version": "5.6.2",
+      "licence": "BSD-3-Clause",
+      "notices": [
+        "docs/public/third-party/python/kombu/kombu-5.6.2.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "mako",
+      "version": "1.4.1",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/mako/mako-1.4.1.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "markupsafe",
+      "version": "3.0.3",
+      "licence": "BSD-3-Clause",
+      "notices": [
+        "docs/public/third-party/python/markupsafe/markupsafe-3.0.3.dist-info/licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "openpyxl",
+      "version": "3.1.5",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/openpyxl/openpyxl-3.1.5.dist-info/LICENCE.rst"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "packaging",
+      "version": "26.3",
+      "licence": "Apache-2.0 OR BSD-2-Clause",
+      "notices": [
+        "docs/public/third-party/python/packaging/packaging-26.3.dist-info/licenses/LICENSE",
+        "docs/public/third-party/python/packaging/packaging-26.3.dist-info/licenses/LICENSE.APACHE",
+        "docs/public/third-party/python/packaging/packaging-26.3.dist-info/licenses/LICENSE.BSD"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "passlib",
+      "version": "1.7.4",
+      "licence": "BSD",
+      "notices": [
+        "docs/public/third-party/python/passlib/passlib-1.7.4.dist-info/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "pdfminer-six",
+      "version": "20260107",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/pdfminer-six/pdfminer_six-20260107.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "pdfplumber",
+      "version": "0.11.10",
+      "licence": "License :: OSI Approved :: MIT License",
+      "notices": [
+        "docs/public/third-party/python/pdfplumber/pdfplumber-0.11.10.dist-info/licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "pillow",
+      "version": "12.3.0",
+      "licence": "MIT-CMU",
+      "notices": [
+        "docs/public/third-party/python/pillow/pillow-12.3.0.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "prompt-toolkit",
+      "version": "3.0.53",
+      "licence": "License :: OSI Approved :: BSD License",
+      "notices": [
+        "docs/public/third-party/python/prompt-toolkit/prompt_toolkit-3.0.53.dist-info/licenses/AUTHORS.rst",
+        "docs/public/third-party/python/prompt-toolkit/prompt_toolkit-3.0.53.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "pycparser",
+      "version": "3.0",
+      "licence": "BSD-3-Clause",
+      "notices": [
+        "docs/public/third-party/python/pycparser/pycparser-3.0.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "pydantic",
+      "version": "2.13.5",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/pydantic/pydantic-2.13.5.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "pydantic-core",
+      "version": "2.46.5",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/pydantic-core/pydantic_core-2.46.5.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "pydantic-settings",
+      "version": "2.15.0",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/pydantic-settings/pydantic_settings-2.15.0.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "pyjwt",
+      "version": "2.15.1",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/pyjwt/pyjwt-2.15.1.dist-info/licenses/AUTHORS.rst",
+        "docs/public/third-party/python/pyjwt/pyjwt-2.15.1.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "pypdfium2",
+      "version": "5.13.0",
+      "licence": "BSD-3-Clause, Apache-2.0, dependency licenses",
+      "notices": [
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/LICENSES/Apache-2.0.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/LICENSES/BSD-3-Clause.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/LICENSES/CC-BY-4.0.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/abseil.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/agg23.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/fast_float.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/freetype.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/icu.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/lcms.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/libjpeg_turbo.ijg",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/libjpeg_turbo.md",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/libopenjpeg.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/libpng.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/libtiff.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/llvm-libc.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/pdfium-binaries.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/pdfium.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/simdutf.txt",
+        "docs/public/third-party/python/pypdfium2/pypdfium2-5.13.0.dist-info/licenses/data/darwin_arm64/BUILD_LICENSES/zlib.txt"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "licence": "Dual License",
+      "notices": [
+        "docs/public/third-party/python/python-dateutil/python_dateutil-2.9.0.post0.dist-info/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "python-dotenv",
+      "version": "1.2.3",
+      "licence": "BSD-3-Clause",
+      "notices": [
+        "docs/public/third-party/python/python-dotenv/python_dotenv-1.2.3.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "python-multipart",
+      "version": "0.0.32",
+      "licence": "Apache-2.0",
+      "notices": [
+        "docs/public/third-party/python/python-multipart/python_multipart-0.0.32.dist-info/licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "pyyaml",
+      "version": "6.0.3",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/pyyaml/pyyaml-6.0.3.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "redis",
+      "version": "6.4.0",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/redis/redis-6.4.0.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "reportlab",
+      "version": "5.0.1",
+      "licence": "BSD license (see license.txt for details), Copyright (c) 2000-2025, ReportLab Inc.",
+      "notices": [
+        "docs/public/third-party/python/reportlab/reportlab-5.0.1.dist-info/licenses/LICENSE",
+        "docs/public/third-party/python/reportlab/reportlab/fonts/bitstream-vera-license.txt"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "six",
+      "version": "1.17.0",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/six/six-1.17.0.dist-info/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "sqlalchemy",
+      "version": "2.0.54",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/sqlalchemy/sqlalchemy-2.0.54.dist-info/licenses/AUTHORS",
+        "docs/public/third-party/python/sqlalchemy/sqlalchemy-2.0.54.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "starlette",
+      "version": "1.6.0",
+      "licence": "BSD-3-Clause",
+      "notices": [
+        "docs/public/third-party/python/starlette/starlette-1.6.0.dist-info/licenses/LICENSE.md"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "licence": "PSF-2.0",
+      "notices": [
+        "docs/public/third-party/python/typing-extensions/typing_extensions-4.16.0.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/typing-inspection/typing_inspection-0.4.4.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "tzdata",
+      "version": "2026.4",
+      "licence": "Apache-2.0",
+      "notices": [
+        "docs/public/third-party/python/tzdata/tzdata-2026.4.dist-info/licenses/LICENSE",
+        "docs/public/third-party/python/tzdata/tzdata-2026.4.dist-info/licenses/licenses/LICENSE_APACHE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "tzlocal",
+      "version": "5.4.4",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/tzlocal/tzlocal-5.4.4.dist-info/licenses/LICENSE.txt"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "uvicorn",
+      "version": "0.53.0",
+      "licence": "BSD-3-Clause",
+      "notices": [
+        "docs/public/third-party/python/uvicorn/uvicorn-0.53.0.dist-info/licenses/LICENSE.md"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "uvloop",
+      "version": "0.22.1",
+      "licence": "MIT License",
+      "notices": [
+        "docs/public/third-party/python/uvloop/uvloop-0.22.1.dist-info/licenses/LICENSE-APACHE",
+        "docs/public/third-party/python/uvloop/uvloop-0.22.1.dist-info/licenses/LICENSE-MIT"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "vine",
+      "version": "5.1.0",
+      "licence": "BSD",
+      "notices": [
+        "docs/public/third-party/python/vine/vine-5.1.0.dist-info/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "watchfiles",
+      "version": "1.2.0",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/watchfiles/watchfiles-1.2.0.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "wcwidth",
+      "version": "0.8.4",
+      "licence": "MIT",
+      "notices": [
+        "docs/public/third-party/python/wcwidth/wcwidth-0.8.4.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "python",
+      "name": "websockets",
+      "version": "17.1",
+      "licence": "BSD-3-Clause",
+      "notices": [
+        "docs/public/third-party/python/websockets/websockets-17.1.dist-info/licenses/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "@page-feedback/react",
+      "version": "0.1.1",
+      "lock_path": "node_modules/@page-feedback/react",
+      "licence": "MIT",
+      "integrity": "sha512-TlIylXITO4Sq2G+SBWqMapSYa6hP96bQkuT0tJMF8PRfRIypVwat3ZZgmGZJpIyanBW04RiWH+V72jgAqXRkSA==",
+      "notices": [
+        "docs/public/third-party/npm/@page-feedback/react/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "@tanstack/query-core",
+      "version": "5.90.20",
+      "lock_path": "node_modules/@tanstack/query-core",
+      "licence": "MIT",
+      "integrity": "sha512-OMD2HLpNouXEfZJWcKeVKUgQ5n+n3A2JFmBaScpNDUqSrQSjiveC7dKMe53uJUg1nDG16ttFPz2xfilz6i2uVg==",
+      "notices": [
+        "docs/public/third-party/npm/@tanstack/query-core/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "@tanstack/react-query",
+      "version": "5.90.20",
+      "lock_path": "node_modules/@tanstack/react-query",
+      "licence": "MIT",
+      "integrity": "sha512-vXBxa+qeyveVO7OA0jX1z+DeyCA4JKnThKv411jd5SORpBKgkcVnYKCiBgECvADvniBX7tobwBmg01qq9JmMJw==",
+      "notices": [
+        "docs/public/third-party/npm/@tanstack/react-query/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "@types/trusted-types",
+      "version": "2.0.7",
+      "lock_path": "node_modules/@types/trusted-types",
+      "licence": "MIT",
+      "integrity": "sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==",
+      "notices": [
+        "docs/public/third-party/npm/@types/trusted-types/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "asynckit",
+      "version": "0.4.0",
+      "lock_path": "node_modules/asynckit",
+      "licence": "MIT",
+      "integrity": "sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==",
+      "notices": [
+        "docs/public/third-party/npm/asynckit/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "axios",
+      "version": "1.20.0",
+      "lock_path": "node_modules/axios",
+      "licence": "MIT",
+      "integrity": "sha512-r8aOh8j9cGKpgQAqpzrUHnSIc6a59Y3Xf/cv8sy1DrHCkZHzQGEuoq1tARk6qSyDdtQGSDgpb9kFlruzPvrgwg==",
+      "notices": [
+        "docs/public/third-party/npm/axios/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "agent-base",
+      "version": "6.0.2",
+      "lock_path": "node_modules/axios/node_modules/agent-base",
+      "licence": "MIT",
+      "integrity": "sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==",
+      "notices": [
+        "docs/public/third-party/npm/agent-base/README.md"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "https-proxy-agent",
+      "version": "5.0.1",
+      "lock_path": "node_modules/axios/node_modules/https-proxy-agent",
+      "licence": "MIT",
+      "integrity": "sha512-dFcAjpTQFgoLMzC2VwU+C/CbS7uRL0lWmxDITmqm7C+7F0Odmj6s9l6alZc6AELXhrnggM2CeWSXHGOdX2YtwA==",
+      "notices": [
+        "docs/public/third-party/npm/https-proxy-agent/README.md"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "base64-arraybuffer",
+      "version": "1.0.2",
+      "lock_path": "node_modules/base64-arraybuffer",
+      "licence": "MIT",
+      "integrity": "sha512-I3yl4r9QB5ZRY3XuJVEPfc2XhZO6YweFPI+UovAzn+8/hb3oJ6lnysaFcjVpkCPfVWFUDvoZ8kmVDP7WyRtYtQ==",
+      "notices": [
+        "docs/public/third-party/npm/base64-arraybuffer/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "call-bind-apply-helpers",
+      "version": "1.0.2",
+      "lock_path": "node_modules/call-bind-apply-helpers",
+      "licence": "MIT",
+      "integrity": "sha512-Sp1ablJ0ivDkSzjcaJdxEunN5/XvksFJ2sMBFfq6x0ryhQV/2b/KwFe21cMpmHtPOSij8K99/wSfoEuTObmuMQ==",
+      "notices": [
+        "docs/public/third-party/npm/call-bind-apply-helpers/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "combined-stream",
+      "version": "1.0.8",
+      "lock_path": "node_modules/combined-stream",
+      "licence": "MIT",
+      "integrity": "sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==",
+      "notices": [
+        "docs/public/third-party/npm/combined-stream/License"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "cookie",
+      "version": "1.1.1",
+      "lock_path": "node_modules/cookie",
+      "licence": "MIT",
+      "integrity": "sha512-ei8Aos7ja0weRpFzJnEA9UHJ/7XQmqglbRwnf2ATjcB9Wq874VKH9kfjjirM6UhU2/E5fFYadylyhFldcqSidQ==",
+      "notices": [
+        "docs/public/third-party/npm/cookie/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "css-line-break",
+      "version": "2.1.0",
+      "lock_path": "node_modules/css-line-break",
+      "licence": "MIT",
+      "integrity": "sha512-FHcKFCZcAha3LwfVBhCQbW2nCNbkZXn7KVUJcsT5/P8YmfsVja0FMPJr0B903j/E69HUphKiV9iQArX8SDYA4w==",
+      "notices": [
+        "docs/public/third-party/npm/css-line-break/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "debug",
+      "version": "4.4.3",
+      "lock_path": "node_modules/debug",
+      "licence": "MIT",
+      "integrity": "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==",
+      "notices": [
+        "docs/public/third-party/npm/debug/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "delayed-stream",
+      "version": "1.0.0",
+      "lock_path": "node_modules/delayed-stream",
+      "licence": "MIT",
+      "integrity": "sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==",
+      "notices": [
+        "docs/public/third-party/npm/delayed-stream/License"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "dompurify",
+      "version": "3.4.16",
+      "lock_path": "node_modules/dompurify",
+      "licence": "(MPL-2.0 OR Apache-2.0)",
+      "integrity": "sha512-sqo+pNp3qRhCIpbgRi1y8Tgk27Bo2Ry7w0dC1NBeNTdZChWjz9Xb/KOoZbRP/R6pQZ80Qw8YhXw13hWWBbMRnQ==",
+      "notices": [
+        "docs/public/third-party/npm/dompurify/LICENSE",
+        "docs/public/third-party/npm/dompurify/LICENSE-MPL"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "dunder-proto",
+      "version": "1.0.1",
+      "lock_path": "node_modules/dunder-proto",
+      "licence": "MIT",
+      "integrity": "sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==",
+      "notices": [
+        "docs/public/third-party/npm/dunder-proto/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "es-define-property",
+      "version": "1.0.1",
+      "lock_path": "node_modules/es-define-property",
+      "licence": "MIT",
+      "integrity": "sha512-e3nRfgfUZ4rNGL232gUgX06QNyyez04KdjFrF+LTRoOXmrOgFKDg4BCdsjW8EnT69eqdYGmRpJwiPVYNrCaW3g==",
+      "notices": [
+        "docs/public/third-party/npm/es-define-property/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "es-errors",
+      "version": "1.3.0",
+      "lock_path": "node_modules/es-errors",
+      "licence": "MIT",
+      "integrity": "sha512-Zf5H2Kxt2xjTvbJvP2ZWLEICxA6j+hAmMzIlypy4xcBg1vKVnx89Wy0GbS+kf5cwCVFFzdCFh2XSCFNULS6csw==",
+      "notices": [
+        "docs/public/third-party/npm/es-errors/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "es-object-atoms",
+      "version": "1.1.1",
+      "lock_path": "node_modules/es-object-atoms",
+      "licence": "MIT",
+      "integrity": "sha512-FGgH2h8zKNim9ljj7dankFPcICIK9Cp5bm+c2gQSYePhpaG5+esrLODihIorn+Pe6FGJzWhXQotPv73jTaldXA==",
+      "notices": [
+        "docs/public/third-party/npm/es-object-atoms/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "es-set-tostringtag",
+      "version": "2.1.0",
+      "lock_path": "node_modules/es-set-tostringtag",
+      "licence": "MIT",
+      "integrity": "sha512-j6vWzfrGVfyXxge+O0x5sh6cvxAog0a/4Rdd2K36zCMV5eJ+/+tOAngRO8cODMNWbVRdVlmGZQL2YS3yR8bIUA==",
+      "notices": [
+        "docs/public/third-party/npm/es-set-tostringtag/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "follow-redirects",
+      "version": "1.16.0",
+      "lock_path": "node_modules/follow-redirects",
+      "licence": "MIT",
+      "integrity": "sha512-y5rN/uOsadFT/JfYwhxRS5R7Qce+g3zG97+JrtFZlC9klX/W5hD7iiLzScI4nZqUS7DNUdhPgw4xI8W2LuXlUw==",
+      "notices": [
+        "docs/public/third-party/npm/follow-redirects/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "form-data",
+      "version": "4.0.6",
+      "lock_path": "node_modules/form-data",
+      "licence": "MIT",
+      "integrity": "sha512-vKatAh4SlVfgbv+YtmhiRjhEMJsYpsG1Y2rMQtR+SVSbytsSD1YGzDIcrAJmdFec88u/+VoGmxnl+80gL1tRCQ==",
+      "notices": [
+        "docs/public/third-party/npm/form-data/License"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "function-bind",
+      "version": "1.1.2",
+      "lock_path": "node_modules/function-bind",
+      "licence": "MIT",
+      "integrity": "sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==",
+      "notices": [
+        "docs/public/third-party/npm/function-bind/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "get-intrinsic",
+      "version": "1.3.0",
+      "lock_path": "node_modules/get-intrinsic",
+      "licence": "MIT",
+      "integrity": "sha512-9fSjSaos/fRIVIp+xSJlE6lfwhES7LNtKaCBIamHsjr2na1BiABJPo0mOjjz8GJDURarmCPGqaiVg5mfjb98CQ==",
+      "notices": [
+        "docs/public/third-party/npm/get-intrinsic/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "get-proto",
+      "version": "1.0.1",
+      "lock_path": "node_modules/get-proto",
+      "licence": "MIT",
+      "integrity": "sha512-sTSfBjoXBp89JvIKIefqw7U2CCebsc74kiY6awiGogKtoSGbgjYE/G/+l9sF3MWFPNc9IcoOC4ODfKHfxFmp0g==",
+      "notices": [
+        "docs/public/third-party/npm/get-proto/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "gopd",
+      "version": "1.2.0",
+      "lock_path": "node_modules/gopd",
+      "licence": "MIT",
+      "integrity": "sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==",
+      "notices": [
+        "docs/public/third-party/npm/gopd/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "has-symbols",
+      "version": "1.1.0",
+      "lock_path": "node_modules/has-symbols",
+      "licence": "MIT",
+      "integrity": "sha512-1cDNdwJ2Jaohmb3sg4OmKaMBwuC48sYni5HUw2DvsC8LjGTLK9h+eb1X6RyuOHe4hT0ULCW68iomhjUoKUqlPQ==",
+      "notices": [
+        "docs/public/third-party/npm/has-symbols/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "has-tostringtag",
+      "version": "1.0.2",
+      "lock_path": "node_modules/has-tostringtag",
+      "licence": "MIT",
+      "integrity": "sha512-NqADB8VjPFLM2V0VvHUewwwsw0ZWBaIdgo+ieHtK3hasLz4qeCRjYcqfB6AQrBggRKppKF8L52/VqdVsO47Dlw==",
+      "notices": [
+        "docs/public/third-party/npm/has-tostringtag/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "hasown",
+      "version": "2.0.4",
+      "lock_path": "node_modules/hasown",
+      "licence": "MIT",
+      "integrity": "sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==",
+      "notices": [
+        "docs/public/third-party/npm/hasown/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "html2canvas",
+      "version": "1.4.1",
+      "lock_path": "node_modules/html2canvas",
+      "licence": "MIT",
+      "integrity": "sha512-fPU6BHNpsyIhr8yyMpTLLxAbkaK8ArIBcmZIRiBLiDhjeqvXolaEmDGmELFuX9I4xDcaKKcJl+TKZLqruBbmWA==",
+      "notices": [
+        "docs/public/third-party/npm/html2canvas/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "js-tokens",
+      "version": "4.0.0",
+      "lock_path": "node_modules/js-tokens",
+      "licence": "MIT",
+      "integrity": "sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==",
+      "notices": [
+        "docs/public/third-party/npm/js-tokens/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "loose-envify",
+      "version": "1.4.0",
+      "lock_path": "node_modules/loose-envify",
+      "licence": "MIT",
+      "integrity": "sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==",
+      "notices": [
+        "docs/public/third-party/npm/loose-envify/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "math-intrinsics",
+      "version": "1.1.0",
+      "lock_path": "node_modules/math-intrinsics",
+      "licence": "MIT",
+      "integrity": "sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==",
+      "notices": [
+        "docs/public/third-party/npm/math-intrinsics/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "mime-db",
+      "version": "1.52.0",
+      "lock_path": "node_modules/mime-db",
+      "licence": "MIT",
+      "integrity": "sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==",
+      "notices": [
+        "docs/public/third-party/npm/mime-db/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "mime-types",
+      "version": "2.1.35",
+      "lock_path": "node_modules/mime-types",
+      "licence": "MIT",
+      "integrity": "sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==",
+      "notices": [
+        "docs/public/third-party/npm/mime-types/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "ms",
+      "version": "2.1.3",
+      "lock_path": "node_modules/ms",
+      "licence": "MIT",
+      "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+      "notices": [
+        "docs/public/third-party/npm/ms/license.md"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "proxy-from-env",
+      "version": "2.1.0",
+      "lock_path": "node_modules/proxy-from-env",
+      "licence": "MIT",
+      "integrity": "sha512-cJ+oHTW1VAEa8cJslgmUZrc+sjRKgAKl3Zyse6+PV38hZe/V6Z14TbCuXcan9F9ghlz4QrFr2c92TNF82UkYHA==",
+      "notices": [
+        "docs/public/third-party/npm/proxy-from-env/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "react",
+      "version": "18.3.1",
+      "lock_path": "node_modules/react",
+      "licence": "MIT",
+      "integrity": "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==",
+      "notices": [
+        "docs/public/third-party/npm/react/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "react-dom",
+      "version": "18.3.1",
+      "lock_path": "node_modules/react-dom",
+      "licence": "MIT",
+      "integrity": "sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==",
+      "notices": [
+        "docs/public/third-party/npm/react-dom/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "react-router",
+      "version": "7.18.4",
+      "lock_path": "node_modules/react-router",
+      "licence": "MIT",
+      "integrity": "sha512-PUPQcMhMGRAslLcvtlPz/kmzBEWPhLdgLFrL7pLNepBL6dX0lWj4WD2cUYVgYCuT3jxvghYFg81cDTj44DhetQ==",
+      "notices": [
+        "docs/public/third-party/npm/react-router/LICENSE.md"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "react-router-dom",
+      "version": "7.18.4",
+      "lock_path": "node_modules/react-router-dom",
+      "licence": "MIT",
+      "integrity": "sha512-yrfmJHIpDG7taCpqKjT1G5B6q3O2K+RN8/fgNf0lTjCwiPbQ0ei6vXX9ZjQR+7ld8Tr7Z5xmyMnZ8YJrphWQUw==",
+      "notices": [
+        "docs/public/third-party/npm/react-router-dom/LICENSE.md"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "scheduler",
+      "version": "0.23.2",
+      "lock_path": "node_modules/scheduler",
+      "licence": "MIT",
+      "integrity": "sha512-UOShsPwz7NrMUqhR6t0hWjFduvOzbtv7toDH1/hIrfRNIDBnnBWd0CwJTGvTpngVlmwGCdP9/Zl/tVrDqcuYzQ==",
+      "notices": [
+        "docs/public/third-party/npm/scheduler/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "set-cookie-parser",
+      "version": "2.7.2",
+      "lock_path": "node_modules/set-cookie-parser",
+      "licence": "MIT",
+      "integrity": "sha512-oeM1lpU/UvhTxw+g3cIfxXHyJRc/uidd3yK1P242gzHds0udQBYzs3y8j4gCCW+ZJ7ad0yctld8RYO+bdurlvw==",
+      "notices": [
+        "docs/public/third-party/npm/set-cookie-parser/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "text-segmentation",
+      "version": "1.0.3",
+      "lock_path": "node_modules/text-segmentation",
+      "licence": "MIT",
+      "integrity": "sha512-iOiPUo/BGnZ6+54OsWxZidGCsdU8YbE4PSpdPinp7DeMtUJNJBoJ/ouUSTJjHkh1KntHaltHl/gDs2FC4i5+Nw==",
+      "notices": [
+        "docs/public/third-party/npm/text-segmentation/LICENSE"
+      ]
+    },
+    {
+      "ecosystem": "npm",
+      "name": "utrie",
+      "version": "1.0.2",
+      "lock_path": "node_modules/utrie",
+      "licence": "MIT",
+      "integrity": "sha512-1MLa5ouZiOmQzUbjbu9VmjLzn1QLXBhwpUa7kdLUQK+KQ5KA9I1vk5U4YHe/X2Ch7PYnJfWuWT+VbuxbGwljhw==",
+      "notices": [
+        "docs/public/third-party/npm/utrie/LICENSE"
+      ]
+    }
+  ],
+  "review_items": []
+}
