@@ -1,3 +1,4 @@
+import './workflow-pages.css'
 import Badge from '../components/ui/Badge'
 import { releaseNotes } from '../content/releaseNotes'
 
@@ -7,7 +8,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-GB', {
 
 export default function ChangeNotes() {
   return (
-    <div className="mx-auto w-full max-w-4xl">
+    <div className="workflow-page release-page mx-auto w-full max-w-4xl">
       <header>
         <h1 className="text-2xl font-semibold text-ink">Change notes</h1>
         <p className="mt-2 text-sm text-muted">Feature changes in each app version, newest first.</p>

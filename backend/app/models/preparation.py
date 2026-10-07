@@ -63,6 +63,9 @@ class PreparationCase(Base):
     owner_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("users.id"), nullable=True, index=True
     )
+    reviewer_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("users.id"), nullable=True, index=True
+    )
     due_date: Mapped[Optional[date]] = mapped_column(Date)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active", index=True)
     revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
@@ -88,6 +91,11 @@ class PreparationResponse(Base):
     not_applicable_reason: Mapped[Optional[str]] = mapped_column(Text)
     accepted_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    review_status: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="pending_review", server_default="pending_review"
+    )
+    last_saved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_saved_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))
     reused_from_case_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("preparation_cases.id", ondelete="SET NULL"), index=True
     )
@@ -125,3 +133,18 @@ class PreparationResponseEvidence(Base):
     evidence_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("preparation_evidence.id"), primary_key=True, index=True
     )
+
+
+class PreparationReviewFeedback(Base):
+    __tablename__ = "preparation_review_feedback"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    response_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("preparation_responses.id", ondelete="CASCADE"), index=True
+    )
+    comment: Mapped[str] = mapped_column(Text)
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    returned_revision: Mapped[int] = mapped_column(Integer)
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    resolved_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id"))

@@ -57,14 +57,14 @@ function TabButton({
       aria-pressed={active}
       onClick={onClick}
       className={[
-        'flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors',
+        'flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors',
         active
           ? 'border-brand-line bg-brand-soft text-accent'
           : 'border-line bg-surface text-muted hover:border-line-strong',
       ].join(' ')}
     >
       <span>{label}</span>
-      <span className="dashboard-number rounded-full bg-surface/70 px-2 py-0.5 text-xs font-semibold text-ink">
+      <span className="dashboard-number rounded-md bg-subtle px-2 py-0.5 text-xs font-semibold text-ink">
         {count}
       </span>
     </button>
@@ -173,7 +173,7 @@ export default function MyWorkPanel({
 
   return (
     <DashboardCard
-      title="My Work"
+      title="Assigned work"
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <TabButton

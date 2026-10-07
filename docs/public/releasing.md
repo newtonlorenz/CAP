@@ -1,11 +1,19 @@
-# Preparing the first public source snapshot
+# Maintaining the public source
 
-Do not push the private preparation repository or its history. The public repository
-must start from a separately reviewed snapshot. The private repository remains intact.
-The private development repository has been renamed to `newtonlorenz/cap-dev`.
-The publication target is a fresh `newtonlorenz/CAP` repository containing only
-the approved snapshot. Confirm the repository identities and visibility before
-any push. Never make the private development repository or its history public.
+`newtonlorenz/CAP` is the maintained public source repository. Create feature branches,
+pull requests and releases there. Its initial commit contains the reviewed source
+snapshot, followed by public maintenance commits.
+
+`newtonlorenz/cap-dev` is a deprecated private archive for historical information.
+Do not develop or publish new releases there. When recovering historical changes,
+transfer reviewed file changes onto a public branch. Never merge or publish private
+Git history, internal design artefacts or operational records. Confirm the repository
+identity and visibility before any push.
+
+For each update, review the source against the current deployed behaviour. Preserve
+existing features, update the allowlist and regenerate `SNAPSHOT.json` from the final
+source. Run the affected checks and require hosted Verify before merging the public
+pull request. Build deployment candidates from that reviewed public revision.
 
 `publication-manifest.json` is an explicit file allowlist. Every tracked source file
 must belong to it. CI rejects tracked files outside the allowlist and entries that

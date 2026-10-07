@@ -96,3 +96,30 @@ it('offers a downloadable workbook and lets a failed download be retried without
   expect(preparationApi.download).toHaveBeenLastCalledWith('templates/import-template', 'CAP-question-import-template.xlsx')
   expect(dirty).not.toHaveBeenCalled()
 })
+
+
+it.each([101, 1000, 1001])('validates bilingual section headings of %i characters without truncation', async (length) => {
+  const section = 'Applicant details / Hakijan tiedot – '.repeat(30).slice(0, length)
+  vi.mocked(preparationApi.importPreview).mockResolvedValue({ sheets: ['Questions'], sheet_name: 'Questions', warnings: [], rows: [
+    ['Section', 'Question'], [section, 'Name / Nimi'], ['', 'Address / Osoite'],
+  ] })
+  const imported = vi.fn()
+  render(<QuestionImport existing={[]} onImport={imported} initialOpen />)
+  fireEvent.change(screen.getByLabelText('Question spreadsheet'), { target: { files: [new File(['fixture'], 'bilingual.xlsx')] } })
+  await screen.findByText('Preview · 2 questions')
+  const add = screen.getByRole('button', { name: 'Add 2 questions to form' })
+  if (length > 1000) {
+    expect(add).toBeDisabled()
+    expect(screen.getByRole('alert')).toHaveTextContent('Row 2: section exceeds 1,000 characters')
+    expect(screen.getByRole('alert')).toHaveTextContent('Row 3: section exceeds 1,000 characters')
+    expect(imported).not.toHaveBeenCalled()
+  } else {
+    expect(add).toBeEnabled()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    fireEvent.click(add)
+    expect(imported).toHaveBeenCalledWith([
+      expect.objectContaining({ section, label: 'Name / Nimi' }),
+      expect.objectContaining({ section, label: 'Address / Osoite' }),
+    ])
+  }
+})

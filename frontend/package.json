@@ -9,13 +9,15 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "node scripts/test.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:onboarding": "playwright test --config playwright.onboarding.config.ts"
   },
   "dependencies": {
     "@page-feedback/react": "file:vendor/page-feedback-react-0.1.1.tgz",
     "@tanstack/react-query": "^5.60.0",
     "axios": "^1.7.0",
     "dompurify": "3.4.16",
+    "driver.js": "1.4.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-router-dom": "^7.18.4"

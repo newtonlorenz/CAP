@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { preparationApi } from '../../api/preparation'
 import { getApiErrorMessage } from '../../api/errors'
 import type { ImportEnhancement, PreparationField, PreparationFieldType } from '../../types/preparation'
-import { nextPreparationFieldKey, preparationLabel } from '../../types/preparation'
+import { nextPreparationFieldKey, preparationLabel, PREPARATION_SECTION_MAX_LENGTH } from '../../types/preparation'
 import Button from '../ui/Button'
 
 type Preview = Awaited<ReturnType<typeof preparationApi.importPreview>>
@@ -97,7 +97,7 @@ export default function QuestionImport({ existing, onImport, disabled = false, i
       const options = cell('options').split(/\r?\n|\|/).map((value) => value.trim()).filter(Boolean)
       const problem = !type ? `unknown answer type “${cell('type')}”` :
         label.length > 2000 ? 'question exceeds 2,000 characters; move longer instructions to the Instructions column' :
-        section.length > 100 ? 'section exceeds 100 characters' :
+        section.length > PREPARATION_SECTION_MAX_LENGTH ? 'section exceeds 1,000 characters' :
         cell('help').length > 10000 ? 'instructions exceed 10,000 characters' :
         required && !['yes', 'true', '1', 'required', 'no', 'false', '0', 'optional'].includes(required) ? `unknown Required value “${cell('required')}”` :
         type === 'choice' && (!options.length || options.length > 50 || new Set(options).size !== options.length || options.some((value) => value.length > 255)) ? 'use 1–50 distinct choices, separated by | or line breaks' : ''

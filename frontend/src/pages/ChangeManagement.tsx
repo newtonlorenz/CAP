@@ -1,3 +1,4 @@
+import './workflow-pages.css'
 import HistoricalChangeScope from '../components/workflows/HistoricalChangeScope'
 import ChangeProgramme from '../components/workflows/ChangeProgramme'
 import ChangeRecordSummary from '../components/workflows/ChangeRecordSummary'
@@ -1004,7 +1005,7 @@ export default function ChangeManagement() {
   if (registersQuery.isError) return <div className="space-y-4"><h1 className="text-2xl font-semibold text-ink">Change Management</h1><LoadError subject="Component registers" onRetry={() => registersQuery.refetch()} /></div>
 
   return (
-    <div className="min-w-0 space-y-4">
+    <div className="workflow-page change-page min-w-0 space-y-4">
       <div>
         <h1 className="text-2xl font-semibold text-ink">Change Management</h1>
         <p className="mt-1 text-sm text-muted">
@@ -1024,7 +1025,7 @@ export default function ChangeManagement() {
         </Card>
       )}
 
-      {jurisdictionId && (
+      {jurisdictionId && !(activeTab === 'changes' && selectedChange) && (
         <Card className="space-y-3 p-4">
           <div className="space-y-2">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1317,7 +1318,8 @@ export default function ChangeManagement() {
           )
         ) : (
           <div className="space-y-6">
-            {canEdit && <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted">Select a change to review its evidence and next steps.</p><Button variant="primary" onClick={() => setShowCreateChange(true)}>New change</Button></div>}
+            {selectedChange && <Button variant="ghost" onClick={() => discardThen(localDirty, () => setSelectedChangeId(null))}>← Back to changes</Button>}
+            {!selectedChange && canEdit && <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted">Select a change to review its evidence and next steps.</p><Button variant="primary" onClick={() => setShowCreateChange(true)}>New change</Button></div>}
             <Modal open={showCreateChange} title="New change" description="Save a draft with a title, then complete the impact evaluation and evidence before approval." size="lg" onClose={() => discardThen(changeDraftDirty, () => {setShowCreateChange(false); setChangeForm(defaultChangeDraft())})}>
               <form className="grid grid-cols-1 gap-3 md:grid-cols-2" onSubmit={event => { event.preventDefault(); createChangeMutation.mutate() }}>
                 <ChangeProposalFields autoFocus draft={changeForm} setDraft={setChangeForm} components={components} danish={danish} />
@@ -1326,7 +1328,7 @@ export default function ChangeManagement() {
               </form>
             </Modal>
 
-            <Card className="space-y-3 p-4">
+            {!selectedChange && <Card className="space-y-3 p-4">
               <div className="flex flex-wrap items-end gap-2">
                 <label className="flex min-w-0 flex-col gap-1 text-xs font-medium text-muted"><span>Search changes</span><input aria-label="Search changes"
                   placeholder="Search changes"
@@ -1401,7 +1403,7 @@ export default function ChangeManagement() {
                   <div className="flex flex-wrap gap-2"><Button size="sm" variant="secondary" onClick={() => focusChange(change.id)}>Details</Button>{canEdit && <Button size="sm" onClick={() => duplicateChangeIntoDraft(change)}>Duplicate</Button>}</div>
                 </li>)}
               </ul>
-            </Card>
+            </Card>}
 
             {workflowAction && workflowChange && (
               <Modal open title={`${formatOptionLabel(workflowAction.action)}: ${workflowChange.title}`} size="lg" onClose={() => discardThen(workflowDirty, () => setWorkflowAction(null))}>
@@ -1493,29 +1495,31 @@ export default function ChangeManagement() {
             )}
 
             {selectedChange && (
-              <Card className="space-y-4 p-6">
+              <Card className="change-detail-surface space-y-4 p-6">
                 <div ref={detailsRef} tabIndex={-1} className="scroll-mt-6 outline-none focus-visible:ring-2 focus-visible:ring-accent">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-base font-semibold text-ink">Change Details: {selectedChange.title}</h3>
+                  <h2 className="change-detail-title">{selectedChange.title}</h2>
                   <Badge tone={changeStatusTone(selectedChange.status)}>
                     {formatOptionLabel(selectedChange.status)}
                   </Badge>
                 </div>
 
-                <ChangeRecordSummary change={selectedChange} components={components} prerequisiteAction={prerequisiteAction} />
+                <nav className="change-record-navigation" aria-label="Change record sections">
+                  {[['change-readiness', 'Readiness'], ['change-component-scope', 'Scope & components'], ['change-assessments', 'Assessments'], ['change-implementation-record', 'Implementation'], ['change-record-history', 'History']].map(([id, label]) => <a key={id} href={`#${id}`} onClick={() => { const section = document.getElementById(id); if (section instanceof HTMLDetailsElement) section.open = true }}>{label}</a>)}
+                </nav>
+                <ChangeRecordSummary readinessExpected={danish} change={selectedChange} components={components} prerequisiteAction={prerequisiteAction} actions={canConfigure && ['draft','rejected'].includes(selectedChange.status) ? <><Button variant="primary" disabled={selectedChange.readiness?.approval?.ready === false || danish && selectedChange.readiness?.approval?.ready !== true} aria-describedby="change-approval-help" onClick={() => openWorkflow(selectedChange.id,'approve')}>{!danish && !selectedChange.readiness?.approval ? 'Review proposal' : 'Approve change'}</Button><p id="change-approval-help">{!selectedChange.readiness?.approval && danish ? 'Unavailable until readiness can be checked' : selectedChange.readiness?.approval.ready === false ? 'Available when required checks pass' : missingApprovalDetails(selectedChange, danish).length > 0 ? 'Complete proposal details before approval' : 'Records internal approval only'}</p></> : undefined} />
                 <div id="change-scope-actions" tabIndex={-1} className="scroll-mt-24">{canConfigure && danish && ['implemented','verified'].includes(selectedChange.status) && selectedChange.components.some(link => !link.frozen_snapshot) && <HistoricalChangeScope key={selectedChange.id} change={selectedChange} components={components} responsibilityRole={selectedRegister?.responsibility_role} />}
                 <div className="flex flex-wrap gap-2">
                   {(canEdit && !['verified','rolled_back'].includes(selectedChange.status) || canConfigure && selectedChange.status === 'verified' && selectedChange.readiness?.certification_status !== 'not_required' && !selectedChange.readiness?.certification_completed) && <Button onClick={() => {setReadinessField(null);setEditingChangeId(selectedChange.id);setChangeEditDraft(changeDraftFromEntity(selectedChange))}}>Edit change evidence</Button>}
-                  {canConfigure && ['draft','rejected'].includes(selectedChange.status) && <Button variant="primary" disabled={selectedChange.readiness?.approval.ready === false} onClick={() => openWorkflow(selectedChange.id,'approve')}>Approve</Button>}
                   {canConfigure && ['draft','approved'].includes(selectedChange.status) && <Button onClick={() => openWorkflow(selectedChange.id,'reject')}>Reject</Button>}
-                  {canEdit && selectedChange.status === 'approved' && <Button variant="primary" disabled={selectedChange.readiness?.implementation.ready === false} onClick={() => openWorkflow(selectedChange.id,'implement')}>Record implementation</Button>}
-                  {canConfigure && selectedChange.status === 'implemented' && <Button variant="primary" disabled={selectedChange.readiness?.verification.ready === false} onClick={() => openWorkflow(selectedChange.id,'verify')}>Verify</Button>}
+                  {canEdit && selectedChange.status === 'approved' && <Button variant="primary" disabled={selectedChange.readiness?.implementation?.ready === false || danish && selectedChange.readiness?.implementation?.ready !== true} onClick={() => openWorkflow(selectedChange.id,'implement')}>Record implementation</Button>}
+                  {canConfigure && selectedChange.status === 'implemented' && <Button variant="primary" disabled={selectedChange.readiness?.verification?.ready === false || danish && selectedChange.readiness?.verification?.ready !== true} onClick={() => openWorkflow(selectedChange.id,'verify')}>Verify</Button>}
                   {canConfigure && ['implemented','verified'].includes(selectedChange.status) && <Button onClick={() => openWorkflow(selectedChange.id,'rollback')}>Record rollback</Button>}
                   {canEdit && selectedChange.status === 'rejected' && <Button onClick={() => reopenRejectedChange(selectedChange)}>Re-open Draft</Button>}
                 </div></div></div>
                 <div id="change-assessments" tabIndex={-1} className="scroll-mt-24"><ChangeAssessments key={selectedChange.id} changeId={selectedChange.id} changeName={selectedChange.title} blockingAssessmentIds={selectedChange.blocking_assessment_ids || []} jurisdictionId={linkedChangeQuery.data?.id === selectedChange.id ? linkedChangeQuery.data.jurisdiction_id || jurisdictionId || '' : selectedRegister?.jurisdiction_id || jurisdictionId || ''} canEdit={canConfigure && ['draft','rejected'].includes(selectedChange.status)} canManage={canConfigure && !['verified','rolled_back'].includes(selectedChange.status)} /></div>
 
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <div id="change-record-history" className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                   <div className="space-y-2">
                     <h4 className="text-sm font-semibold text-ink">Timeline Events</h4>
                     <div className="overflow-x-auto rounded-xl border border-line">

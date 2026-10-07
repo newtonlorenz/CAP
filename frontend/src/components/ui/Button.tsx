@@ -6,7 +6,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive'
 export type ButtonSize = 'sm' | 'md'
 
 const base =
-  'ui-button inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:pointer-events-none disabled:opacity-50'
+  'ui-button inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:pointer-events-none disabled:opacity-50'
 
 const variants: Record<ButtonVariant, string> = {
   primary: 'border border-transparent bg-brand text-white hover:bg-brand-hover',
@@ -42,6 +42,7 @@ export default function Button({
       type={type ?? 'button'}
       {...props}
       disabled={disabled || loading}
+      aria-busy={loading || undefined}
     >
       {loading ? <span className="text-xs">Working...</span> : children}
     </button>

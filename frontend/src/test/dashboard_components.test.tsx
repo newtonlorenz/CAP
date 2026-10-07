@@ -355,6 +355,7 @@ describe('Dashboard insights', () => {
       </DashboardWrapper>,
     )
 
+    fireEvent.click(await screen.findByRole('button', { name: 'Programmes' }))
     await waitFor(() => {
       expect(screen.getByText(/next actions/i)).toBeInTheDocument()
     })

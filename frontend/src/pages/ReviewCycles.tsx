@@ -1,3 +1,4 @@
+import './workflow-pages.css'
 import { formatDate } from '../utils/dateFormat'
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -396,7 +397,7 @@ export default function ReviewCycles() {
   }
 
   return (
-    <div className="min-w-0 space-y-4">
+    <div className="workflow-page assessments-page min-w-0 space-y-4">
       <header className="py-1">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
@@ -461,7 +462,7 @@ export default function ReviewCycles() {
       ) : isError ? <Card className="p-5"><p role="alert">Assessments could not be loaded.</p><Button onClick={() => refetch()}>Try again</Button></Card> : isLoading ? (
         <Card className="p-6 text-sm text-muted">Loading...</Card>
       ) : (
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden"><div className="workflow-table-heading"><h2>Requirement assessments</h2><p>{filteredCycles.length} matching {filteredCycles.length === 1 ? 'assessment' : 'assessments'}</p></div>
           <div data-testid="review-cycles-mobile-cards" className="divide-y divide-line lg:hidden">
             {filteredCycles.map((cycle) => (
               <div

@@ -62,10 +62,10 @@ export default function Modal({ open, title, description, onClose, children, foo
   if (!open) return null
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-      <div className="absolute inset-0 bg-slate-950/45 backdrop-blur-sm" aria-hidden="true" onMouseDown={onClose} />
+      <div className="absolute inset-0 bg-slate-950/45" aria-hidden="true" onMouseDown={onClose} />
       <div ref={panelRef} role="dialog" aria-modal="true" aria-label={title} aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined} tabIndex={-1}
-        className={cn('relative flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-2xl bg-elevated shadow-[var(--elevation)]', size === 'lg' ? 'max-w-2xl' : size === 'sm' ? 'max-w-sm' : 'max-w-md')}
+        className={cn('relative flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-lg bg-elevated shadow-[var(--elevation)]', size === 'lg' ? 'max-w-2xl' : size === 'sm' ? 'max-w-sm' : 'max-w-md')}
         onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex shrink-0 items-start justify-between gap-4 border-b border-line px-5 py-4">
           <div className="min-w-0">

@@ -1,3 +1,4 @@
+import './workflow-pages.css'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -107,7 +108,7 @@ const moduleSections: ModuleSection[] = [
     keyActions: [
       'Choose the jurisdiction before working on its packs, certification projects, requirements or change registers.',
       'Open assigned forms, authority queries and requirement assessments from Dashboard’s My work. Links return you to the relevant pack, project or assessment item.',
-      'Use Resources in the sidebar to open requirements, form templates, evidence and existing forms. The current resource is highlighted. Use Find a page to search navigation, including secondary Resources pages. On a small screen, open the menu to change jurisdiction or workspace.',
+      'Use Resources in the top navigation to open requirements, form templates, evidence and existing forms. The current resource is highlighted. Use Find a page to search navigation, including secondary Resources pages. On a small screen, open the menu to change jurisdiction or workspace.',
       'Use the certification overview for project readiness and blockers. Check the individual project before making a stage or package decision.',
     ],
     links: [{ to: '/', label: 'Dashboard' }, { to: '/program-workspace', label: 'Certification overview' }],
@@ -264,7 +265,7 @@ export default function GuideFaq() {
   const query = search.trim().toLowerCase()
   const visibleSections = moduleSections.filter((section) => !query || [section.title, section.summary, ...section.keyActions, ...section.faqItems.flatMap((item) => [item.question, item.answer])].join(' ').toLowerCase().includes(query))
   return (
-    <div className="min-w-0 space-y-4">
+    <div className="workflow-page guide-page min-w-0 space-y-4">
       <header className="py-1">
         <h1 className="text-2xl font-bold text-ink">User Guide & FAQ</h1>
         <p className="mt-3 max-w-3xl text-sm text-muted">

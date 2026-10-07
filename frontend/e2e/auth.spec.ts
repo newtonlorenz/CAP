@@ -10,7 +10,7 @@ test.describe('Authentication', () => {
   test('should login with valid credentials', async ({ page }) => {
     await loginAsAdmin(page)
     await expect(page).toHaveURL('/')
-    await expect(page.getByRole('heading', { name: /Compliance Dashboard/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /My work/i })).toBeVisible()
   })
 
   test('should show error for invalid credentials', async ({ page }) => {

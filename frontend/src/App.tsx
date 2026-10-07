@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 import { useTheme } from './hooks/useTheme'
 const Login = lazy(() => import('./pages/Login'))
+const AnswerReview = lazy(() => import('./pages/AnswerReview'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Jurisdictions = lazy(() => import('./pages/Jurisdictions'))
 const RequirementsList = lazy(() => import('./pages/RequirementsList'))
@@ -44,6 +45,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route index element={<Dashboard />} />
+              <Route path="answer-review" element={<AnswerReview />} />
               <Route path="jurisdictions" element={<Jurisdictions />} />
               <Route path="requirements" element={<RequirementsList />} />
               <Route path="requirements/sets/:documentId" element={<RequirementsSetView />} />

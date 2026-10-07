@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { preparationApi } from '../../api/preparation'
@@ -14,6 +14,9 @@ import Button from '../ui/Button'
 import CopyButton from '../ui/CopyButton'
 import DraftSaveStatus from '../ui/DraftSaveStatus'
 import EvidenceAttachments from './EvidenceAttachments'
+import ContextualEvidenceUpload from './ContextualEvidenceUpload'
+import AnswerHistory from './AnswerHistory'
+import type { PilotPreparationCase } from '../../types/pilotReview'
 
 const EMPTY_RESPONSE: PreparationResponse = {
   field_key: '',
@@ -38,10 +41,13 @@ export default function CaseField({
   jurisdictionName,
   onDirtyChange,
   onSourceNavigate,
+  focused = false,
+  hidden = false,
+  reviewerName,
 }: {
   caseId: string
   field: PreparationField
-  response?: PreparationResponse
+  response?: PilotPreparationCase['responses'][number]
   blockers: PreparationBlocker[]
   archived: boolean
   canEdit: boolean
@@ -50,18 +56,24 @@ export default function CaseField({
   jurisdictionName: (id: string) => string
   onDirtyChange: (fieldKey: string, dirty: boolean) => void
   onSourceNavigate?: () => boolean
+  focused?: boolean
+  hidden?: boolean
+  reviewerName?: string | null
 }) {
   const response = incoming || EMPTY_RESPONSE
   const inputId = useId()
   const questionId = `${inputId}-question`
   const helpId = field.help_text ? `${inputId}-help` : undefined
+  const [uploadPending, setUploadPending] = useState(false)
+  const { setFieldDirty } = writes
+  useEffect(() => { setFieldDirty(`upload:${field.key}`, uploadPending); return () => setFieldDirty(`upload:${field.key}`, false) }, [field.key, setFieldDirty, uploadPending])
   const [showReuse, setShowReuse] = useState(false)
   const [suggestionError, setSuggestionError] = useState('')
   const readOnly = !canEdit || archived
   const draft = useResponseDraft(field, response, !readOnly, writes, onDirtyChange)
   const { value, reason, evidenceIds, dirty } = draft
   const [supportOpen, setSupportOpen] = useState(Boolean(
-    response.not_applicable_reason || response.evidence_ids.length || field.type === 'evidence',
+    response.not_applicable_reason || (!focused && (response.evidence_ids.length || field.type === 'evidence')),
   ))
   const copyValue = readOnly ? fieldValueToString(response.value) : value
   const copyReason = readOnly ? response.not_applicable_reason || '' : reason
@@ -78,7 +90,8 @@ export default function CaseField({
     <article
       id={`preparation-field-${field.key}`}
       tabIndex={-1}
-      className={`min-w-0 scroll-mt-24 border-b border-line py-3 ${field.type === 'multiline' || field.type === 'evidence' ? 'lg:col-span-2' : ''}`}
+      hidden={hidden}
+      className={`${focused ? 'pilot-focused-question' : ''} min-w-0 scroll-mt-24 border-b border-line py-3 ${field.type === 'multiline' || field.type === 'evidence' ? 'lg:col-span-2' : ''}`}
       aria-label={field.label}
     >
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
@@ -100,16 +113,18 @@ export default function CaseField({
         <div className="flex flex-wrap items-center gap-2">
           {!readOnly && <DraftSaveStatus state={draft.state} message={draft.localError || undefined} onRetry={draft.state === 'error' && !draft.localError ? draft.retry : undefined} />}
           <span
-            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${dirty ? 'bg-warning-soft text-warning' : response.accepted_at ? 'bg-success-soft text-success' : 'bg-subtle text-muted'}`}
+            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${dirty || incoming?.review_status === 'changes_requested' ? 'bg-warning-soft text-warning' : response.accepted_at ? 'bg-success-soft text-success' : 'bg-subtle text-muted'}`}
           >
             {dirty || draft.saving
               ? 'Draft'
               : response.accepted_at
                 ? 'Accepted'
+                : incoming?.review_status === 'changes_requested'
+                  ? 'Changes requested'
                 : response.value !== null ||
                     response.not_applicable_reason ||
                     response.evidence_ids.length
-                  ? 'Pending review'
+                  ? 'Pending acceptance'
                   : 'Unanswered'}
           </span>
           {field.type !== 'evidence' && (
@@ -272,15 +287,20 @@ export default function CaseField({
                     Accept response
                   </Button>
                 )}
-            {writes.conflicted && dirty && (
-              <div className="rounded-lg border border-line bg-subtle p-3 text-sm">
-                <p className="font-medium">Latest saved answer</p>
-                <p className="mt-1 whitespace-pre-wrap break-words">{response.not_applicable_reason ? `Not applicable: ${response.not_applicable_reason}` : response.value === null ? 'No answer' : field.type === 'yes_no' ? response.value ? 'Yes' : 'No' : fieldValueToString(response.value)}</p>
-                <div className="mt-2"><EvidenceAttachments ids={response.evidence_ids} /></div>
-                <Button className="mt-2 min-h-11" size="sm" disabled={!writes.conflictReady || draft.saving} onClick={draft.useLatest}>Use latest answer</Button>
+            {(writes.conflicted || draft.needsReview) && dirty && (
+              <div className="pilot-conflict" role="alert">
+                <h3>This form changed while you were editing.</h3>
+                <p>Your draft has not been saved. Keep this form open until it is saved.</p>
+                {writes.conflictReady ? <>
+                  <details open><summary>Latest saved answer</summary><p className="whitespace-pre-wrap break-words">{response.not_applicable_reason ? `Not applicable: ${response.not_applicable_reason}` : response.value === null ? 'No answer' : field.type === 'yes_no' ? response.value ? 'Yes' : 'No' : fieldValueToString(response.value)}</p><EvidenceAttachments ids={response.evidence_ids} /></details>
+                  <details open><summary>Your unsaved draft</summary><p className="whitespace-pre-wrap break-words">{reason ? `Not applicable: ${reason}` : value || 'No answer'}</p><EvidenceAttachments ids={evidenceIds} /></details>
+                  {draft.comparing ? <><p>Combine your changes in the answer editor above, then save when you are ready.</p><Button variant="primary" disabled={draft.saving} onClick={draft.saveCombined}>Save combined answer</Button></> : <Button variant="primary" disabled={draft.saving} onClick={draft.reviewChanges}>Review and combine changes</Button>}
+                  <Button variant="ghost" disabled={draft.saving} onClick={draft.useLatest}>Discard my draft and use latest</Button>
+                </> : <><p>The latest saved form has not loaded. Your local draft is retained; comparison is unavailable.</p><Button onClick={() => void writes.refreshConflict()}>Retry loading latest form</Button></>}
               </div>
             )}
-            <details open={supportOpen || Boolean(reason) || evidenceIds.length > 0 || field.type === 'evidence'} onToggle={(event) => setSupportOpen(event.currentTarget.open)} className="max-w-2xl text-sm">
+            {focused && <section className="pilot-answer-evidence"><h3>Evidence for this answer</h3><EvidenceAttachments ids={evidenceIds} disabled={draft.saving || uploadPending} onChange={(next) => draft.change({ evidenceIds: next })} /><ContextualEvidenceUpload caseId={caseId} onBusyChange={setUploadPending} ids={evidenceIds} disabled={draft.saving || Boolean(writes.pauseReason) || draft.needsReview} attach={draft.attachEvidence} /><p className="text-xs text-muted">Earlier attachment references remain in answer history.</p></section>}
+            <details open={supportOpen || Boolean(reason) || (!focused && (evidenceIds.length > 0 || field.type === 'evidence'))} onToggle={(event) => setSupportOpen(event.currentTarget.open)} className="max-w-2xl text-sm">
               <summary className="w-fit py-1 text-muted hover:text-ink">Supporting details<span className="ml-2 text-xs">Evidence, not applicable{field.reuse_key ? ', reuse' : ''}</span></summary>
               <div className="mt-3 space-y-4">
                 <label className="block max-w-2xl text-sm font-medium">
@@ -298,10 +318,7 @@ export default function CaseField({
                     field is ready.
                   </span>
                 </label>
-                <EvidenceAttachments
-                  ids={evidenceIds}
-                  onChange={(next) => draft.change({ evidenceIds: next })}
-                />
+                {!focused && <EvidenceAttachments ids={evidenceIds} onChange={(next) => draft.change({ evidenceIds: next })} />}
                 {field.reuse_key && (
                   <Button
                     size="sm"
@@ -316,6 +333,9 @@ export default function CaseField({
           </fieldset>
         </form>
       )}
+      {focused && <AnswerHistory caseId={caseId} fieldKey={field.key} revision={writes.revision} />}
+      {incoming?.feedback?.filter(feedback => !feedback.resolved_at).map(feedback => <div className="pilot-feedback" key={feedback.id}><strong>Changes requested · {feedback.created_by_name || 'Reviewer'}</strong><p>{feedback.comment}</p><small>Your next saved revision returns this answer for review. This feedback stays open until the reviewer resolves it.</small></div>)}
+      {focused && !dirty && !uploadPending && !draft.saving && (response.value !== null || response.evidence_ids.length > 0 || response.not_applicable_reason) && <p className="pilot-next-action" role="status">{response.accepted_at ? 'This answer and its attached evidence are accepted.' : incoming?.review_status === 'changes_requested' ? 'Changes requested · Next action: update this answer using the feedback above.' : reviewerName ? `Saved · Next action: ${reviewerName} to review this answer.` : 'Saved · Review owner unassigned.'}</p>}
       {showReuse && canEdit && !archived && (
         <div className="mt-4 max-w-2xl rounded-xl bg-subtle p-4">
           <h5 className="font-semibold">Possible answers to review</h5>

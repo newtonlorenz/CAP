@@ -1,16 +1,23 @@
 import AccessPanel from '../access/AccessPanel'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useInRouterContext } from 'react-router-dom'
 import { preparationApi } from '../../api/preparation'
 import { getApiErrorMessage } from '../../api/errors'
 import { useCaseWrites } from '../../hooks/preparation/useCaseWrites'
 import { useDraftNavigationGuard } from '../../hooks/useDraftNavigationGuard'
 import type { CertificationProject, UserMention } from '../../types'
-import type { PreparationCase, PreparationField } from '../../types/preparation'
+import type { PreparationField } from '../../types/preparation'
 import Button from '../ui/Button'
 import Card from '../ui/Card'
 import CaseField from './CaseField'
 import EvidenceAttachments from './EvidenceAttachments'
+import PackContents from '../applications/PackContents'
+import type { LicenceApplication } from '../../types/applications'
+import './pilot.css'
+import ReviewerAssignment from './ReviewerAssignment'
+import PilotIcon from './PilotIcon'
+import { visibilityLabels } from '../../types/access'
+import type { PilotPreparationCase } from '../../types/pilotReview'
 
 export default function CaseDetail({
   item,
@@ -23,8 +30,11 @@ export default function CaseDetail({
   backLabel = 'All forms',
   initialFieldKey,
   headingLevel = 2,
+  pack,
+  onOpenCase,
+  onPackSection,
 }: {
-  item: PreparationCase
+  item: PilotPreparationCase
   canEdit: boolean
   canManage: boolean
   users: UserMention[]
@@ -34,7 +44,11 @@ export default function CaseDetail({
   backLabel?: string
   initialFieldKey?: string
   headingLevel?: 1 | 2
+  pack?: LicenceApplication
+  onOpenCase?: (id: string) => void
+  onPackSection?: (tab: string) => void
 }) {
+  const inRouter = useInRouterContext()
   const Heading = headingLevel === 1 ? 'h1' : 'h2'
   const canEdit = item.access ? roleEdit && item.access.permissions.includes('edit') : roleEdit
   const canManage = item.access ? roleManage && item.access.permissions.includes('edit') : roleManage
@@ -44,6 +58,13 @@ export default function CaseDetail({
   const [projectId, setProjectId] = useState(item.project_id || '')
   const [metadataDirty, setMetadataDirty] = useState(false)
   const focusedTarget = useRef('')
+  const [question, setQuestion] = useState(() => { if (initialFieldKey) return initialFieldKey; try { const saved = sessionStorage.getItem(`cap-question:${item.id}`); if (saved && item.fields.some(field => field.key === saved)) return saved } catch { /* Optional position restoration. */ } return item.fields[0]?.key || '' })
+  const [allQuestions, setAllQuestions] = useState(false)
+  const questionIndex = Math.max(0, item.fields.findIndex(field => field.key === question))
+  const answered = item.fields.filter(field => item.responses.some(response => response.field_key === field.key && (response.value !== null || response.not_applicable_reason || response.evidence_ids.length))).length
+  const accepted = item.responses.filter(response => response.accepted_at).length
+  const chooseQuestion = (key: string) => { try { sessionStorage.setItem(`cap-question:${item.id}`, key) } catch { /* Keep position in memory. */ } setQuestion(key); setAllQuestions(false); window.setTimeout(() => document.getElementById(`preparation-field-${key}`)?.focus(), 0) }
+  useEffect(() => { if (initialFieldKey) setQuestion(initialFieldKey) }, [initialFieldKey])
   const writes = useCaseWrites(item.id, item.revision, metadataDirty)
   const dirtyFields = useRef(new Set<string>())
   const [downloadBusy, setDownloadBusy] = useState(false)
@@ -74,8 +95,8 @@ export default function CaseDetail({
   useEffect(() => {
     if (!initialFieldKey || focusedTarget.current === `${item.id}:${initialFieldKey}` || !item.fields.some(field => field.key === initialFieldKey)) return
     const target = document.getElementById(`preparation-field-${initialFieldKey}`)
-    target?.scrollIntoView?.({ block: 'center' })
-    target?.focus()
+    // Select the question for keyboard users without scrolling its pack context away.
+    target?.focus({ preventScroll: true })
     if (target) focusedTarget.current = `${item.id}:${initialFieldKey}`
   }, [item.id, initialFieldKey, item.fields])
   const saveMetadata = async (event: FormEvent) => {
@@ -89,7 +110,7 @@ export default function CaseDetail({
     if (ok) setMetadataDirty(false)
   }
   const canLeave = () =>
-    navigationGuarded || !(metadataDirty || dirtyFields.current.size > 0 || writes.isWriting) ||
+    navigationGuarded || !(metadataDirty || dirtyFields.current.size > 0 || writes.isWriting || writes.hasPendingDrafts) ||
     window.confirm('Some changes are still waiting to save. Leave this form? Unsaved edits will be lost; a save already in progress may still complete.')
   const backWithDraftGuard = () => {
     if (canLeave()) onBack()
@@ -97,13 +118,13 @@ export default function CaseDetail({
   useEffect(() => {
     if (navigationGuarded) return
     const warnBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!metadataDirty && dirtyFields.current.size === 0 && !writes.isWriting) return
+      if (!metadataDirty && dirtyFields.current.size === 0 && !writes.isWriting && !writes.hasPendingDrafts) return
       event.preventDefault()
       event.returnValue = ''
     }
     window.addEventListener('beforeunload', warnBeforeUnload)
     return () => window.removeEventListener('beforeunload', warnBeforeUnload)
-  }, [metadataDirty, writes.isWriting, navigationGuarded])
+  }, [metadataDirty, writes.isWriting, writes.hasPendingDrafts, navigationGuarded])
   const exportZip = async () => {
     setDownloadBusy(true)
     setDownloadError('')
@@ -122,13 +143,17 @@ export default function CaseDetail({
   }
   if (item.summary_only || (item.access && !item.access.permissions.includes('view'))) return <Card className="space-y-4 p-5"><Button onClick={onBack}>{backLabel}</Button><Heading>{item.name}</Heading><p>You have summary access. Form details are restricted.</p></Card>
   return (
-    <div className="space-y-4">
+    <div className="pilot-case space-y-4">
+      {pack && <header className="pilot-dossier-heading"><button type="button" onClick={backWithDraftGuard}>Licence Applications / {pack.name}</button><div className="flex flex-wrap items-center justify-between gap-3"><h1><span className="pilot-desktop-pack-name">{pack.name}</span><span className="pilot-mobile-form-name">{item.name}</span></h1>{pack.access && <span className="flex items-center gap-2 text-sm text-accent"><PilotIcon name="lock" size={19} />{visibilityLabels[pack.access.visibility]}</span>}</div><p>{pack.status === 'draft' ? 'Working draft' : 'Pack version'} v{pack.snapshots.length ? Math.max(...pack.snapshots.map(snapshot => snapshot.version)) + (pack.status === 'draft' ? 1 : 0) : 1} · {pack.status === 'draft' ? 'Preparing revision' : pack.status.replace(/_/g, ' ')}{pack.snapshots.length > 0 && <> · <button type="button" onClick={() => { if (canLeave()) onPackSection?.('history') }}>View approved v{Math.max(...pack.snapshots.map(snapshot => snapshot.version))}</button></>}</p><nav aria-label="Licence pack sections">{[['forms', 'Contents'], ['approval', 'Internal approval and submission'], ['history', 'History']].map(([key, label]) => <button key={key} type="button" aria-current={key === 'forms' ? 'page' : undefined} onClick={() => { if (canLeave()) onPackSection?.(key) }}>{label}</button>)}</nav></header>}
+      <div className={pack ? "pilot-dossier" : ""}>
+      {pack && <PackContents pack={pack} currentCaseId={item.id} onOpenCase={id => { if (canLeave()) onOpenCase?.(id) }} onOpenContents={() => { if (canLeave()) onPackSection?.('forms') }} />}
+      <div className="pilot-case-body space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Button variant="ghost" size="sm" onClick={backWithDraftGuard}>
             ← {backLabel}
           </Button>
-          <Heading className="mt-1 text-xl font-semibold">{item.name}</Heading>
+          <Heading className="mt-1 text-xl font-semibold">{item.name}</Heading><p className="text-sm text-muted">Document owner: {ownerName}</p>
           <p className="mt-1 text-sm text-muted">
             {jurisdictionName(item.jurisdiction_id)} · {item.template_id ? `${item.template_name} v${item.template_revision}` : 'Questions saved with this form'} · {archived ? 'Archived' : 'Active'}
           </p>
@@ -145,6 +170,7 @@ export default function CaseDetail({
           {downloadError}
         </p>
       )}
+      {pack?.components.some(component => component.case_id === item.id && !component.included) && <p role="status" className="rounded-md bg-info-soft p-3 text-sm text-info">This form is excluded from the current pack. Work saved here does not count towards this pack’s readiness.</p>}
       {archived && (
         <p
           role="status"
@@ -159,9 +185,9 @@ export default function CaseDetail({
           <p>{writes.error}</p>
           {writes.conflicted ? (
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <p className="max-w-prose">Your unsaved fields show the latest answer for comparison. Use the latest answer where appropriate, then resume to save the remaining drafts.</p>
+              <p className="max-w-prose">Compare each unsaved draft with the latest saved answer below. Review and combine changes before saving, or explicitly discard your draft.</p>
               {writes.conflictReady ? (
-                <Button size="sm" disabled={writes.isWriting} onClick={writes.resumeWrites}>Keep my drafts and resume autosave</Button>
+                <div><span className="text-sm">Latest form loaded. Resolve each draft below.</span>{writes.hasPendingUploads && !writes.hasPendingAnswerDrafts && <><p className="mt-2 text-sm">Review the latest answer and evidence before retrying the uploaded attachment.</p><Button className="mt-2" size="sm" disabled={writes.isWriting} onClick={writes.resumeWrites}>Use latest form for attachment retry</Button></>}</div>
               ) : (
                 <Button size="sm" disabled={writes.isWriting} onClick={() => void writes.refreshConflict()}>Reload latest form</Button>
               )}
@@ -174,7 +200,7 @@ export default function CaseDetail({
       {(writes.hasPendingDrafts || writes.isWriting) && (
         <p role="status" className="text-xs text-muted">Unsaved changes remain. Keep this form open until every draft is saved.</p>
       )}
-      <div className="border-y border-line py-2">
+      <div className="pilot-form-readiness border-y border-line py-2">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
           <h3 className="font-semibold">Form completion and acceptance</h3>
           <span className="text-muted">{item.readiness.answered_count} of {item.readiness.required_count} required answers · {item.readiness.accepted_count} accepted</span>
@@ -191,7 +217,7 @@ export default function CaseDetail({
                 <li key={`${blocker.field_key}-${blocker.code}-${index}`}>
                   {item.fields.find((field) => field.key === blocker.field_key)
                     ?.label || blocker.field_key}
-                  : {blocker.message}{blocker.field_key && <button type="button" className="ml-2 font-medium text-accent underline" onClick={() => { const target = document.getElementById(`preparation-field-${blocker.field_key}`); target?.scrollIntoView?.({ block: 'center' }); target?.focus() }}>Review field</button>}
+                  : {blocker.message}{blocker.field_key && <button type="button" className="ml-2 font-medium text-accent underline" onClick={() => { chooseQuestion(blocker.field_key); const target = document.getElementById(`preparation-field-${blocker.field_key}`); target?.scrollIntoView?.({ block: 'center' }); target?.focus() }}>Review field</button>}
                 </li>
               ))}
             </ul>
@@ -203,71 +229,24 @@ export default function CaseDetail({
         <div className="mt-3"><EvidenceAttachments ids={item.original_evidence_ids} /></div>
         <p className="mt-2 text-xs text-muted">Retained for reference. Review imported questions against these documents; this form export does not reproduce the authority’s original layout.</p>
       </details>}
-      <Card className="overflow-hidden">
-        <div className="border-b border-line px-4 py-3 sm:px-5">
-          <h3 className="text-base font-semibold">Answers</h3>
-          <p className="mt-1 text-sm text-muted">
-            {canEdit && !archived
-              ? 'Answers save automatically. Acceptance remains a separate review step. Required fields are marked *.'
-              : 'Review the saved answers and supporting evidence below.'}
-          </p>
-          {sections.length > 1 && (
-            <nav aria-label="Form sections" className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
-              {sections.map((section, index) => (
-                <a key={index} href={`#preparation-section-${index}`} className="py-1 text-sm font-medium text-accent underline decoration-transparent hover:decoration-current">{section.name}</a>
-              ))}
-            </nav>
-          )}
+      <section className="pilot-question-workspace" aria-label="Answers">
+        <div className="pilot-question-navigation">
+          <Button size="sm" disabled={questionIndex === 0} onClick={() => chooseQuestion(item.fields[questionIndex - 1].key)}>Previous question</Button>
+          <select aria-label="Current question" value={question} onChange={event => chooseQuestion(event.target.value)}>{item.fields.map((field, index) => <option key={field.key} value={field.key}>{index + 1} · {field.label}</option>)}</select>
+          <Button size="sm" disabled={questionIndex >= item.fields.length - 1} onClick={() => chooseQuestion(item.fields[questionIndex + 1].key)}>Next question</Button>
+          <span className="pilot-question-count">{answered} answered · {accepted} accepted</span>
+          <button type="button" className="text-sm text-accent underline" onClick={() => { const next = [...item.fields.slice(questionIndex + 1), ...item.fields.slice(0, questionIndex + 1)].find(field => !item.responses.find(response => response.field_key === field.key)?.accepted_at); if (next) chooseQuestion(next.key) }} disabled={accepted >= item.fields.length}>Next needing attention</button>
         </div>
-        <div className="px-4 sm:px-5">
-          {sections.map((section, index) => {
-            const fields = section.fields
-            const answered = fields.filter((field) => item.responses.some((response) =>
-              response.field_key === field.key &&
-              (response.value !== null || response.not_applicable_reason || response.evidence_ids.length > 0),
-            )).length
-            return (
-              <section
-                key={index}
-                id={`preparation-section-${index}`}
-                aria-labelledby={`preparation-section-heading-${index}`}
-                className="scroll-mt-24 pt-4"
-              >
-                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-2">
-                  <h4 id={`preparation-section-heading-${index}`} className="text-base font-semibold">{section.name}</h4>
-                  <span className="text-xs tabular-nums text-muted">{answered} of {fields.length} answered</span>
-                </div>
-                <div className="grid grid-cols-1 gap-x-6 lg:grid-cols-2">
-                {fields.map((field) => (
-                  <CaseField
-                    key={field.key}
-                    caseId={item.id}
-                    field={field}
-                    response={item.responses.find(
-                      (response) => response.field_key === field.key,
-                    )}
-                    blockers={item.readiness.blockers.filter(
-                      (blocker) => blocker.field_key === field.key,
-                    )}
-                    archived={archived}
-                    canEdit={canEdit}
-                    canAccept={item.access ? roleManage && item.access.permissions.includes('approve') : canManage}
-                    writes={writes}
-                    jurisdictionName={jurisdictionName}
-                    onSourceNavigate={canLeave}
-                    onDirtyChange={(key, dirty) => {
-                      if (dirty) dirtyFields.current.add(key)
-                      else dirtyFields.current.delete(key)
-                    }}
-                  />
-                ))}
-                </div>
-              </section>
-            )
-          })}
-        </div>
-      </Card>
+        <div className="flex flex-wrap justify-between gap-3 text-sm text-muted"><p>{allQuestions ? 'All questions' : `Question ${questionIndex + 1} of ${item.fields.length}`} · Answers save automatically</p><button type="button" className="text-accent underline" disabled={writes.hasPendingUploads} onClick={() => setAllQuestions(!allQuestions)}>{allQuestions ? 'Focus current question' : 'View all questions'}</button></div>
+        {sections.map((section, index) => <section key={index} id={`preparation-section-${index}`} hidden={!allQuestions && !section.fields.some(field => field.key === question)}>
+          {allQuestions && <h3 className="mt-5 font-semibold">{section.name}</h3>}
+          {section.fields.map(field => <CaseField key={field.key} caseId={item.id} field={field} response={item.responses.find(response => response.field_key === field.key)} blockers={item.readiness.blockers.filter(blocker => blocker.field_key === field.key)} archived={archived} canEdit={canEdit} canAccept={item.access ? roleManage && item.access.permissions.includes('approve') : canManage} writes={writes} jurisdictionName={jurisdictionName} onSourceNavigate={canLeave} focused={!allQuestions} hidden={!allQuestions && field.key !== question} reviewerName={item.reviewer_name} onDirtyChange={(key, dirty) => { if (dirty) dirtyFields.current.add(key); else dirtyFields.current.delete(key) }} />)}
+        </section>)}
+        <div className="pilot-contributor-footer"><Button size="sm" disabled={questionIndex >= item.fields.length - 1} onClick={() => chooseQuestion(item.fields[questionIndex + 1].key)}>Next question</Button>{inRouter ? <Link className="pilot-primary-link" to="/" onClick={event => { if (!canLeave()) event.preventDefault() }}>Back to my work</Link> : <a className="pilot-primary-link" href={import.meta.env.BASE_URL} onClick={event => { if (!canLeave()) event.preventDefault() }}>Back to my work</a>}</div>
+      </section>
       <Card className="p-4 sm:p-5">
+        {pack && <Button className="pilot-mobile-export" disabled={Boolean(item.access && !item.access.permissions.includes('export'))} onClick={() => void exportZip()} loading={downloadBusy}>Export form and evidence</Button>}
+        {canManage && !archived && <ReviewerAssignment item={item} writes={writes} />}
         {canManage && !archived ? (
           <details>
             <summary className="cursor-pointer marker:text-accent">
@@ -426,6 +405,7 @@ export default function CaseDetail({
           <div className="mt-4"><AccessPanel type="preparation_case" id={item.id} /></div>
         </details>
       )}
+      </div></div>
     </div>
   )
 }

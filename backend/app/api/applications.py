@@ -288,6 +288,9 @@ async def instantiate_component_form(db, template_id, item, application, user, o
     )
     db.add(case)
     await db.flush()
+    # Preserve existing organisation permissions explicitly so contextual evidence
+    # can inherit the form without a contributor having to establish its owner.
+    await initialize_access(db, "preparation_case", case.id, user, visibility="organisation")
     await log_action(
         db,
         user,

@@ -425,18 +425,22 @@ describe('ChangeManagement page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Change Register' }))
     const firstRow = (await screen.findByText('Previously selected change')).closest('li')!
     fireEvent.click(within(firstRow).getByRole('button', { name: 'Details' }))
-    await screen.findByRole('heading', { name: 'Change Details: Previously selected change' })
+    await screen.findByRole('heading', { name: 'Previously selected change', level: 2 })
+    expect(screen.queryByRole('textbox', { name: 'Search changes' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'Component Register' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '← Back to changes' }))
+    expect(screen.getByRole('textbox', { name: 'Search changes' })).toBeVisible()
     const targetRow = screen.getByText('Target change').closest('li')!
     fireEvent.click(within(targetRow).getByRole('button', { name: 'Details' }))
-    await screen.findByRole('heading', { name: 'Change Details: Target change' })
-    expect(screen.queryByRole('heading', { name: 'Change Details: Previously selected change' })).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: action === 'Implement' ? 'Record implementation' : action }))
+    await screen.findByRole('heading', { name: 'Target change', level: 2 })
+    expect(screen.queryByRole('heading', { name: 'Previously selected change', level: 2 })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: action === 'Implement' ? 'Record implementation' : action === 'Approve' ? 'Approve change' : action }))
 
     const workflowForm = await screen.findByRole('form', { name: `${action} Change: Target change` })
     const heading = screen.getByRole('heading', { name: `${action} Change: Target change` })
     expect(within(heading.parentElement!).getByText(status[0].toUpperCase() + status.slice(1))).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Change Details: Target change', hidden: true })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Change Details: Previously selected change' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Target change', level: 2, hidden: true })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Previously selected change', level: 2 })).not.toBeInTheDocument()
     fireEvent.change(within(workflowForm).getByLabelText('Enter required rationale'), { target: { value: 'Reviewed the target change' } })
     if (action === 'Implement') {
       expect(within(workflowForm).getByLabelText('Implemented Start')).toHaveValue('')
@@ -462,7 +466,7 @@ describe('ChangeManagement page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Change Register' }))
     const row = (await screen.findByText('Early draft')).closest('li')!
     fireEvent.click(within(row).getByRole('button', { name: 'Details' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Approve' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Review proposal' }))
     await screen.findByText('Finish these proposal details before approval:')
     expect(screen.getByText('At least one linked component')).toBeVisible()
     expect(screen.getByText('Planning: complexity, resources, scheduling, planned start, planned end, justification')).toBeVisible()
@@ -570,7 +574,7 @@ describe('ChangeManagement page', () => {
     fireEvent.click(
       within(changeRow as HTMLLIElement).getByRole('button', { name: /details/i })
     )
-    await screen.findByRole('heading', { name: /change details: rotate encryption key/i })
+    await screen.findByRole('heading', { name: /rotate encryption key/i, level: 2 })
     fireEvent.click(screen.getByRole('button', { name: /^delete$/i }))
 
     const dialog = await screen.findByRole('dialog', { name: /delete timeline event/i })
@@ -668,14 +672,14 @@ it('shows full approved scope to a reader and makes missing release evidence vis
   expect(screen.getByText('Close a security finding')).toBeInTheDocument()
   expect(screen.getByText('RNG certification is required before implementation')).toBeInTheDocument()
   expect(screen.getByRole('button',{name:'Record implementation'})).toBeDisabled()
-  expect(screen.queryByRole('button',{name:'Approve'})).not.toBeInTheDocument()
+  expect(screen.queryByRole('button',{name:'Approve change'})).not.toBeInTheDocument()
 })
 
 it('names the approval target so a decision cannot silently apply to another selected record', async () => {
   vi.clearAllMocks();mockRole='manager'
   setupApiMocks({registers:[workflowRegister],changes:[workflowChange({readiness:{approval:{ready:true,reasons:[]}}})]});renderPage()
   fireEvent.click(await screen.findByRole('button',{name:'Details'}))
-  fireEvent.click(screen.getByRole('button',{name:'Approve'}))
+  fireEvent.click(screen.getByRole('button',{name:'Approve change'}))
   const dialog=await screen.findByRole('dialog',{name:'Approve: PAM release'})
   expect(within(dialog).getByText('Replace the authorisation service')).toBeInTheDocument()
   fireEvent.change(within(dialog).getByLabelText('Enter required rationale'),{target:{value:'Scope and evidence reviewed'}})
@@ -687,7 +691,7 @@ it('names the approval target so a decision cannot silently apply to another sel
 it('records explicit actual versions rather than inferring them from the planned change', async () => {
   vi.clearAllMocks();mockRole='manager'
   const link={component_id:'comp-1',version_at_proposal:'1.0',planned_version:'1.1',planned_checksum_hash:'expected',frozen_snapshot:{component_uid:'PAM',classification_code:3}}
-  setupApiMocks({registers:[workflowRegister],changes:[workflowChange({status:'approved',components:[link]})]});renderPage()
+  setupApiMocks({registers:[workflowRegister],changes:[workflowChange({status:'approved',components:[link],readiness:{implementation:{ready:true,reasons:[]}}})]});renderPage()
   fireEvent.click(await screen.findByRole('button',{name:'Details'}));fireEvent.click(screen.getByRole('button',{name:'Record implementation'}))
   const dialog=await screen.findByRole('dialog',{name:'Implement: PAM release'})
   expect(within(dialog).getByLabelText('Implemented Start')).toHaveValue('')
@@ -766,7 +770,7 @@ it('opens the missing impact field from prerequisites while preserving the appro
     implementation: { ready: false, reasons: [] }, verification: { ready: false, reasons: [] },
   } })] }); renderPage()
   fireEvent.click(await screen.findByRole('button', { name: 'Details' }))
-  expect(screen.getByRole('button', { name: 'Approve' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Approve change' })).toBeDisabled()
   fireEvent.click(screen.getByRole('button', { name: 'Complete change details' }))
   const editor = await screen.findByRole('dialog', { name: 'Edit: PAM release' })
   expect(within(editor).getByLabelText('Evaluation: risk')).toBeVisible()
@@ -784,7 +788,7 @@ it('takes assessment blockers to linked assessments without allowing read-only r
   fireEvent.click(screen.getByRole('button', { name: 'Review assessments' }))
   expect(document.getElementById('change-assessments')).toHaveFocus()
   expect(screen.queryByRole('button', { name: 'Complete change details' })).not.toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Approve change' })).not.toBeInTheDocument()
 })
 
 
@@ -792,11 +796,10 @@ it('blocks Danish approval when authoritative readiness is unavailable', async (
   vi.clearAllMocks(); mockRole = 'manager'
   setupApiMocks({registers: [workflowRegister], changes: [workflowChange()]}); renderPage()
   fireEvent.click(await screen.findByRole('button', {name: 'Details'}))
-  fireEvent.click(screen.getByRole('button', {name: 'Approve'}))
-  const dialog = await screen.findByRole('dialog', {name: 'Approve: PAM release'})
-  expect(within(dialog).getByText('Danish approval readiness is unavailable. Reload this change before approval.')).toBeVisible()
-  expect(within(dialog).queryByLabelText('Enter required rationale')).not.toBeInTheDocument()
-  expect(within(dialog).queryByRole('button', {name: 'Approve Change'})).not.toBeInTheDocument()
+  expect(screen.getByRole('button', {name: 'Approve change'})).toBeDisabled()
+  expect(screen.getByText('Readiness unavailable')).toBeVisible()
+  expect(screen.getByText('Unavailable until readiness can be checked')).toBeVisible()
+  expect(screen.queryByRole('dialog', {name: 'Approve: PAM release'})).not.toBeInTheDocument()
   expect(api.post).not.toHaveBeenCalled()
 })
 
@@ -805,7 +808,7 @@ it('uses Danish server readiness without imposing the legacy testing status and 
   const change = workflowChange({testing_org_required: true, testing_org_status: null, testing_org_cycle: null, readiness: {approval: {ready: true, reasons: []}}})
   setupApiMocks({registers: [workflowRegister], changes: [change]}); renderPage()
   fireEvent.click(await screen.findByRole('button', {name: 'Details'}))
-  fireEvent.click(screen.getByRole('button', {name: 'Approve'}))
+  fireEvent.click(screen.getByRole('button', {name: 'Approve change'}))
   const dialog = await screen.findByRole('dialog', {name: 'Approve: PAM release'})
   expect(within(dialog).getByLabelText('Enter required rationale')).toBeInTheDocument()
   expect(within(dialog).getByRole('button', {name: 'Approve Change'})).toBeEnabled()
@@ -820,8 +823,8 @@ it('preserves Danish readiness blockers for component scope, ATO evidence and re
   ]
   setupApiMocks({registers: [workflowRegister], changes: [workflowChange({readiness: {approval: {ready: false, reasons}}})]}); renderPage()
   fireEvent.click(await screen.findByRole('button', {name: 'Details'}))
-  expect(screen.getByRole('button', {name: 'Approve'})).toBeDisabled()
-  for (const reason of reasons) expect(screen.getByText(reason.message)).toBeVisible()
+  expect(screen.getByRole('button', {name: 'Approve change'})).toBeDisabled()
+  for (const reason of reasons) expect(within(screen.getByRole('region', {name: 'Current change readiness'})).getByText(reason.message)).toBeVisible()
   expect(api.post).not.toHaveBeenCalled()
 })
 
@@ -853,4 +856,28 @@ it('preserves existing multiline proposal evidence when editing and saving a dra
   fireEvent.change(within(dialog).getByLabelText('Description'), {target: {value: 'Updated description'}})
   fireEvent.submit(within(dialog).getByRole('button', {name: 'Save Change'}).closest('form')!)
   await waitFor(() => expect(api.patch).toHaveBeenCalledWith('/change-management/changes/chg-1', expect.objectContaining(evidence)))
+})
+
+
+it.each([
+  ['approved', 'Record implementation'],
+  ['implemented', 'Verify'],
+])('blocks the Danish %s transition when readiness is unavailable', async (status, action) => {
+  vi.clearAllMocks(); mockRole = 'manager'
+  setupApiMocks({registers: [workflowRegister], changes: [workflowChange({status})]}); renderPage()
+  fireEvent.click(await screen.findByRole('button', {name: 'Details'}))
+  expect(screen.getByRole('button', {name: action})).toBeDisabled()
+  expect(screen.getByText('Readiness unavailable')).toBeVisible()
+  expect(api.post).not.toHaveBeenCalled()
+})
+
+it('keeps generic proposal review available without reporting missing Danish checks', async () => {
+  vi.clearAllMocks(); mockRole = 'manager'; mockJurisdictionCode = 'example'
+  setupApiMocks({registers: [workflowRegister], changes: [workflowChange()]}); renderPage()
+  fireEvent.click(await screen.findByRole('button', {name: 'Details'}))
+  expect(screen.getByText('Review the change proposal')).toBeVisible()
+  expect(screen.queryByText('Readiness unavailable')).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', {name: 'Review proposal'}))
+  expect(await screen.findByRole('dialog', {name: 'Approve: PAM release'})).toBeVisible()
+  expect(api.post).not.toHaveBeenCalled()
 })

@@ -1,3 +1,4 @@
+import './workflow-pages.css'
 import ProjectForms from '../components/workflows/ProjectForms'
 import ProjectMaintenance from '../components/workflows/ProjectMaintenance'
 import CertificationEngagement, { type EngagementUpdate } from '../components/workflows/CertificationEngagement'
@@ -950,7 +951,7 @@ export default function CertificationProjects() {
   }
 
   return (
-    <div className="min-w-0 space-y-4">
+    <div className="workflow-page certification-page min-w-0 space-y-4">
       {!selectedProjectId && <header className="py-1">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -971,7 +972,7 @@ export default function CertificationProjects() {
         </div>
       </header>}
 
-      {!selectedProjectId && <div className="flex flex-wrap items-end gap-3">
+      {!selectedProjectId && <div className="workflow-toolbar flex flex-wrap items-end gap-3">
         <label className="w-full min-w-0 sm:w-auto sm:flex-1 text-sm text-muted">Search projects
           <input aria-label="Project name" value={searchParams.get('q') || ''} onChange={(e) => updateLocation('q', e.target.value)} placeholder="Project name" className="mt-1 block w-full px-3 py-2" />
         </label>
@@ -990,7 +991,7 @@ export default function CertificationProjects() {
       {projectsQuery.isError ? <Card className="p-5"><p role="alert">Projects could not be loaded.</p><Button onClick={() => projectsQuery.refetch()}>Try again</Button></Card> : projectsQuery.isLoading ? (
         <Card className="p-6 text-sm text-muted">Loading projects...</Card>
       ) : !selectedProjectId ? (
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden"><div className="workflow-table-heading"><h2>Certification projects</h2><p>{filteredProjects.length} matching {filteredProjects.length === 1 ? 'project' : 'projects'}</p></div>
           <div className="divide-y divide-line lg:hidden">{filteredProjects.map((project) => <article key={project.id} className="space-y-3 p-4"><button type="button" className="text-left text-base font-semibold text-accent" onClick={() => setSelectedProjectId(project.id)}>{project.name}</button><div className="flex flex-wrap gap-2"><Badge tone={stageTone(project.stage)}>{formatStage(project.stage)}</Badge><Badge tone={statusTone(project.status)}>{project.status.replace(/_/g, ' ')}</Badge></div><p className="text-sm text-muted">{jurisdictionsById[project.jurisdiction_id]?.name || 'Jurisdiction unavailable'} · Target {formatDate(project.target_submission_date)}</p><Button className="w-full" onClick={() => setSelectedProjectId(project.id)} aria-label={`Open ${project.name}`}>Open project</Button></article>)}{!filteredProjects.length && <p className="p-5 text-sm text-muted">{projects.length ? 'No projects match your filters.' : 'Create a certification project to select requirement sets and plan submission.'}</p>}</div>
           <div className="hidden overflow-x-auto lg:block"><Table>
             <THead>
@@ -1060,14 +1061,15 @@ export default function CertificationProjects() {
             { id: 'overview', label: 'Overview' }, { id: 'requirements', label: 'Requirements and evidence' }, { id: 'testing', label: 'Testing and findings' }, { id: 'reports', label: 'Reports and submission' }, { id: 'history', label: 'History' },
           ]} />
           <section hidden={projectSection !== 'overview'} aria-label="Project overview" className="space-y-5">
+            <ol className="certification-progression" aria-label="Certification stages">{stageOrder.map(stage => <li key={stage} aria-current={selectedProject.stage === stage ? 'step' : undefined}>{stageLabel[stage]}{selectedProject.stage === stage && <span>Current stage</span>}</li>)}</ol>
             <div className="flex flex-wrap gap-6 text-sm">
               <div><span className="block text-muted">Stage</span><span className="font-semibold">{formatStage(selectedProject.stage)}</span></div>
               <div><span className="block text-muted">Status</span><span className="capitalize">{selectedProject.status.replace(/_/g, ' ')}</span></div>
               <div><span className="block text-muted">Target submission</span>{formatDate(selectedProject.target_submission_date)}</div>
             </div>
             {selectedProject.description && <p className="max-w-prose text-sm text-muted">{selectedProject.description}</p>}
-            <div className="space-y-3 border-y border-line py-4">
-              <h2 className="font-semibold">Continue this project</h2>
+            <div className="project-next-step space-y-3">
+              <h2 className="font-semibold">Next step for this project</h2>
               <p className="text-sm text-muted">{(selectedProject.baseline_versions || []).length} requirement {(selectedProject.baseline_versions || []).length === 1 ? 'set' : 'sets'} in the baseline · {submissionCycle ? `Submission assessment ${submissionCycle.status}` : 'Submission assessment not started'} · {submissionPackages.length} submission packages</p>
               <div className="flex flex-wrap gap-2">
                 {submissionCycle ? <LinkButton variant="primary" to={`/review-cycles/${submissionCycle.id}`}>Continue requirement assessment</LinkButton> : <Button variant="primary" onClick={() => updateLocation('section', 'requirements')}>{(selectedProject.baseline_versions || []).length ? 'Start requirement assessment' : 'Choose approved requirements'}</Button>}

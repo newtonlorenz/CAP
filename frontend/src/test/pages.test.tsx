@@ -251,14 +251,12 @@ describe('Dashboard Page', () => {
       )
 
       await waitFor(() => {
-        expect(screen.getByText(/compliance dashboard/i)).toBeInTheDocument()
-        expect(screen.getByText(/jurisdiction:/i)).toBeInTheDocument()
-        expect(screen.getByText(/compliance overview/i)).toBeInTheDocument()
-        expect(screen.getByText(/my work/i)).toBeInTheDocument()
-        expect(screen.getByRole('heading', { name: /active requirement assessments/i })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: 'My work' })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: 'Assigned work' })).toBeInTheDocument()
         expect(screen.queryByText(/snapshot trend/i)).not.toBeInTheDocument()
       })
 
+      fireEvent.click(screen.getByText('Activity and reporting'))
       expect(screen.getByRole('heading', { name: 'Recent Activity' })).toBeInTheDocument()
       expect(screen.getByRole('link', { name: 'Open requirement' })).toHaveAttribute('href', '/requirements/req-1')
 

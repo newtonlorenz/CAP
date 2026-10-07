@@ -8,7 +8,7 @@ type SectionNavProps = {
 /** Page sections keep their drafts mounted; navigation exposes one task at a time. */
 export default function SectionNav({ label, value, items, onChange }: SectionNavProps) {
   return (
-    <nav aria-label={label} className="flex flex-wrap gap-x-5 gap-y-1 border-b border-line">
+    <nav aria-label={label} className="cap-page-tabs">
       {items.map((item) => (
         <button
           key={item.id}

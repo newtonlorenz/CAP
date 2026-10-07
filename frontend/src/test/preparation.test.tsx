@@ -270,6 +270,7 @@ describe('preparation responses', () => {
     getCase.mockReset().mockResolvedValue({ ...initial, revision: 7, responses: [{ ...response, value: 'Latest server answer' }, { ...response, field_key: 'other', value: 'Other server answer' }] })
     render(<QueryClientProvider client={makeClient()}><CaseEditor initial={initial} /></QueryClientProvider>)
     const first = screen.getByRole('textbox', { name: 'Answer' })
+    fireEvent.click(screen.getByRole('button', { name: 'View all questions' }))
     const second = screen.getByRole('textbox', { name: 'Other answer' })
     fireEvent.change(first, { target: { value: 'My first draft' } })
     fireEvent.blur(first)
@@ -286,9 +287,11 @@ describe('preparation responses', () => {
     fireEvent.blur(first)
     await act(async () => { await vi.advanceTimersByTimeAsync(2000) })
     expect(saveResponse).toHaveBeenCalledTimes(1)
-    fireEvent.click(screen.getAllByRole('button', { name: 'Use latest answer' })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Discard my draft and use latest' })[0])
     expect(first).toHaveValue('Latest server answer')
-    fireEvent.click(screen.getByRole('button', { name: 'Keep my drafts and resume autosave' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Review and combine changes' }))
+    expect(saveResponse).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Save combined answer' }))
     await act(async () => { await vi.advanceTimersByTimeAsync(800) })
     expect(saveResponse).toHaveBeenCalledTimes(2)
     expect(saveResponse).toHaveBeenLastCalledWith('case-1', 'other', expect.objectContaining({ value: 'Second draft', expected_revision: 7 }))
@@ -776,5 +779,6 @@ it('keeps question order when a source form repeats a section heading', () => {
     { ...field, key: 'three', label: '3. Third question', section: 'Applicant' },
   ]
   render(<QueryClientProvider client={makeClient()}><CaseDetail item={{ ...sampleCase, fields, responses: [] }} canEdit canManage={false} users={[]} projects={[]} jurisdictionName={() => 'Denmark'} onBack={vi.fn()} /></QueryClientProvider>)
+  fireEvent.click(screen.getByRole('button', { name: 'View all questions' }))
   expect(screen.getAllByRole('textbox').filter((input) => input.hasAttribute('aria-labelledby')).map((input) => input.getAttribute('aria-labelledby')).map((id) => document.getElementById(id!)?.textContent)).toEqual(['1. First question', '2. Second question', '3. Third question'])
 })

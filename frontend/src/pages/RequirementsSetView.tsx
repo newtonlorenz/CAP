@@ -1,3 +1,4 @@
+import './workflow-pages.css'
 import { formatDate } from '../utils/dateFormat'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -707,8 +708,8 @@ export default function RequirementsSetView() {
   if (documentError) return <LoadError subject="This requirement set" onRetry={() => refetchDocument()} />
 
   return (
-    <div className="min-w-0">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div className="workflow-page requirement-source-page min-w-0">
+      <div className="workflow-heading flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-ink">
             {doc?.name || doc?.filename || 'Requirements Set'}
@@ -1287,7 +1288,7 @@ export default function RequirementsSetView() {
       {isLoading ? (
         <div className="text-center py-8">Loading...</div>
       ) : (
-        <div className="bg-surface shadow rounded-lg overflow-hidden">
+        <div className="requirement-library-table bg-surface rounded-lg border border-line overflow-hidden">
           <div data-testid="requirements-view-mobile-cards" className="space-y-3 p-3 lg:hidden">
             {visibleRequirements.map(({ item, depth }) => {
               const extraction = item.source_extraction_id

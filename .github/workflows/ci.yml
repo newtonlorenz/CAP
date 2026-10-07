@@ -88,6 +88,9 @@ jobs:
           npx playwright install --with-deps chromium
           cd ..
           .venv/bin/python scripts/run-e2e.py
+      - name: Product tour browser checks
+        working-directory: frontend
+        run: npm run test:e2e:onboarding
   container_checks:
     runs-on: ubuntu-24.04
     timeout-minutes: 40

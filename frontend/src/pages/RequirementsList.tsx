@@ -1,3 +1,4 @@
+import './workflow-pages.css'
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -365,7 +366,7 @@ export default function RequirementsList() {
   }
 
   return (
-    <div className="min-w-0 space-y-4">
+    <div className="workflow-page requirements-page min-w-0 space-y-4">
       <header className="py-1">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
@@ -399,7 +400,7 @@ export default function RequirementsList() {
         </div>
       </header>
 
-      <Card className="p-4 sm:p-5">
+      <Card className="workflow-toolbar p-4 sm:p-5">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium uppercase tracking-wide text-muted">
@@ -501,7 +502,7 @@ export default function RequirementsList() {
       ) : isError ? <Card className="p-5"><p role="alert">Requirement sets could not be loaded.</p><Button onClick={() => refetch()}>Try again</Button></Card> : isLoading ? (
         <Card className="p-6 text-sm text-muted">Loading...</Card>
       ) : sortedSets.length ? (
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden"><div className="workflow-table-heading"><h2>Requirement sets</h2><p>{sortedSets.length} matching {sortedSets.length === 1 ? 'set' : 'sets'}</p></div>
           <div data-testid="requirements-sets-mobile-cards" className="space-y-3 p-3 lg:hidden">
             {sortedSets.map((set) => {
               const label = set.name || set.filename

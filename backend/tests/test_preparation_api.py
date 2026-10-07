@@ -604,3 +604,44 @@ async def test_changed_file_bytes_block_readiness_and_list_hashes_shared_file_on
     assert read.json()["readiness"]["ready"] is False
     assert read.json()["readiness"]["accepted_count"] == 0
     assert read.json()["readiness"]["blockers"][0]["code"] == "invalid_evidence_file"
+
+
+@pytest.mark.parametrize("length", [101, 1000])
+async def test_bilingual_sections_survive_template_save_edit_and_case_creation(
+    client, actors, default_jurisdiction, length
+):
+    manager = actors["manager"]
+    section = ("Applicant details / Hakijan tiedot – " * 30)[:length]
+    fields = [{"key": "name", "label": "Name / Nimi", "type": "text", "section": section}]
+    form = await make_template(client, manager, fields)
+    assert form["fields"][0]["section"] == section
+    updated_section = section[:-1] + "ä"
+    fields[0]["section"] = updated_section
+    updated = await client.patch(
+        f"{BASE}/templates/{form['id']}",
+        headers=headers(manager),
+        json={"expected_revision": form["revision"], "fields": fields},
+    )
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["fields"][0]["section"] == updated_section
+    case = await make_case(client, manager, form["id"], default_jurisdiction.id)
+    assert case["fields"][0]["section"] == updated_section
+    loaded = await client.get(f"{BASE}/cases/{case['id']}", headers=headers(manager))
+    assert loaded.status_code == 200, loaded.text
+    assert loaded.json()["fields"][0]["section"] == updated_section
+
+
+async def test_sections_over_1000_characters_are_rejected_on_create_and_edit(client, actors):
+    manager = actors["manager"]
+    fields = [{"key": "name", "label": "Name / Nimi", "type": "text", "section": "ä" * 1001}]
+    created = await client.post(f"{BASE}/templates", headers=headers(manager), json=template(fields))
+    assert created.status_code == 422, created.text
+    assert created.json()["detail"][0]["loc"] == ["body", "fields", 0, "section"]
+    form = await make_template(client, manager)
+    updated = await client.patch(
+        f"{BASE}/templates/{form['id']}",
+        headers=headers(manager),
+        json={"expected_revision": form["revision"], "fields": fields},
+    )
+    assert updated.status_code == 422, updated.text
+    assert updated.json()["detail"][0]["loc"] == ["body", "fields", 0, "section"]

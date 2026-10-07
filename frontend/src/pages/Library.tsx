@@ -1,3 +1,5 @@
+import SectionNav from '../components/ui/SectionNav'
+import './workflow-pages.css'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api/client'
@@ -41,13 +43,14 @@ export default function Library() {
     queryFn: async () => (await api.get<PaginatedResponse<CertificationProject>>('/certification-projects?limit=1000')).data,
     enabled: section === 'forms', staleTime: 300000,
   })
-  return <div className="space-y-6 pb-10">
+  return <div className="workflow-page library-page space-y-6 pb-10">
     <header className="space-y-2">
       <h1 className="text-3xl font-semibold">{sections.find((item) => item.id === section)?.label}</h1>
       <p className="max-w-prose text-sm leading-relaxed text-muted">Requirements describe obligations. Saved blank forms define reusable questions. Completed forms contain answers and supporting evidence.</p>
       {safeReturn && <Link to={safeReturn} className="inline-block text-sm font-semibold text-accent underline">Return to your workspace</Link>}
     </header>
 
+    <SectionNav label="Resource sections" value={section} items={sections} onChange={value => { const next = new URLSearchParams(params); next.set('section', value); next.delete('sourceDocument'); next.delete('kind'); navigate(`/library?${next.toString()}`) }} />
     {jurisdictionError && <p role="alert" className="text-sm text-warning">{jurisdictionError} <button type="button" className="underline" onClick={retry}>Retry</button></p>}
     {section === 'requirements' && <div className="space-y-3"><h2 className="text-xl font-semibold">Shared requirement sources</h2><p className="max-w-prose text-sm text-muted">Create or import requirements, check their source and wording, then use them in certification assessments or licence application forms.</p><Link className="font-semibold text-accent underline" to="/requirements">Open requirements</Link></div>}
     {section === 'templates' && <>

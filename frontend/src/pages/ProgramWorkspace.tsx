@@ -1,3 +1,4 @@
+import './workflow-pages.css'
 import { formatDateTime, formatDate } from '../utils/dateFormat'
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -60,7 +61,7 @@ export default function ProgramWorkspace() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="workflow-page programme-page space-y-4">
       <header className="py-1">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -87,7 +88,7 @@ export default function ProgramWorkspace() {
         </select>
       </label>}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,240px)_minmax(0,1fr)]">
-        <Card className="hidden self-start p-4 lg:block">
+        <Card className="programme-sidebar hidden self-start p-4 lg:block">
           <h2 className="text-sm font-semibold text-ink">Projects</h2>
           <div className="mt-3 space-y-2">
             {projects.length === 0 ? (
@@ -150,7 +151,7 @@ export default function ProgramWorkspace() {
                 </div>
               ) : (
                 nextActions.slice(0, 8).map((action) => (
-                  <div key={action.id} className="border-b border-line py-3 last:border-0">
+                  <div key={action.id} className="programme-action-row border-b border-line py-3 last:border-0">
                     <div className="text-sm font-semibold text-ink">{action.title}</div>
                     <div className="mt-1 text-xs text-muted">{action.summary}</div>
                     <div className="mt-2">
@@ -198,7 +199,7 @@ export default function ProgramWorkspace() {
                 </div>
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-ink">Project stages</h3>
+                <h3 className="text-base font-semibold text-ink">Project stages and readiness</h3><p className="mt-1 text-sm text-muted">Expand a stage to see its checks and the evidence still needed.</p>
                 <div className="mt-2 space-y-2">
                   {selectedProject.stage_states.map((stageState) => (
                     <details key={`${selectedProject.project_id}-${stageState.stage}`} className="border-b border-line py-3">

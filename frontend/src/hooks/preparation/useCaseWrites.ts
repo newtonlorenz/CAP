@@ -18,6 +18,8 @@ export function useCaseWrites(caseId: string, revision: number, metadataDirty = 
   const latestRevision = useRef(revision)
   const [isWriting, setIsWriting] = useState(false)
   const [hasPendingDrafts, setHasPendingDrafts] = useState(false)
+  const [hasPendingUploads, setHasPendingUploads] = useState(false)
+  const [hasPendingAnswerDrafts, setHasPendingAnswerDrafts] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pauseReason, setPauseReason] = useState<PauseReason>(null)
   const [conflictReady, setConflictReady] = useState(false)
@@ -35,6 +37,8 @@ export function useCaseWrites(caseId: string, revision: number, metadataDirty = 
     if (dirty) dirtyFields.current.add(key)
     else dirtyFields.current.delete(key)
     setHasPendingDrafts(dirtyFields.current.size > 0)
+    setHasPendingUploads([...dirtyFields.current].some(item => item.startsWith('upload:')))
+    setHasPendingAnswerDrafts([...dirtyFields.current].some(item => !item.startsWith('upload:')))
   }, [])
 
   const refreshConflict = useCallback(async () => {
@@ -85,6 +89,8 @@ export function useCaseWrites(caseId: string, revision: number, metadataDirty = 
         const cached = queryClient.getQueryData<PreparationCase>(['preparation', 'case', caseId])
         if (!cached || cached.revision <= updated.revision) queryClient.setQueryData(['preparation', 'case', caseId], updated)
         void queryClient.invalidateQueries({ queryKey: ['preparation', 'cases'] })
+        void queryClient.invalidateQueries({ queryKey: ['applications', 'item'] })
+        void queryClient.invalidateQueries({ queryKey: ['preparation', 'review-queue'] })
         return updated
       } catch (caught) {
         if (!active.current) return null
@@ -128,10 +134,10 @@ export function useCaseWrites(caseId: string, revision: number, metadataDirty = 
     run((expected_revision) => preparationApi.updateCase(caseId, { ...patch, expected_revision })), [caseId, run])
 
   return useMemo(() => ({
-    run, revision, isWriting, hasPendingDrafts, error, pauseReason,
+    run, revision, isWriting, hasPendingDrafts, hasPendingUploads, hasPendingAnswerDrafts, error, pauseReason,
     conflicted: pauseReason === 'conflict', conflictReady, resumeVersion,
     setFieldDirty, refreshConflict, resumeWrites, saveField, acceptField, reuseField, updateCase,
-  }), [run, revision, isWriting, hasPendingDrafts, error, pauseReason, conflictReady, resumeVersion,
+  }), [run, revision, isWriting, hasPendingDrafts, hasPendingUploads, hasPendingAnswerDrafts, error, pauseReason, conflictReady, resumeVersion,
     setFieldDirty, refreshConflict, resumeWrites, saveField, acceptField, reuseField, updateCase])
 }
 export type CaseWrites = ReturnType<typeof useCaseWrites>

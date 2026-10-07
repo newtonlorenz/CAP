@@ -1,4 +1,6 @@
 import type { ResourceAccess } from './access'
+
+export const PREPARATION_SECTION_MAX_LENGTH = 1000
 export type PreparationKind =
   | 'licence_application'
   | 'certification'

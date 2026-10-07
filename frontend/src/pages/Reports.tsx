@@ -1,3 +1,4 @@
+import './workflow-pages.css'
 import ReportDownloadRow from '../components/ReportDownloadRow'
 import { getApiErrorMessage } from '../api/errors'
 import axios from 'axios'
@@ -116,10 +117,10 @@ export default function Reports() {
   if (user && !canDownloadChangeManagementReports) return <div className="space-y-4"><h1 className="text-2xl font-semibold">Reports</h1><div className="rounded-xl border border-line bg-surface p-5"><p className="text-sm text-muted">Report exports are available to managers, approvers and administrators. You can continue your assigned evidence and assessment work.</p><Link to="/review-cycles" className="mt-4 inline-block text-sm font-semibold text-accent underline">Open assessments</Link></div></div>
 
   return (
-    <div className="min-w-0">
+    <div className="workflow-page reports-page min-w-0">
       {downloadError && <p role="alert" className="rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger">{downloadError}</p>}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-ink">Reports</h1>
+        <h1 className="text-2xl font-semibold text-ink">Reports</h1><p className="mt-2 text-sm text-muted">Export assessment evidence, controlled-change records and audit history.</p>
         {jurisdictionId && jurisdictionById[jurisdictionId] && (
           <div className="mt-1 text-sm text-muted">
             Jurisdiction: {jurisdictionById[jurisdictionId].name}
@@ -127,7 +128,7 @@ export default function Reports() {
         )}
       </div>
 
-      <section aria-labelledby="report-choice-heading" className="mb-6 max-w-3xl">
+      <section aria-labelledby="report-choice-heading" className="report-intro mb-6 max-w-3xl">
         <h2 id="report-choice-heading" className="text-lg font-semibold text-ink">Which report do I need?</h2>
         <p className="mt-2 text-sm text-muted">Use assessment reports to review compliance and evidence. Use change management reports for component records and verified changes.</p>
         <p className="mt-2 text-sm text-muted">Use Audit trail to investigate who changed a record and when.</p>

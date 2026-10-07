@@ -317,7 +317,7 @@ test('visual batch: both themes, desktop tablet and 320px, with real pack and ce
         await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
         await expect(page.getByText(/^Loading/i).and(page.locator(':visible'))).toHaveCount(0)
         await expect(page.getByRole('heading', { name: 'Page not found', exact: true })).toHaveCount(0)
-        if (name === 'dashboard') await expect(page.getByRole('heading', { name: 'Compliance Dashboard', exact: true })).toBeVisible()
+        if (name === 'dashboard') await expect(page.getByRole('heading', { name: 'My work', exact: true })).toBeVisible()
         await capture(page, info, `${name}-${theme}-${width}`)
       }
     }

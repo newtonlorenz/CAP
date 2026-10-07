@@ -1,0 +1,3 @@
+export default function PilotIcon({ name, size = 22 }: { name: 'file' | 'search' | 'close' | 'lock'; size?: number }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{name === 'file' ? <><path d="M14 2H5v20h14V7z" /><path d="M14 2v6h5M8 12h8M8 16h8" /></> : name === 'search' ? <><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></> : name === 'lock' ? <><rect x="5" y="10" width="14" height="12" rx="1" /><path d="M8 10V6a4 4 0 0 1 8 0v4M12 15v3" /></> : <path d="m6 6 12 12M6 18 18 6" />}</svg>
+}

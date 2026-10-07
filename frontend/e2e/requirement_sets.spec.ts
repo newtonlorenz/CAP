@@ -51,7 +51,9 @@ test.describe('Requirement Sets', () => {
   test('should render Not Found for /documents', async ({ page }) => {
     await page.goto('/documents')
     await expect(page.getByRole('heading', { name: /^Page not found$/i })).toBeVisible()
-    await expect(page.getByText(/No route matches/i)).toBeVisible()
+    await expect(page.getByText(/is unavailable\. The link may have changed\./i)).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Back to overview', exact: true })).toHaveAttribute('href', '/')
+    await expect(page.getByRole('link', { name: 'Open the guide', exact: true })).toHaveAttribute('href', '/guide')
     await expect(page.getByText('/documents')).toBeVisible()
   })
 

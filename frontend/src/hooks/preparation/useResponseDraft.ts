@@ -34,10 +34,13 @@ export function useResponseDraft(
   const [saving, setSaving] = useState(false)
   const savingRef = useRef(false)
   const [localError, setLocalError] = useState('')
+  const [needsReview, setNeedsReview] = useState(false)
+  const [comparing, setComparing] = useState(false)
+  useEffect(() => { if (writes.conflicted && dirty) setNeedsReview(true) }, [writes.conflicted, dirty])
   const mounted = useRef(true)
   const timer = useRef<ReturnType<typeof setTimeout>>()
-  const latest = useRef({ field, response, editable, writes, onDirtyChange })
-  latest.current = { field, response, editable, writes, onDirtyChange }
+  const latest = useRef({ field, response, editable, writes, onDirtyChange, needsReview })
+  latest.current = { field, response, editable, writes, onDirtyChange, needsReview }
 
   const notifyDirty = useCallback((next: boolean) => {
     dirtyRef.current = next
@@ -79,8 +82,8 @@ export function useResponseDraft(
   }
   const saveNow = useCallback(async () => {
     clearTimer()
-    const { field, editable, writes } = latest.current
-    if (!mounted.current || !editable || !dirtyRef.current || savingRef.current || writes.pauseReason) return
+    const { field, editable, writes, needsReview } = latest.current
+    if (!mounted.current || !editable || !dirtyRef.current || savingRef.current || writes.pauseReason || needsReview) return
     const captured = toPayload(field, current.current)
     if (field.type === 'number' && !current.current.reason.trim() && current.current.value !== '' && !Number.isFinite(Number(current.current.value))) {
       setLocalError('Enter a valid number.')
@@ -102,13 +105,15 @@ export function useResponseDraft(
   }, [clearTimer, notifyDirty])
 
   useEffect(() => {
-    if (editable && dirty && !saving && !writes.pauseReason && !localError)
+    if (editable && dirty && !saving && !writes.pauseReason && !localError && !needsReview)
       timer.current = setTimeout(() => { void saveNow() }, 800)
     return clearTimer
-  }, [draft, dirty, editable, saving, writes.pauseReason, writes.resumeVersion, localError, saveNow, clearTimer])
+  }, [draft, dirty, editable, saving, writes.pauseReason, writes.resumeVersion, localError, needsReview, saveNow, clearTimer])
 
   const useLatest = () => {
     clearTimer()
+    setNeedsReview(false)
+    setComparing(false)
     const next = fromResponse(response)
     uncertain.current = false
     deferredServer.current = null
@@ -117,12 +122,44 @@ export function useResponseDraft(
     setDraft(next)
     setLocalError('')
     notifyDirty(false)
+    if (writes.conflicted && writes.conflictReady) writes.resumeWrites()
   }
   const retry = () => {
     writes.resumeWrites()
   }
-  const state = writes.conflicted && dirty ? 'conflict'
+  const state = (writes.conflicted || needsReview) && dirty ? 'conflict'
     : (writes.pauseReason === 'error' && dirty) || localError ? 'error'
       : saving ? 'saving' : dirty ? 'dirty' : 'saved'
-  return { ...draft, dirty, saving, state, localError, change, saveNow, useLatest, retry } as const
+  // Upload and attachment are separate operations: keep the old attachment visible
+  // until the response write is acknowledged, and retain the uploaded file on failure.
+  const attachEvidence = async (evidenceIds: string[]) => {
+    clearTimer()
+    const { field, editable, writes, needsReview } = latest.current
+    if (!editable || savingRef.current || needsReview || writes.pauseReason) return false
+    const captured = toPayload(field, { ...current.current, evidenceIds })
+    savingRef.current = true
+    setSaving(true)
+    notifyDirty(dirtyRef.current)
+    const saved = await writes.saveField(field.key, captured, () => mounted.current && latest.current.editable)
+    if (!mounted.current) return Boolean(saved)
+    savingRef.current = false
+    setSaving(false)
+    if (saved) {
+      uncertain.current = false
+      acknowledged.current = JSON.stringify(captured)
+      current.current = { ...current.current, evidenceIds }
+      setDraft(current.current)
+      if (deferredServer.current && deferredServer.current.revision <= saved.revision) deferredServer.current = null
+    }
+    notifyDirty(uncertain.current || JSON.stringify(toPayload(field, current.current)) !== acknowledged.current)
+    return Boolean(saved)
+  }
+  const reviewChanges = () => setComparing(true)
+  const saveCombined = () => {
+    if (!writes.conflictReady || savingRef.current) return
+    setNeedsReview(false)
+    setComparing(false)
+    writes.resumeWrites()
+  }
+  return { ...draft, dirty, saving, state, localError, change, saveNow, useLatest, retry, attachEvidence, needsReview, comparing, reviewChanges, saveCombined } as const
 }
