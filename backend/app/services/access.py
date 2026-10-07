@@ -350,9 +350,11 @@ def inherited_clause(model, user, action, *, resolve=None):
         BaselineMigration,
         CertificationProject,
         CertificationProjectMilestone,
-        MaintenancePlan,
-        MaintenanceEvent,
+        EvidenceItem,
+        EvidenceValidation,
         ExportManifest,
+        MaintenanceEvent,
+        MaintenancePlan,
         SubmissionPackage,
         SubmissionPackageArtifact,
     )
@@ -365,6 +367,7 @@ def inherited_clause(model, user, action, *, resolve=None):
     )
 
     mapping = {
+        EvidenceValidation: (EvidenceItem, EvidenceValidation.evidence_item_id, False),
         ReviewCycle: (CertificationProject, ReviewCycle.certification_project_id, True),
         MaintenancePlan: (CertificationProject, MaintenancePlan.certification_project_id, True),
         MaintenanceEvent: (MaintenancePlan, MaintenanceEvent.maintenance_plan_id, False),
@@ -393,6 +396,18 @@ def inherited_clause(model, user, action, *, resolve=None):
             False,
         ),
     }
+    if model is EvidenceItem:
+        # Evidence is private to its creator, operational owner and reviewer.
+        # Account roles never bypass this relationship check.
+        author = or_(model.created_by == user.id, model.owner_id == user.id)
+        participant = or_(author, model.reviewer_id == user.id)
+        if action in ("summary", "view", "export"):
+            return and_(user.active, participant)
+        if action == "edit":
+            return and_(user.active, author, legacy_permission(user, "edit"))
+        if action == "approve":
+            return and_(user.active, participant, user.role in ("approver", "admin"))
+        return literal(False)
     if model is ExportManifest:
         return manifest_access_clause(user, action, resolve=resolve)
     if model is Snapshot:

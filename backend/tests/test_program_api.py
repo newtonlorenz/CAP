@@ -1167,7 +1167,7 @@ async def test_contributor_cannot_forge_evidence_approval(
         response = await client.patch(url, headers=program_contributor_headers, json=forged_patch)
         assert response.status_code in {403, 422}
 
-    listed = await client.get(create_url, headers=program_auth_headers)
+    listed = await client.get(create_url, headers=program_contributor_headers)
     item = next(row for row in listed.json()["items"] if row["id"] == item_id)
     assert item["review_status"] == "in_review"
     assert item["approved_by"] is None
@@ -1212,6 +1212,7 @@ async def test_evidence_approval_records_caller_and_is_tenant_scoped(
             "evidence_type": "note",
             "title": "Reviewable evidence",
             "review_status": "in_review",
+            "reviewer_id": str(approver.id),
         },
     )
     assert created.status_code == 201

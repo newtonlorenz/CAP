@@ -51,7 +51,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "32783430b755c30878732378736e99361b3d0bccfdbcdb381a6f872ebe0649e1"
+      "sha256": "0719d4b4813c3ca04de013baf1d9aaaa6153ec3a9d0ba8811633b4b4faccc963"
     },
     {
       "path": "SECURITY.md",
@@ -363,7 +363,7 @@
     },
     {
       "path": "backend/app/api/program.py",
-      "sha256": "bd855f57eb1d254a1ce2acd1c14d48f466f10b21873fee29688c14608cd014ba"
+      "sha256": "e44046e8ea827fb0737557c58415f5722a8e5149ebfcdd00febb7cc3bc73796f"
     },
     {
       "path": "backend/app/api/reports.py",
@@ -599,11 +599,11 @@
     },
     {
       "path": "backend/app/services/access.py",
-      "sha256": "91c48eb951305dca4131dcffa473840b0866f94430977fd630a8921ba2a0ee7d"
+      "sha256": "f5391ac12bc4ee5b32c86f0f40248dba7a26fea8d497639589512fad9250efa6"
     },
     {
       "path": "backend/app/services/access_audit.py",
-      "sha256": "320dbf042ac4fe407713ff5795cfd134f4b7ca3bc928240d53b872e94dab976b"
+      "sha256": "e8fb6589887641cab13ff35794fcc3b3279f1327bec9ac61ae636698d9d2bf52"
     },
     {
       "path": "backend/app/services/ai_parser.py",
@@ -1046,6 +1046,14 @@
       "sha256": "2a2f77dab6db2fd840d0c73fd8820f877c32d61f9d0eb78ddc41f384d2529717"
     },
     {
+      "path": "backend/tests/test_evidence_item_access.py",
+      "sha256": "c39bf420f7a39f6857d6ceb5d5e3ff713c69da2d2b6bfbbbe05821366820b436"
+    },
+    {
+      "path": "backend/tests/test_evidence_item_access_postgres.py",
+      "sha256": "07e90ad4ae70fb865c6802b55c754eb47a5067bcd9ae615414323c30bc72c30d"
+    },
+    {
       "path": "backend/tests/test_extraction.py",
       "sha256": "64c770507370f1b6172efb5d2014663fce309d23f0b207eb59f0077e6230a7b4"
     },
@@ -1187,7 +1195,7 @@
     },
     {
       "path": "backend/tests/test_program_api.py",
-      "sha256": "056b9751461f16ab06bb09674e45333ebe25f990af4ad4e6212117b556e69cab"
+      "sha256": "bd8d142ae5bf3e688ccb1838a798d066b5fc029eab54a76640c51fea4f354796"
     },
     {
       "path": "backend/tests/test_program_workspace_api.py",
@@ -1339,7 +1347,7 @@
     },
     {
       "path": "docs/public/access-control.md",
-      "sha256": "7560b32a84c8ae086a66467833192fb816e256e020d233456cc7154600474199"
+      "sha256": "7a446edaee50e945c7b19f65ac7b64b32f65d942c8bd2aef22640187536ba418"
     },
     {
       "path": "docs/public/applications.md",
@@ -2278,6 +2286,10 @@
       "sha256": "50012de54d8daf9d52393614beab4e40f12e0f2fbee1dec5d2e3a56898c239b8"
     },
     {
+      "path": "frontend/src/components/ProductFeedbackBrief.tsx",
+      "sha256": "5a4a0caf3ba95b3f5de8b2a118dd9a9fb64dc1982d9861078ad1a980bbfadc8e"
+    },
+    {
       "path": "frontend/src/components/ProductTourInvitation.tsx",
       "sha256": "603753f98e4caf8d419352e8da4a413746f0ae6af91fcc27a8597901e446430a"
     },
@@ -2579,7 +2591,7 @@
     },
     {
       "path": "frontend/src/content/releaseNotes.ts",
-      "sha256": "6447854be0ae29238d087897b7d3f084955aab113946affc5cb4759f17dd2be0"
+      "sha256": "627c12a3156b5ec21c45f435b6f497f245a2c080e85e7919ad1d47f41c29929b"
     },
     {
       "path": "frontend/src/contexts/AuthContext.tsx",
@@ -2687,7 +2699,7 @@
     },
     {
       "path": "frontend/src/pages/GuideFaq.tsx",
-      "sha256": "bed9e596b3ac53598709910ce93ad491f6658847189ba5f7e0a9b0d6711831fb"
+      "sha256": "b067690ce660ddfd2e79b9613e5ef666990623e69c73e8d85b38a329aefd6199"
     },
     {
       "path": "frontend/src/pages/Jurisdictions.tsx",
@@ -2751,7 +2763,7 @@
     },
     {
       "path": "frontend/src/pages/admin/ProductFeedback.tsx",
-      "sha256": "41887ba7c143a83ba46e8d311579398ebab8ffd07d8f672fc35b565b929ad827"
+      "sha256": "c17cd6189be87fa47ebb11e5539481691eb716ce64e213e8f5c02cb09774e0be"
     },
     {
       "path": "frontend/src/pages/admin/Settings.tsx",
@@ -2903,7 +2915,7 @@
     },
     {
       "path": "frontend/src/test/change_notes_page.test.tsx",
-      "sha256": "3c565f088f3b01a8ba31bc8010586e02da1042dbbb9b0db71a471041087e1e85"
+      "sha256": "69d9f8103a9f29a45e6cc934c1b41a0a6ebe675d4c062305c30dee75d2d170d9"
     },
     {
       "path": "frontend/src/test/change_readiness_pilot.test.tsx",
@@ -2976,6 +2988,10 @@
     {
       "path": "frontend/src/test/preparation.test.tsx",
       "sha256": "732bc7b626241b9202be8a554f674b6f6f555624153a04d3012f121d4705bcff"
+    },
+    {
+      "path": "frontend/src/test/product_feedback_brief.test.tsx",
+      "sha256": "9c6c76299f18c774a8b0ca90322ab70a066decddf094c2df9eeec0054bdff375"
     },
     {
       "path": "frontend/src/test/product_tour.test.tsx",
@@ -3247,7 +3263,7 @@
     },
     {
       "path": "publication-manifest.json",
-      "sha256": "31bfafe1956beec3baa7558784595833d515ca825c16db13369449a15bc9a89b"
+      "sha256": "389fa0418704534637369d94de2cb5881c9dd2f82f18721ab854d9aafbffc3ad"
     },
     {
       "path": "scripts/check-release-lifecycle.py",

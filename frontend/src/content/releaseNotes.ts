@@ -10,6 +10,17 @@ export type ReleaseNote = {
 // See docs/public/change-notes.md for the release procedure.
 export const releaseNotes: ReleaseNote[] = [
   {
+    version: '2026.10.07.2',
+    date: '2026-10-07',
+    title: 'Private evidence and clearer feedback handoff',
+    summary: 'Keep requirement evidence within its assigned audience and turn product feedback into a focused implementation brief.',
+    features: [
+      { title: 'Requirement evidence access', description: 'Requirement evidence and validation history are visible to their creator, owner and reviewer. Content edits and approval decisions also require the appropriate role; account administrators cannot open unrelated evidence.' },
+      { title: 'Feedback implementation brief', description: 'Copy or preview a brief from a product feedback report to investigate it in public CAP. Attached screenshots and private report details stay separate from public pull requests.' },
+      { title: 'Account and notification guidance', description: 'The Guide explains profile changes, password changes, saved email preferences and how to check missing notifications.' },
+    ],
+  },
+  {
     version: '2026.10.07',
     date: '2026-10-07',
     title: 'Guided onboarding and clearer team workflows',

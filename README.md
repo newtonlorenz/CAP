@@ -209,10 +209,11 @@ Daniel Graetzer is the first-party licensor and project maintainer; `newtonloren
 is the GitHub account. See [NOTICE](NOTICE)
 for attribution and the distinction from third-party components.
 
-The first public source candidate uses a reviewed, history-free snapshot of the
-private development tree. Publication requires approval of the exact snapshot
-and repository. Source publication alone does not establish a supported container
-release or validate a production deployment. The
+`newtonlorenz/CAP` is the maintained public repository for development, pull
+requests and releases. Its initial commit is a reviewed, history-free source
+snapshot. The private `cap-dev` repository is a deprecated historical archive.
+Source publication alone does not establish a supported container release or
+validate a production deployment. The
 [publication checklist](docs/public/releasing.md) records rights, security,
 repository configuration and verification requirements; the
 [container release guide](docs/public/releases.md) records image qualifications

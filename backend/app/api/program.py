@@ -3186,7 +3186,9 @@ async def list_evidence_items(
     current_user: User = Depends(get_current_user),
 ):
     limit = min(max(limit, 1), 1000)
-    query = _org_filter(select(EvidenceItem), EvidenceItem, current_user)
+    query = _org_filter(select(EvidenceItem), EvidenceItem, current_user).where(
+        access_clause(EvidenceItem, current_user, "view")
+    )
     if requirement_id is not None:
         query = query.where(EvidenceItem.requirement_id == requirement_id)
     if review_status:
@@ -3207,7 +3209,7 @@ async def list_evidence_items(
 async def create_evidence_item(
     body: EvidenceItemCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role("contributor", "manager", "admin")),
 ):
     if body.review_status not in {"draft", "in_review", "rejected", "approved"}:
         raise HTTPException(status_code=422, detail="Invalid evidence review status")
@@ -3253,6 +3255,7 @@ async def create_evidence_item(
         created_by=current_user.id,
     )
     db.add(item)
+    await db.flush()
 
     await log_action(
         db,
@@ -3279,13 +3282,16 @@ async def update_evidence_item(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = _org_filter(
-        select(EvidenceItem).where(EvidenceItem.id == item_id), EvidenceItem, current_user
+    # Lock before checking relationships in a fresh statement: assignment may
+    # have changed while this request waited for the preceding writer.
+    locked = await db.scalar(
+        _org_filter(
+            select(EvidenceItem.id).where(EvidenceItem.id == item_id), EvidenceItem, current_user
+        ).with_for_update()
     )
-    result = await db.execute(query.with_for_update())
-    item = result.scalar_one_or_none()
-    if item is None:
+    if locked is None:
         raise HTTPException(status_code=404, detail="Evidence item not found")
+    item = await require_access(db, EvidenceItem, item_id, current_user, "view")
 
     if {"approved_by", "approved_at"} & body.model_fields_set:
         raise HTTPException(status_code=422, detail="Approval attribution is set by the server")
@@ -3303,6 +3309,17 @@ async def update_evidence_item(
         and current_user.role not in {"approver", "admin"}
     ):
         raise HTTPException(status_code=403, detail="Insufficient role to change evidence approval")
+
+    content_fields = body.model_fields_set - {"review_status", "approved_by", "approved_at"}
+    if any(getattr(body, field) is not None for field in content_fields):
+        await require_access(db, EvidenceItem, item_id, current_user, "edit")
+    if body.review_status is not None:
+        action = (
+            "approve"
+            if body.review_status in {"approved", "rejected"} or item.review_status == "approved"
+            else "edit"
+        )
+        await require_access(db, EvidenceItem, item_id, current_user, action)
 
     old_value = {
         "title": item.title,
@@ -3404,7 +3421,9 @@ async def list_evidence_validations(
     query = select(EvidenceValidation).join(
         EvidenceItem, EvidenceItem.id == EvidenceValidation.evidence_item_id
     )
-    query = _org_filter(query, EvidenceItem, current_user)
+    query = _org_filter(query, EvidenceItem, current_user).where(
+        access_clause(EvidenceItem, current_user, "view")
+    )
     if evidence_item_id is not None:
         query = query.where(EvidenceValidation.evidence_item_id == evidence_item_id)
 
@@ -3424,15 +3443,7 @@ async def create_evidence_validation(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    evidence_query = _org_filter(
-        select(EvidenceItem).where(EvidenceItem.id == body.evidence_item_id),
-        EvidenceItem,
-        current_user,
-    )
-    evidence_result = await db.execute(evidence_query)
-    evidence_item = evidence_result.scalar_one_or_none()
-    if evidence_item is None:
-        raise HTTPException(status_code=404, detail="Evidence item not found")
+    await require_access(db, EvidenceItem, body.evidence_item_id, current_user, "approve")
 
     item = EvidenceValidation(
         evidence_item_id=body.evidence_item_id,
@@ -3441,6 +3452,7 @@ async def create_evidence_validation(
         comment=body.comment,
     )
     db.add(item)
+    await db.flush()
 
     await log_action(
         db,
