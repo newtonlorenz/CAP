@@ -57,7 +57,13 @@ async function setupForm(page: Page, name: string, label: string) {
   await row.getByRole('button', { name: 'Save form or document', exact: true }).click()
   await row.getByRole('button', { name: `Open ${name}`, exact: true }).click()
   const input = page.getByRole('textbox', { name: label, exact: true })
+  const caseId = new URL(page.url()).searchParams.get('case')
+  expect(caseId).toBeTruthy()
+  const savedAnswer = page.waitForResponse(response => response.request().method() === 'PUT' &&
+    new URL(response.url()).pathname.startsWith(`/api/v1/preparation/cases/${caseId}/responses/`))
   await input.fill('Synthetic verified answer')
+  const savedCase = await json(await savedAnswer)
+  expect(savedCase.responses.some((response: { value: unknown }) => response.value === 'Synthetic verified answer')).toBe(true)
   await expect(page.getByRole('button', { name: 'Accept response', exact: true })).toBeEnabled()
   await page.getByRole('button', { name: 'Accept response', exact: true }).click()
   await expect(page.getByText('Accepted', { exact: true })).toBeVisible()
@@ -312,13 +318,15 @@ test('visual batch: both themes, desktop tablet and 320px, with real pack and ce
     for (const width of [1280, 768, 320]) {
       await page.setViewportSize({ width, height: 900 })
       for (const [name, route] of Object.entries(routes)) {
-        await page.goto(route)
-        await expect(page.locator('main h1').first()).toBeVisible()
-        await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
-        await expect(page.getByText(/^Loading/i).and(page.locator(':visible'))).toHaveCount(0)
-        await expect(page.getByRole('heading', { name: 'Page not found', exact: true })).toHaveCount(0)
-        if (name === 'dashboard') await expect(page.getByRole('heading', { name: 'My work', exact: true })).toBeVisible()
-        await capture(page, info, `${name}-${theme}-${width}`)
+        await test.step(`${name}: ${theme}, ${width}px (${route})`, async () => {
+          await page.goto(route)
+          await expect(page.locator('main h1').first()).toBeVisible()
+          await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+          await expect(page.getByText(/^Loading/i).and(page.locator(':visible'))).toHaveCount(0)
+          await expect(page.getByRole('heading', { name: 'Page not found', exact: true })).toHaveCount(0)
+          if (name === 'dashboard') await expect(page.getByRole('heading', { name: 'My work', exact: true })).toBeVisible()
+          await capture(page, info, `${name}-${theme}-${width}`)
+        })
       }
     }
   }

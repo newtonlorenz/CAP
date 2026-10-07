@@ -7,23 +7,27 @@ const popover = (page: Page) => page.locator('.cap-product-tour')
 
 async function mockAccount(page: Page) {
   let activeUser: string | null = userId
+  let profileName = 'Synthetic Tour User'
+  let notifications = { review_mentions: true, review_reminders: false }
   await page.route('**/api/v1/**', async route => {
     const path = new URL(route.request().url()).pathname.replace('/api/v1', '')
     if (path === '/auth/logout') activeUser = null
     if (path === '/auth/login') activeUser = route.request().postDataJSON().email.startsWith('second') ? 'second-user' : userId
     if (path === '/auth/me') {
+      if (route.request().method() === 'PATCH') profileName = route.request().postDataJSON().full_name
       await route.fulfill({ status: activeUser ? 200 : 401, json: activeUser ? {
-        id: activeUser, organization_id: 'synthetic-organisation', full_name: 'Synthetic Tour User',
+        id: activeUser, organization_id: 'synthetic-organisation', full_name: profileName,
         email: `${activeUser}@example.test`, role: 'admin', active: true, created_at: '2026-01-01T00:00:00Z',
       } : { detail: 'Not authenticated' } })
       return
     }
+    if (path === '/auth/notification-settings' && route.request().method() === 'PATCH') notifications = route.request().postDataJSON()
     if (path === '/auth/refresh' && !activeUser) {
       await route.fulfill({ status: 401, json: { detail: 'Not authenticated' } })
       return
     }
     await route.fulfill({ json: path === '/product-feedback/config' ? { enabled: false }
-      : path === '/auth/notification-settings' ? { review_mentions: true, review_reminders: false }
+      : path === '/auth/notification-settings' ? notifications
         : { items: [], total: 0, limit: 1000, offset: 0 } })
   })
 }
@@ -274,7 +278,7 @@ test('invitation and tour preserve an unsaved account form', async ({ page }) =>
   const fullName = page.getByRole('textbox', { name: 'Full name' })
   await fullName.fill('Synthetic unsaved name')
   await expect(fullName).toBeFocused()
-  await expect(invitation(page)).toHaveCount(0)
+  await expect(invitation(page)).toBeVisible()
   await expect(page).toHaveURL('/account?section=account')
   await page.getByRole('heading', { name: 'My account', exact: true }).click()
   await expect(invitation(page)).toBeVisible()
@@ -282,4 +286,41 @@ test('invitation and tour preserve an unsaved account form', async ({ page }) =>
   await finishTour(page)
   await expect(fullName).toHaveValue('Synthetic unsaved name')
   await expect(page).toHaveURL('/account?section=account')
+})
+
+test('typing, single save clicks, and checkbox focus keep invitation geometry stable', async ({ page }) => {
+  await page.goto('/account?section=account')
+  await expect(invitation(page)).toBeVisible()
+  const invitationBounds = await invitation(page).boundingBox()
+  const fullName = page.getByRole('textbox', { name: 'Full name' })
+  await fullName.fill('Synthetic saved name')
+  await expect(fullName).toBeFocused()
+  await expect(invitation(page)).toBeVisible()
+  expect(await invitation(page).boundingBox()).toEqual(invitationBounds)
+  const profileSaves: string[] = []
+  page.on('request', request => {
+    if (new URL(request.url()).pathname.endsWith('/auth/me') && request.method() === 'PATCH') profileSaves.push(request.postData() || '')
+  })
+  const saveProfile = page.getByRole('button', { name: 'Save profile', exact: true })
+  const profileResponse = page.waitForResponse(response => new URL(response.url()).pathname.endsWith('/auth/me') && response.request().method() === 'PATCH')
+  await saveProfile.click()
+  expect((await profileResponse).ok()).toBe(true)
+  await expect(saveProfile).toBeDisabled()
+  await expect(fullName).toHaveValue('Synthetic saved name')
+  expect(profileSaves).toHaveLength(1)
+  expect(JSON.parse(profileSaves[0])).toMatchObject({ full_name: 'Synthetic saved name' })
+  expect(await invitation(page).boundingBox()).toEqual(invitationBounds)
+
+  await page.getByRole('button', { name: 'Notifications', exact: true }).click()
+  await expect(invitation(page)).toBeVisible()
+  const checkbox = page.getByRole('checkbox', { name: /review reminders/i })
+  const notificationBounds = await invitation(page).boundingBox()
+  await checkbox.check()
+  await expect(checkbox).toBeChecked()
+  expect(await invitation(page).boundingBox()).toEqual(notificationBounds)
+  const notificationResponse = page.waitForResponse(response => new URL(response.url()).pathname.endsWith('/auth/notification-settings') && response.request().method() === 'PATCH')
+  await page.getByRole('button', { name: 'Save notification settings', exact: true }).click()
+  expect((await notificationResponse).ok()).toBe(true)
+  await expect(page.getByRole('button', { name: 'Save notification settings', exact: true })).toBeDisabled()
+  await expect(checkbox).toBeChecked()
 })

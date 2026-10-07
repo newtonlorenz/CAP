@@ -57,18 +57,12 @@ export default function useProductTour({ userId, ready, routeKey, prepare }: {
   }, [userId, ready, routeKey])
 
   useEffect(() => {
-    const check = () => {
-      const focus = document.activeElement
-      setInvitationSafe(!document.querySelector('[role="dialog"], [aria-modal="true"]') &&
-        !(focus instanceof HTMLElement && focus.matches('input, textarea, select, [contenteditable="true"]')))
-    }
-    check()
-    const observer = new MutationObserver(check)
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['role', 'aria-modal'] })
-    document.addEventListener('focusin', check)
-    document.addEventListener('focusout', check)
-    return () => { observer.disconnect(); document.removeEventListener('focusin', check); document.removeEventListener('focusout', check) }
-  }, [])
+    const focus = document.activeElement
+    // Snapshot eligibility at a route/session boundary. Toggling the banner
+    // during pointer focus moves controls between mousedown and mouseup.
+    setInvitationSafe(ready && !document.querySelector('[role="dialog"], [aria-modal="true"]') &&
+      !(focus instanceof HTMLElement && focus.matches('input, textarea, select, [contenteditable="true"]')))
+  }, [ready, userId, routeKey])
 
   const save = useCallback((value: ProductTourRecord) => {
     if (!userId) return

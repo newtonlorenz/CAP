@@ -2,6 +2,10 @@
 
 The authenticated workspace offers an optional four-step Driver.js tour.
 The invitation does not move focus or change the current page.
+Its visibility is decided at each route or session boundary.
+Once shown, it stays in place while fields gain focus, keeping clicks stable.
+An editor or dialog already active at that boundary defers the invitation until
+a new boundary; the Help replay entry remains available.
 Select **Start product tour** to begin.
 Select **Not now** to dismiss the invitation.
 On desktop, use **Resources → Help → Product tour** to replay it.

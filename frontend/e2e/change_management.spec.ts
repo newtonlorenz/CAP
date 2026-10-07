@@ -36,26 +36,20 @@ test.describe('Change Management', () => {
     const registerSelect = page.getByLabel('Component Register', { exact: true })
     await expect(registerSelect).toBeVisible()
 
-    const registerOptionValues = await registerSelect
-      .locator('option')
-      .evaluateAll((options) => options.map((opt) => ({ value: opt.getAttribute('value') ?? '', text: opt.textContent ?? '' })))
-
-    const existingRegister = registerOptionValues.find((opt) => opt.value)
-    if (!existingRegister) {
-      const registerName = `E2E Register ${Date.now()}`
-      await page.getByRole('button', { name: /create register/i }).click()
-      await page.getByPlaceholder('Register name').fill(registerName)
-      await page.getByRole('button', { name: /save register/i }).click()
-      await expect(registerSelect.locator('option')).toHaveCount(2)
-    }
-
-    const updatedRegisterOptions = await registerSelect
-      .locator('option')
-      .evaluateAll((options) => options.map((opt) => opt.getAttribute('value') ?? ''))
-    const selectedRegister = updatedRegisterOptions.find((value) => value)
-    if (selectedRegister) {
-      await registerSelect.selectOption(selectedRegister)
-    }
+    // Create and select this workflow's own register, independent of prior fixtures.
+    const registerName = `E2E Register ${Date.now()}`
+    await page.getByRole('button', { name: /create register/i }).click()
+    await page.getByPlaceholder('Register name').fill(registerName)
+    const savedRegister = page.waitForResponse(response =>
+      response.url().endsWith('/change-management/registers') && response.request().method() === 'POST')
+    await page.getByRole('button', { name: /save register/i }).click()
+    const registerResponse = await savedRegister
+    expect(registerResponse.ok(), await registerResponse.text()).toBeTruthy()
+    const register = await registerResponse.json()
+    expect(register.name).toBe(registerName)
+    await expect(registerSelect.locator(`option[value="${register.id}"]`)).toContainText(registerName)
+    await registerSelect.selectOption(register.id)
+    await expect(registerSelect).toHaveValue(register.id)
 
     await page.getByRole('button',{name:'Components',exact:true}).click()
     await page.locator('summary', { hasText: /^Add Component$/ }).click()

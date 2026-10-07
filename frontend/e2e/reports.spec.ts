@@ -39,10 +39,15 @@ test.describe('Reports', () => {
     await page.getByRole('button', { name: 'Audit trail', exact: true }).click()
     await page.getByLabel('Audit from date').fill('2024-01-01')
     await page.getByLabel('Audit to date').fill('2024-12-31')
-    const [response] = await Promise.all([
-      page.waitForResponse(resp => resp.url().includes('/api/v1/reports/audit-trail') && resp.status() === 200),
+    const [response, download] = await Promise.all([
+      page.waitForResponse(resp => resp.url().includes('/api/v1/reports/audit-trail') && resp.request().method() === 'GET'),
+      page.waitForEvent('download'),
       page.getByRole('button', { name: 'Download', exact: true }).click(),
     ])
-    expect(response.ok()).toBe(true)
+    expect(response.ok(), await response.text()).toBeTruthy()
+    const requestUrl = new URL(response.url())
+    expect(requestUrl.searchParams.get('from_date')).toBe('2024-01-01')
+    expect(requestUrl.searchParams.get('to_date')).toBe('2024-12-31')
+    expect(download.suggestedFilename()).toBe('audit-trail.csv')
   })
 })

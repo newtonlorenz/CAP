@@ -3,6 +3,9 @@ import { loginAsAdmin } from './testCredentials'
 
 test('assessment controls remain readable and usable across themes and mobile', async ({ page }, info) => {
   await loginAsAdmin(page)
+  // This checks the working layout after the optional introduction is dismissed.
+  // First-use invitation and its mobile layout have separate product-tour coverage.
+  await page.getByRole('region', { name: 'Product tour invitation' }).getByRole('button', { name: 'Not now', exact: true }).click()
   const token = (await page.context().cookies()).find(cookie => cookie.name === 'access_token')!.value
   const headers = { Authorization: `Bearer ${token}` }
   const jurisdictions = await (await page.request.get('/api/v1/jurisdictions?limit=1000', { headers })).json()
@@ -62,7 +65,9 @@ test('resource collections preserve drafts through the Resources navigation', as
   await page.keyboard.press('Escape')
   await page.getByRole('button',{name:'Add evidence',exact:true}).click()
   await page.getByLabel('Title',{exact:true}).fill('Draft evidence note')
-  await page.getByRole('button',{name:/Back to evidence/}).click()
+  await expect(page.getByLabel('Title',{exact:true})).toHaveValue('Draft evidence note')
+  await page.getByRole('button',{name:'Back to evidence · Draft kept',exact:true}).click()
+  await expect(page.getByLabel('Title',{exact:true})).toBeHidden()
   await page.getByRole('button',{name:'Resume evidence draft',exact:true}).click()
   await expect(page.getByLabel('Title',{exact:true})).toHaveValue('Draft evidence note')
   await page.getByRole('button',{name:'Resources',exact:true}).click()
@@ -71,7 +76,9 @@ test('resource collections preserve drafts through the Resources navigation', as
   await page.getByRole('button',{name:'Leave with unsaved changes',exact:true}).click()
   await page.getByRole('button',{name:'New blank form',exact:true}).click()
   await page.getByLabel('Blank form name',{exact:true}).fill('Draft template')
-  await page.getByRole('button',{name:/Back to templates/}).click()
+  await expect(page.getByLabel('Blank form name',{exact:true})).toHaveValue('Draft template')
+  await page.getByRole('button',{name:'Back to templates · Draft kept',exact:true}).click()
+  await expect(page.getByLabel('Blank form name',{exact:true})).toBeHidden()
   await page.getByRole('button',{name:'Resume draft',exact:true}).click()
   await expect(page.getByLabel('Blank form name',{exact:true})).toHaveValue('Draft template')
   await expect(page.getByRole('button',{name:'Resources',exact:true})).toHaveAttribute('aria-expanded','false')

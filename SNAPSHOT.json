@@ -19,7 +19,7 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "sha256": "6ed58535a8638798bec9e7658b3698ef8df2c3b2484aac52589abf6f6fe31319"
+      "sha256": "9a64f24b01c0b4b96c020a8a10df27b2c261f6234fab41559bb2de802adeba56"
     },
     {
       "path": ".github/workflows/release.yml",
@@ -1387,7 +1387,7 @@
     },
     {
       "path": "docs/public/product-tour.md",
-      "sha256": "44bbe4828f4fd3d926b6560c8e2d2a6bb2c2c3586a7a3ded17b8d4bdda2544ed"
+      "sha256": "2ba64cb8083e9a098377499ff09255f0a83e20c3deac27fd3fedc11e0b2773b8"
     },
     {
       "path": "docs/public/releases.md",
@@ -2079,11 +2079,11 @@
     },
     {
       "path": "frontend/e2e/change_management.spec.ts",
-      "sha256": "d512e29f12d34c2a8ab9c4a75be36fa60576dc703e366b790439727fb6b807e7"
+      "sha256": "efd0f616009e59992d2674f28aeb3fe1cc4ef01f972d35c98720a2f9968e4f76"
     },
     {
       "path": "frontend/e2e/connected_workflows.spec.ts",
-      "sha256": "d84b7a58700c1a689d45e2aada081ef1dfd18295e787a73bb47b6fcb8976213b"
+      "sha256": "1c9d3b1298f57568ac7cdc65afc2b6a824058e5d99689946d76d01c5c22e06ba"
     },
     {
       "path": "frontend/e2e/danish_change_workflow.spec.ts",
@@ -2111,31 +2111,31 @@
     },
     {
       "path": "frontend/e2e/outline_levels.spec.ts",
-      "sha256": "9806cd67cd8ce44e05caa8ec1eb3d6ac7a5537f563864db44944685a11e6e1c3"
+      "sha256": "1974d695a844992410adda8c77d7cf2a4a53bab139569dd88117ae26a4d89aa5"
     },
     {
       "path": "frontend/e2e/pack_permissions.spec.ts",
-      "sha256": "00107445a7dbbd3b6b8d5570b7170fdb6d5fb8db34f86707350dafd8064f3c26"
+      "sha256": "5ee02fed71c598b97412139a92163631d9eba450e819fe27c77e075d200989e9"
     },
     {
       "path": "frontend/e2e/pack_redesign.spec.ts",
-      "sha256": "82c7fb51ced258bee7633e94e93673ee11e7c1e2c64e6ccbe8b6ca868ddc101b"
+      "sha256": "9176d09138aa11c28e8db15886e4cf477ad6993147723aaf385245386949bab4"
     },
     {
       "path": "frontend/e2e/product_tour.spec.ts",
-      "sha256": "927fba9563b180af1d7af3df736d21c9ef9da5aefc26dcd8be856f6e47e422c8"
+      "sha256": "e9a6a31f9fda079d038122d5e1324e457b3c6fd9957398449402dd789a02fbe3"
     },
     {
       "path": "frontend/e2e/redesign_journeys.spec.ts",
-      "sha256": "2e73eccb574a5abbf507a5d595eaab4c366706acd9fdc480f635ef06f0b8b7fd"
+      "sha256": "7c77a1bef83df02ffa89550662a41a371ac35ef02ca51da627ae7397d7885a6b"
     },
     {
       "path": "frontend/e2e/reports.spec.ts",
-      "sha256": "38d691586abe04370001bf578e13a35a7fa375b489c6dfa8d98edf22d5084283"
+      "sha256": "a9da6ed3b90897d7e8b1154a9e1677bd3f11e9f4e4e05d162e3f44c892369205"
     },
     {
       "path": "frontend/e2e/requirement_sets.spec.ts",
-      "sha256": "22065590e0153bc83d6ebf89850c032efa7aab4afd84c634a63c4943c2a06679"
+      "sha256": "a029ef3b048992d3f5cb8f733c6736995535b033a85660f034f825125d12bc27"
     },
     {
       "path": "frontend/e2e/requirements.spec.ts",
@@ -2143,7 +2143,7 @@
     },
     {
       "path": "frontend/e2e/responsive.spec.ts",
-      "sha256": "a54b3b4eccb2e0624c58c777940728a3e9f32609a123c5fc3d8e95443b0f19bc"
+      "sha256": "932ce88960f79a23f343b4ffba8998dc699523aa12dd3459e1c9d83564253cad"
     },
     {
       "path": "frontend/e2e/testCredentials.ts",
@@ -2151,7 +2151,7 @@
     },
     {
       "path": "frontend/e2e/ui_readability.spec.ts",
-      "sha256": "1b31c8e3490283e4bc96edd5af6a5e713939a9b724ef7857458f565c01c368f9"
+      "sha256": "16c34d64f4739102804fbdaf021b76e5652660aafaf7ba1e5e378a36a0719da9"
     },
     {
       "path": "frontend/eslint.config.js",
@@ -2535,7 +2535,7 @@
     },
     {
       "path": "frontend/src/components/useProductTour.ts",
-      "sha256": "2e3bc785bb5c865dac7813066168ee260cbd157d0aeb31c96fc4f1c81a2b9f22"
+      "sha256": "04def6dabca2bebfcce88bf5b92b1ee8875c58e2b26e129fb913f1f286209b78"
     },
     {
       "path": "frontend/src/components/workflows/CertificationEngagement.tsx",
@@ -2979,7 +2979,7 @@
     },
     {
       "path": "frontend/src/test/product_tour.test.tsx",
-      "sha256": "9989f3c1c9800b3c36dc637586e7223acb678e6b8e1da30fa2b53ef88a979a35"
+      "sha256": "99c5b1180e0c5cc80a65ad176eb76fce53f02115c80e4ec1a776d252e777223d"
     },
     {
       "path": "frontend/src/test/program_workspace_page.test.tsx",

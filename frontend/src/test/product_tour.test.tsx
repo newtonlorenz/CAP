@@ -76,6 +76,28 @@ describe('product tour persistence and lifecycle', () => {
     expect(mocked.config).toBeNull()
   })
 
+  it('keeps an eligible invitation mounted while focus moves between form controls', () => {
+    render(<><Harness /><input aria-label="Draft answer" /><button>Save answer</button></>)
+    const invitation = screen.getByText('Invitation')
+    act(() => screen.getByLabelText('Draft answer').focus())
+    expect(invitation).toBeInTheDocument()
+    act(() => screen.getByText('Save answer').focus())
+    expect(screen.getByText('Invitation')).toBe(invitation)
+  })
+
+  it('defers an initially focused editor until a new route boundary', () => {
+    const focusedEditor = document.createElement('input')
+    document.body.append(focusedEditor)
+    focusedEditor.focus()
+    const view = render(<Harness />)
+    expect(screen.queryByText('Invitation')).not.toBeInTheDocument()
+    act(() => focusedEditor.blur())
+    expect(screen.queryByText('Invitation')).not.toBeInTheDocument()
+    view.rerender(<Harness routeKey="/reports" />)
+    expect(screen.getByText('Invitation')).toBeInTheDocument()
+    focusedEditor.remove()
+  })
+
   it('requires explicit resume, interrupts on navigation, and replays from the start', async () => {
     writeProductTour('one', { status: 'interrupted', step: 2 })
     const view = render(<Harness />)

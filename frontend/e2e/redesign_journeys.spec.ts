@@ -34,7 +34,7 @@ async function fixture(page: Page) {
   return { pack, form, contributor, jurisdiction, url: `/licence-applications?application=${pack.id}&case=${form.id}&field=ownership` }
 }
 async function contributorPage(browser: Browser, email: string, jurisdictionId: string) {
-  const context = await browser.newContext({ baseURL: 'http://127.0.0.1:15173', viewport: { width: 1586, height: 992 } })
+  const context = await browser.newContext({ baseURL: String(test.info().project.use.baseURL), viewport: { width: 1586, height: 992 } })
   const page = await context.newPage()
   await page.goto('/login'); await page.locator('input[type=email]').fill(email); await page.locator('input[type=password]').fill(e2eAdminPassword!); await page.locator('button[type=submit]').click(); await page.waitForURL('/')
   await page.getByLabel('Jurisdiction selector').selectOption(jurisdictionId); await csrf(page)
@@ -151,7 +151,9 @@ test('mobile focused navigation, drawer and concurrent-edit comparison retain dr
   await page.getByRole('button', { name: 'Review and combine changes', exact: true }).click()
   await local.fill('Combined ownership answer reviewed against the newer answer.')
   await expect.poll(async () => answer(await readForm(page, f.form.id)).value).toBe('A newer answer from another editor.')
+  const combinedSave = page.waitForResponse(response => response.request().method() === 'PUT' && new URL(response.url()).pathname === `/api/v1/preparation/cases/${f.form.id}/responses/ownership`)
   await page.getByRole('button', { name: 'Save combined answer', exact: true }).click()
+  expect(answer(await json(await combinedSave)).value).toBe('Combined ownership answer reviewed against the newer answer.')
   await expect.poll(async () => answer(await readForm(page, f.form.id)).value).toBe('Combined ownership answer reviewed against the newer answer.')
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
 })

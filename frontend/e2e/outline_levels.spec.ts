@@ -154,6 +154,8 @@ for (const theme of ['light', 'dark']) {
       // Library search must keep the original depth after the API hierarchy is loaded.
       await page.goto(`/requirements/sets/${document.id}`)
       const library = page.getByRole('region', { name: 'Requirement library', exact: true })
+      // Wait for the requested version's rows before editing its search control.
+      await expect(library.locator(`a[href="/requirements/${requirements['CTRL-ROOT'].id}"]:visible`)).toBeVisible()
       await expect(library.getByRole('combobox', { name: 'Show levels', exact: true })).toHaveValue('2')
       await page.getByRole('textbox', { name: 'Requirements search', exact: true }).fill('needle deep control')
       await expect(library.locator(`a[href="/requirements/${requirements['CTRL-DEEP'].id}"]:visible`)).toHaveCount(0)

@@ -243,7 +243,9 @@ test.describe('Responsive Layout', () => {
     await comment.fill('')
 
     await page.getByRole('button', { name: 'Filters and view options', exact: true }).click()
+    await expect(page.locator('#assessment-tools')).toBeVisible()
     await page.getByRole('button', { name: 'Focus on one requirement', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Focus on one requirement', exact: true })).toHaveAttribute('aria-pressed', 'true')
     await expect(page.locator('[id^="review-item-"]')).toHaveCount(1)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Assessment overview', exact: true })).toBeVisible()

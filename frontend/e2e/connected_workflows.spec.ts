@@ -95,7 +95,12 @@ test('change reassessment and periodic work remain inside the certification cont
   await page.getByText('Add maintenance plan', { exact: true }).click()
   await page.getByLabel('Plan name', { exact: true }).fill('Synthetic periodic assessment')
   await page.getByLabel('First due date', { exact: true }).fill(new Date(Date.now() - 86400000 * 2).toISOString().slice(0, 10))
+  const savedPlan = page.waitForResponse(response =>
+    response.url().endsWith('/maintenance-plans') && response.request().method() === 'POST')
   await page.getByRole('button', { name: 'Add plan', exact: true }).click()
+  const plan = await data(await savedPlan)
+  expect(plan.name).toBe('Synthetic periodic assessment')
+  expect(plan.certification_project_id).toBe(project.id)
   await expect(page.getByText('Synthetic periodic assessment', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Run due plans', exact: true }).click()
   await expect(page.getByText('1 maintenance assessments created for due plans in this project.', { exact: true })).toBeVisible()

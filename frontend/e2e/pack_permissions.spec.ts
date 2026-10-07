@@ -17,7 +17,7 @@ async function csrf(page: Page) {
 }
 async function admin(page: Page) { await loginAsAdmin(page); await csrf(page) }
 async function rolePage(browser: Browser, email: string): Promise<{ context: BrowserContext; page: Page }> {
-  const context = await browser.newContext({ baseURL: 'http://127.0.0.1:15173' })
+  const context = await browser.newContext({ baseURL: String(test.info().project.use.baseURL) })
   const page = await context.newPage()
   await page.goto('/login')
   await page.locator('input[type="email"]').fill(email)
