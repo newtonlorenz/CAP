@@ -121,7 +121,7 @@ export default function CasePortfolio({
     users.find((item) => item.id === id)?.full_name ||
     (id ? 'Assigned owner' : 'Unassigned')
   return (
-    <div className="space-y-6">
+    <div data-tour="forms-list" className="space-y-6">
       <Card className="p-5 sm:p-7">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>

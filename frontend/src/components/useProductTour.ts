@@ -1,38 +1,52 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Driver, DriveStep } from 'driver.js'
-import { readProductTour, writeProductTour, type ProductTourRecord } from './productTourState'
+import { PRODUCT_OVERVIEW_TOUR, type ProductTourDefinition } from './productTourCatalog'
+import { productTourKey, readProductTour, writeProductTour, type ProductTourRecord } from './productTourState'
 
-const steps = [
-  { target: 'requirements', title: 'Find a requirement', path: 'Resources → Requirements', description: 'Browse the source requirements before you start an assessment. Open a requirement to read its details.' },
-  { target: 'assessment', title: 'Understand assessment work', path: 'Resources → Assessment overview', description: 'Open an assessment to review each requirement, record findings, and track decisions with your team.' },
-  { target: 'evidence', title: 'Locate supporting evidence', path: 'Resources → Evidence', description: 'Browse reusable evidence in the library. In an assessment, attach the evidence that supports each finding.' },
-  { target: 'reports', title: 'Check progress and reports', path: 'Workspace → Reports', description: 'Review assessment progress and reports. Use Help → Product tour to repeat this tour at any time.' },
-]
+// Driver renders popover strings as HTML. Catalog text stays literal.
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!)
+}
 
-function tourSteps(mobile: boolean): DriveStep[] {
-  return steps.map(step => ({
-    // A missing or hidden target uses Driver's floating popover. No record is required.
-    element: mobile ? undefined : () => {
-      const target = document.querySelector<HTMLElement>(`[data-testid="primary-nav"] [data-tour="${step.target}"]`)
-      if (target?.getClientRects().length && getComputedStyle(target).visibility !== 'hidden' && !target.closest('[inert]')) return target
-      // Driver accepts an unresolved element at runtime and creates its floating target.
-      return document.getElementById('driver-dummy-element')!
+const mobilePaths: Record<string, string> = {
+  overview: 'Overview', licences: 'Licence Applications', certifications: 'Certifications', changes: 'Change Management',
+  requirements: 'Resources → Requirements', assessment: 'Resources → Assessment overview',
+  evidence: 'Resources → Evidence', reports: 'Workspace → Reports',
+}
+
+function stepDescription(step: ProductTourDefinition['steps'][number], mobile: boolean) {
+  const path = mobile && step.target?.includes('primary-nav')
+    ? mobilePaths[step.target.match(/data-tour="([^"\n]+)"/)?.[1] || ''] : undefined
+  return escapeHtml(step.description) + (path ? `<p class="cap-tour-path">${escapeHtml(`Navigation → ${path}`)}</p>` : '')
+}
+
+function tourSteps(tour: ProductTourDefinition, mobile: boolean): DriveStep[] {
+  return tour.steps.map(step => ({
+    element: !step.target || (mobile && step.target.includes('primary-nav')) ? undefined : () => {
+      const targets = document.querySelectorAll<HTMLElement>(step.target!)
+      const target = Array.from(targets).find(element => element.getClientRects().length &&
+        getComputedStyle(element).visibility !== 'hidden' && !element.closest('[inert], [hidden]'))
+      // Driver uses a floating popover for an unresolved target.
+      return target || document.getElementById('driver-dummy-element')!
     },
     popover: {
-      title: step.title,
-      description: `${step.description}<p class="cap-tour-path">${mobile ? 'Open Navigation → ' : step.target === 'reports' ? 'Resources → ' : ''}${step.path}</p>`,
+      title: escapeHtml(step.title),
+      description: stepDescription(step, mobile),
       side: 'bottom', align: 'start',
     },
   }))
 }
 
-export default function useProductTour({ userId, ready, routeKey, prepare }: {
+export default function useProductTour({ userId, ready, routeKey, prepare, tour = PRODUCT_OVERVIEW_TOUR }: {
   userId: string | undefined
+  tour?: ProductTourDefinition
   ready: boolean
   routeKey: string
   prepare: () => void
 }) {
-  const [record, setRecord] = useState<ProductTourRecord | null>(null)
+  const [stored, setStored] = useState<{ key: string; value: ProductTourRecord | null } | null>(null)
+  const key = productTourKey(userId || '', tour.id)
+  const record = stored?.key === key ? stored.value : null
   const [isRunning, setIsRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [invitationSafe, setInvitationSafe] = useState(false)
@@ -41,20 +55,20 @@ export default function useProductTour({ userId, ready, routeKey, prepare }: {
   const prepareRef = useRef(prepare)
   prepareRef.current = prepare
   const stopRef = useRef<(() => void) | null>(null)
-  const recordRef = useRef<{ userId: string; value: ProductTourRecord | null } | null>(null)
+  const sessionRecords = useRef(new Map<string, ProductTourRecord | null>())
 
   useEffect(() => {
-    if (userId && recordRef.current?.userId !== userId) {
-      recordRef.current = { userId, value: readProductTour(userId) }
-      setRecord(recordRef.current.value)
-    }
+    if (userId) {
+      if (!sessionRecords.current.has(key)) sessionRecords.current.set(key, readProductTour(userId, tour))
+      setStored({ key, value: sessionRecords.current.get(key) || null })
+    } else setStored(null)
     setError(null)
     return () => {
       generation.current += 1
       stopRef.current?.()
       stopRef.current = null
     }
-  }, [userId, ready, routeKey])
+  }, [userId, ready, routeKey, key, tour])
 
   useEffect(() => {
     const focus = document.activeElement
@@ -66,23 +80,36 @@ export default function useProductTour({ userId, ready, routeKey, prepare }: {
 
   const save = useCallback((value: ProductTourRecord) => {
     if (!userId) return
-    recordRef.current = { userId, value }
-    writeProductTour(userId, value)
-    setRecord(value)
-  }, [userId])
+    sessionRecords.current.set(key, value)
+    writeProductTour(userId, value, tour.id)
+    setStored({ key, value })
+  }, [userId, key, tour.id])
 
   const start = useCallback(async (resume = false) => {
-    if (!ready || !userId || isRunning) return
+    if (!ready || !userId || isRunning || stopRef.current || document.querySelector('[role="dialog"]:not([aria-label="Navigation"]), [aria-modal="true"]:not([aria-label="Navigation"])')) return
     const launch = ++generation.current
     const mobile = window.innerWidth < 1280
     const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    let currentStep = resume ? recordRef.current?.value?.step || 0 : 0
+    let currentStep = resume ? sessionRecords.current.get(key)?.step || 0 : 0
     let ending: ProductTourRecord['status'] = 'dismissed'
     let finished = false
+    let transitioning = false
+    let queuedDirection: -1 | 0 | 1 = 0
+    let controls: { nextButton: HTMLButtonElement; previousButton: HTMLButtonElement } | null = null
+    const updateControls = () => {
+      if (!controls) return
+      controls.nextButton.disabled = transitioning
+      controls.previousButton.disabled = transitioning || currentStep === 0
+      controls.nextButton.classList.toggle('driver-popover-btn-disabled', transitioning)
+      controls.previousButton.classList.toggle('driver-popover-btn-disabled', transitioning || currentStep === 0)
+    }
     let viewportWidth = window.innerWidth
+    let viewportHeight = window.innerHeight
     const finish = () => {
       if (finished) return
       finished = true
+      queuedDirection = 0
+      controls = null
       window.removeEventListener('resize', onResize)
       document.removeEventListener('keydown', onKey, true)
       driverRef.current = null
@@ -105,13 +132,22 @@ export default function useProductTour({ userId, ready, routeKey, prepare }: {
     }
     const onResize = () => {
       // Driver's positioning becomes stale while its target changes visibility or size.
-      if (window.innerWidth !== viewportWidth) { viewportWidth = window.innerWidth; interrupt() }
+      if (window.innerWidth !== viewportWidth || window.innerHeight !== viewportHeight) {
+        viewportWidth = window.innerWidth; viewportHeight = window.innerHeight; interrupt()
+      }
     }
     const next = () => {
       const active = driverRef.current
-      if (!active) return
+      if (!active || finished) return
+      if (transitioning) { queuedDirection = 1; return }
       if (active.hasNextStep()) active.moveNext()
       else { ending = 'completed'; active.destroy(); finish() }
+    }
+    const previous = () => {
+      const active = driverRef.current
+      if (!active || finished) return
+      if (transitioning) { queuedDirection = -1; return }
+      if ((active.getActiveIndex() || 0) > 0) active.movePrevious()
     }
     const close = () => {
       currentStep = driverRef.current?.getActiveIndex() ?? currentStep
@@ -127,12 +163,12 @@ export default function useProductTour({ userId, ready, routeKey, prepare }: {
         event.stopImmediatePropagation()
         if (event.key === 'Escape') close()
         else if (event.key === 'ArrowRight') next()
-        else if (event.key === 'ArrowLeft') { if ((active.getActiveIndex() || 0) > 0) active.movePrevious() }
+        else if (event.key === 'ArrowLeft') previous()
         else {
           // Driver includes the highlighted link in its default Tab order.
           // Keep keyboard focus on the tour controls to protect the current task.
           const controls = Array.from(document.querySelectorAll<HTMLButtonElement>('.cap-product-tour button:not([disabled])'))
-            .filter(button => button.style.display !== 'none')
+            .filter(button => getComputedStyle(button).display !== 'none' && getComputedStyle(button).visibility !== 'hidden')
           const index = controls.indexOf(document.activeElement as HTMLButtonElement)
           const target = event.shiftKey ? (index <= 0 ? controls.length - 1 : index - 1) : (index + 1) % controls.length
           controls[target]?.focus()
@@ -152,31 +188,45 @@ export default function useProductTour({ userId, ready, routeKey, prepare }: {
       // React commits the temporary navigation expansion before selectors are resolved.
       await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
       if (launch !== generation.current || finished) return
-      const tour = driver({
-        steps: tourSteps(mobile), animate: !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
+      const activeTour = driver({
+        steps: tourSteps(tour, mobile), animate: !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
         smoothScroll: false, allowClose: true, overlayClickBehavior: close,
         disableActiveInteraction: true, allowKeyboardControl: false,
         popoverClass: 'cap-product-tour', showProgress: true,
         progressText: 'Step {{current}} of {{total}}', showButtons: ['previous', 'next', 'close'],
         nextBtnText: 'Next', prevBtnText: 'Back', doneBtnText: 'Finish',
         onPopoverRender: popover => {
+          controls = popover
+          updateControls()
           popover.closeButton.setAttribute('aria-label', 'Close product tour')
           popover.wrapper.setAttribute('aria-modal', 'true')
           popover.progress.setAttribute('aria-live', 'polite')
         },
         onHighlightStarted: (element, _step, { driver: active }) => {
+          transitioning = true
           // Driver checks the window bounds, but a resource link can still be
           // clipped by a scrollable navigation container.
           element?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' })
           currentStep = active.getActiveIndex() || 0
+          updateControls()
           save({ status: 'interrupted', step: currentStep })
         },
+        onHighlighted: () => {
+          transitioning = false
+          updateControls()
+          const direction = queuedDirection
+          queuedDirection = 0
+          // Driver commits its previous target after this hook returns, even
+          // without animation. Flush one requested move after that commit.
+          if (direction) queueMicrotask(() => { if (!finished) { if (direction > 0) next(); else previous() } })
+        },
         onNextClick: next,
+        onPrevClick: previous,
         onCloseClick: close,
         onDestroyed: finish,
       })
-      driverRef.current = tour
-      tour.drive(currentStep)
+      driverRef.current = activeTour
+      activeTour.drive(currentStep)
     } catch {
       if (launch !== generation.current || finished) return
       ending = 'interrupted'
@@ -184,7 +234,7 @@ export default function useProductTour({ userId, ready, routeKey, prepare }: {
       finish()
       setError('The product tour could not start. Try again from Help → Product tour.')
     }
-  }, [ready, userId, isRunning, save])
+  }, [ready, userId, isRunning, save, key, tour])
 
   return {
     isRunning, error, record,

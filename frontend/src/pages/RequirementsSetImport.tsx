@@ -1033,7 +1033,7 @@ export default function RequirementsSetImport() {
   const structuredEngineUnavailable = isLocalStructuredExtraction && !pdfStructure?.available
 
   return (
-    <div className="workflow-page requirement-import-page min-w-0">
+    <div data-tour="requirement-import" className="workflow-page requirement-import-page min-w-0">
       <div className="mb-6">
         <button
           onClick={() => navigate('/requirements')}

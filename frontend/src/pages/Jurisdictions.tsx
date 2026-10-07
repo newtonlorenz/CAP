@@ -178,7 +178,7 @@ export default function Jurisdictions() {
   }
 
   return (
-    <div className="workflow-page jurisdictions-page min-w-0 space-y-4">
+    <div data-tour="jurisdictions-page" className="workflow-page jurisdictions-page min-w-0 space-y-4">
       <header className="py-1">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">

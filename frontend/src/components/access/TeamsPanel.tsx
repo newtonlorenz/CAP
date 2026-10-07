@@ -32,7 +32,7 @@ export default function TeamsPanel({ users, usersLoading = false, usersError = f
     setParams(current => { const next = new URLSearchParams(current); next.delete('team'); return next }, { replace: true })
   }
   const visible = teams.data?.filter(item => item.name.toLowerCase().includes(search.trim().toLowerCase())) || []
-  return <section className="space-y-5" aria-label="Access teams">
+  return <section data-tour="teams-list" className="space-y-5" aria-label="Access teams">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold">Your teams</h2><p className="mt-1 text-sm text-muted">Manage membership for the teams you own.</p></div><Button variant="primary" disabled={!available || teams.isLoading || teams.isError} onClick={() => choose('new')}>New team</Button></div>
     <p className="max-w-prose text-sm text-muted">Adding a member shares every resource granted to that team. Only its owner can change membership; account administrators cannot add themselves to another owner's team.</p>
     {users.length >= 1000 && <p className="text-sm text-warning">Showing the first 1,000 active people. Search applies to this list; existing team members outside it remain included.</p>}

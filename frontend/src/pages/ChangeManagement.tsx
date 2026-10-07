@@ -1005,7 +1005,7 @@ export default function ChangeManagement() {
   if (registersQuery.isError) return <div className="space-y-4"><h1 className="text-2xl font-semibold text-ink">Change Management</h1><LoadError subject="Component registers" onRetry={() => registersQuery.refetch()} /></div>
 
   return (
-    <div className="workflow-page change-page min-w-0 space-y-4">
+    <div data-tour="changes-page" className="workflow-page change-page min-w-0 space-y-4">
       <div>
         <h1 className="text-2xl font-semibold text-ink">Change Management</h1>
         <p className="mt-1 text-sm text-muted">
@@ -1495,7 +1495,7 @@ export default function ChangeManagement() {
             )}
 
             {selectedChange && (
-              <Card className="change-detail-surface space-y-4 p-6">
+              <Card data-tour="change-detail" className="change-detail-surface space-y-4 p-6">
                 <div ref={detailsRef} tabIndex={-1} className="scroll-mt-6 outline-none focus-visible:ring-2 focus-visible:ring-accent">
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 className="change-detail-title">{selectedChange.title}</h2>

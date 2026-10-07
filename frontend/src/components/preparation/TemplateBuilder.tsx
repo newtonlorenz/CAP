@@ -249,8 +249,8 @@ export default function TemplateBuilder({
   }
 
   return (
-    <div className="space-y-6">
-      {!embedded && <Card hidden={editorOpen && canManage} className="p-5">
+    <div data-tour="templates-library" className="space-y-6">
+      {!embedded && <Card data-tour="templates-collection" hidden={editorOpen && canManage} className="p-5">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">Templates</h2>
           {canManage && (

@@ -10,11 +10,14 @@ export type ReleaseNote = {
 // See docs/public/change-notes.md for the release procedure.
 export const releaseNotes: ReleaseNote[] = [
   {
-    version: '2026.10.07.2',
+    version: '2026.10.07.3',
     date: '2026-10-07',
-    title: 'Private evidence and clearer feedback handoff',
-    summary: 'Keep requirement evidence within its assigned audience and turn product feedback into a focused implementation brief.',
+    title: 'Clearer introductions to each workspace',
+    summary: 'Short guided tours explain each section’s purpose, its core principles and how to get started.',
     features: [
+      { title: 'Licence application tours', description: 'Understand how a licence pack brings together forms and supporting evidence, how internal review works, and how to record actual submission and follow-up.' },
+      { title: 'Certification project tours', description: 'Understand project scope, requirement baselines, assessments, testing findings and reviewed submission packages, with a clear starting point for new work.' },
+      { title: 'Tours throughout CAP', description: 'Use Help → Product tour for a short introduction to the current section. Skip, resume or replay tours independently. Changing tabs within a section keeps its tour progress.' },
       { title: 'Requirement evidence access', description: 'Requirement evidence and validation history are visible to their creator, owner and reviewer. Content edits and approval decisions also require the appropriate role; account administrators cannot open unrelated evidence.' },
       { title: 'Feedback implementation brief', description: 'Copy or preview a brief from a product feedback report to investigate it in public CAP. Attached screenshots and private report details stay separate from public pull requests.' },
       { title: 'Account and notification guidance', description: 'The Guide explains profile changes, password changes, saved email preferences and how to check missing notifications.' },

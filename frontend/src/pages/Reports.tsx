@@ -128,7 +128,7 @@ export default function Reports() {
         )}
       </div>
 
-      <section aria-labelledby="report-choice-heading" className="report-intro mb-6 max-w-3xl">
+      <section data-tour="reports-choice" aria-labelledby="report-choice-heading" className="report-intro mb-6 max-w-3xl">
         <h2 id="report-choice-heading" className="text-lg font-semibold text-ink">Which report do I need?</h2>
         <p className="mt-2 text-sm text-muted">Use assessment reports to review compliance and evidence. Use change management reports for component records and verified changes.</p>
         <p className="mt-2 text-sm text-muted">Use Audit trail to investigate who changed a record and when.</p>

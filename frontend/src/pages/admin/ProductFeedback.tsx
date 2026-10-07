@@ -27,7 +27,7 @@ export default function ProductFeedback() {
     mutationFn: ({ id, value }: { id: string; value: ProductFeedbackStatus }) => api.patch(`${endpoint}/${id}`, { status: value }),
     onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['product-feedback'] }) },
   })
-  return <div className="workflow-page feedback-page mx-auto max-w-5xl space-y-5">
+  return <div data-tour="admin-feedback" className="workflow-page feedback-page mx-auto max-w-5xl space-y-5">
     <header><h1>Product feedback</h1><p className="mt-2 text-sm text-muted">Bugs and ideas reported by your organization.</p></header>
     {config.isLoading && <p role="status">Loading feedback…</p>}
     {config.isError && <p role="alert">Could not check feedback availability. <button className="underline" onClick={() => void config.refetch()}>Retry</button></p>}
