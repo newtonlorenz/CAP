@@ -25,7 +25,7 @@ def run_browser_checks(env, extra_args, *, root=ROOT):
         specs = [
             str(path.relative_to(root / "frontend"))
             for path in sorted((root / "frontend" / "e2e").glob("*.spec.ts"))
-            if path.name != "product_tour.spec.ts"
+            if "product_tour" not in path.name
         ]
         if not specs:
             raise RuntimeError("No browser workflow specifications were found.")

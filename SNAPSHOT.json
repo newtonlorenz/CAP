@@ -2163,7 +2163,7 @@
     },
     {
       "path": "frontend/e2e/ui_readability.spec.ts",
-      "sha256": "16c34d64f4739102804fbdaf021b76e5652660aafaf7ba1e5e378a36a0719da9"
+      "sha256": "3855d983f427fd2fa945904b390d17c83b07b1657085b2a04ed586fdd1fa5d27"
     },
     {
       "path": "frontend/eslint.config.js",
@@ -2191,7 +2191,7 @@
     },
     {
       "path": "frontend/playwright.config.ts",
-      "sha256": "c515a31713a1b18d993b05f5c4ca5bb364dc99c234666f5b6dc3e6ff06ddca53"
+      "sha256": "5bc2939f3dc5952e15034c0918b3378fce18383f9db03ac1e4547b16e1a3ef88"
     },
     {
       "path": "frontend/playwright.feedback.config.ts",
@@ -3327,7 +3327,7 @@
     },
     {
       "path": "scripts/run-e2e.py",
-      "sha256": "86942eb9d29ead0edcebfda2d6c877c38b2c2e7a4140aac1abf6d37c93713c46"
+      "sha256": "7c040ddb3fbf8ed0eda0fd3b57dae2a9c9b2ea17740fe50ea259c031842d22de"
     },
     {
       "path": "scripts/tests/test_release_images.py",
@@ -3335,7 +3335,7 @@
     },
     {
       "path": "scripts/tests/test_run_e2e.py",
-      "sha256": "cbd47034cd56dbe89f30418aba263e511fb34f1353c727fd8e5d1b2a3ca3cd00"
+      "sha256": "cf0cc9739e3681a14f5fbf540ee5dce5ea9257dcb86724e7454b292b886d6e56"
     },
     {
       "path": "scripts/update-feedback-widget.sh",

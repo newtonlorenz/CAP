@@ -29,7 +29,7 @@ class BrowserBatchTests(unittest.TestCase):
 
     def create_specs(self, count):
         paths = [f"workflow-{index:02}.spec.ts" for index in range(count)]
-        for name in [*paths, "product_tour.spec.ts"]:
+        for name in [*paths, "product_tour.spec.ts", "section_product_tours.spec.ts"]:
             (self.specs / name).touch()
         return [f"e2e/{name}" for name in paths]
 

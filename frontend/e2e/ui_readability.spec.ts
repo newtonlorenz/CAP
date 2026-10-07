@@ -19,6 +19,9 @@ test('assessment controls remain readable and usable across themes and mobile', 
     await page.evaluate(value => localStorage.setItem('cap:theme', value), theme)
     await page.goto(`/review-cycles/${cycle.id}`)
     await expect(page.getByLabel('Evidence for REQ-001', { exact: true })).toBeVisible()
+    // Section orientation has its own dismissal, independent of the home section.
+    const assessmentInvitation = page.getByRole('region', { name: 'Product tour invitation' })
+    if (await assessmentInvitation.isVisible()) await assessmentInvitation.getByRole('button', { name: 'Not now', exact: true }).click()
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
     const ratios = await page.evaluate(() => {
       const root = getComputedStyle(document.documentElement)
