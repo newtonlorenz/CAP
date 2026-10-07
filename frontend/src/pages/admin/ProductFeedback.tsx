@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../api/client'
 import type { PaginatedResponse, ProductFeedbackReport, ProductFeedbackStatus } from '../../types'
 import { formatDateTime } from '../../utils/dateFormat'
+import ProductFeedbackBrief from '../../components/ProductFeedbackBrief'
 
 const statuses = { new: 'New', in_progress: 'In progress', done: 'Done' }
 const kinds = { bug: 'Bug', feature: 'Feature request', other: 'Other' }
@@ -53,6 +54,7 @@ export default function ProductFeedback() {
           {report.has_screenshot && <button className="font-semibold text-accent underline" onClick={() => { setImageError(false); setPreview(preview === report.id ? null : report.id) }}>{preview === report.id ? 'Hide screenshot' : 'View screenshot'}</button>}
         </div>
         {report.pin && <details className="mt-3 text-xs text-muted"><summary>Element reference</summary><code className="mt-2 block break-all">{report.pin.selector}</code></details>}
+        <ProductFeedbackBrief report={report} />
         {preview === report.id && (imageError ? <p role="alert" className="mt-4 text-sm text-danger">Could not load screenshot. Close it and try again.</p> :
           <img data-feedback-private="" className="mt-4 max-h-[70vh] w-full rounded-lg border border-line object-contain" alt="Screenshot attached to this report"
             src={`${import.meta.env.BASE_URL}api/v1/product-feedback/${report.id}/screenshot`} onError={() => setImageError(true)} />)}

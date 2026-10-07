@@ -18,6 +18,8 @@ from app.models.program import (
     BaselineMigration,
     CertificationProject,
     CertificationProjectMilestone,
+    EvidenceItem,
+    EvidenceValidation,
     ExportManifest,
     MaintenancePlan,
     SubmissionPackage,
@@ -184,6 +186,8 @@ def audit_access_clause(user):
         return exists(select(ids.c.id).where(matches(ids.c.id)).correlate(AuditLog))
 
     models = {
+        "evidence_item": EvidenceItem,
+        "evidence_validation": EvidenceValidation,
         "application": Application,
         "preparation_case": PreparationCase,
         "preparation_evidence": PreparationEvidence,

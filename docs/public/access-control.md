@@ -2,8 +2,9 @@
 
 Account administration and content access are separate. Being a company administrator
 or installation operator does not grant permission to open confidential applications
-through CAP. Assignment as a business owner or reviewer does not grant access either.
-The resource's access owner and explicit grants control its audience.
+through CAP. For resources with an access policy, business owner and reviewer
+assignments do not grant access. The resource's access owner and explicit grants
+control its audience.
 
 ## Visibility
 
@@ -48,6 +49,23 @@ simply because they administer accounts. Highly confidential work does not use t
 Administrators can deactivate accounts, but cannot replace another confidential
 user's password or sign-in address to impersonate that user. Identity-verified
 credential recovery requires a separate controlled operational process.
+
+## Requirement evidence library
+
+Requirement evidence items (`/evidence-items`) use a separate participant policy.
+Only the creator, assigned owner and assigned reviewer can read an item or its
+validation history. Creators and owners with contributor, manager or admin roles
+can edit content and assignments. Participants with approver or admin roles can
+approve, reject, withdraw approval and record validations. Reviewer assignment
+alone does not permit content edits. An edit to approved content invalidates its
+previous approval. Account administrators have no access to unrelated evidence.
+
+This policy applies to existing and new items, including items without assignments.
+Evidence lists, filtered counts and audit entries omit inaccessible items entirely.
+There are no summary grants or team grants for this library. Assignment changes
+change its audience, so only authorized content editors can make them. CAP checks
+mutation authority after locking the evidence row. Evidence in preparation forms
+continues to use the resource access and inheritance policy described above.
 
 ## Protection boundary
 

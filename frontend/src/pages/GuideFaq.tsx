@@ -206,7 +206,7 @@ const moduleSections: ModuleSection[] = [
       { question: 'When should we create a new requirement assessment?', answer: 'Create one for a new submission milestone, a selected change impact or a periodic control check. Use the project or change context when applicable; standalone assessments remain available for other preparation and review work.' },
       { question: 'What happens if requirement sets are updated after an assessment is created?', answer: 'The assessment keeps its locked versions. Review new scope through a subsequent assessment or an explicit project baseline migration. Updating a source does not silently replace frozen completed results.' },
       { question: 'What do active, closed and archived mean?', answer: 'Active work is in progress. Closed assessments retain the completed result and its frozen history. Archived assessments are retained for reference but removed from the active queue. These statuses do not record an external certification or licence outcome.' },
-      { question: 'Will mentioning someone send them an email?', answer: 'Mention emails depend on the installation’s email configuration. Select a colleague who can access the work; a mention does not grant access. A sent email links to the relevant assessment comment.' },
+      { question: 'Will mentioning someone send them an email?', answer: 'Mention emails depend on the installation’s email configuration and the recipient’s notification settings. Select a colleague who can access the work; a mention does not grant access. A sent email links to the relevant assessment comment. Turning off email does not remove the comment or assignment.' },
     ],
   },
   {
@@ -241,6 +241,22 @@ const moduleSections: ModuleSection[] = [
       { question: 'Does an export approve work or submit it?', answer: 'No. A form export can include incomplete work with its readiness recorded. Approved pack exports use the frozen approved version. Exporting does not accept answers, approve a package, send an application or record an external outcome.' },
       { question: 'Why can’t I download or export a record?', answer: 'Your role and resource permissions must allow export, and required evidence must remain accessible and pass integrity checks. Read the displayed blocker or ask the access owner to check the grant; assignment and viewing rights alone are not export permission.' },
       { question: 'Can later edits change an old approved export?', answer: 'No. Approved packs and locked submission packages retain their versions and files. Export the appropriate historical version when you need to show what was approved or sent at that time.' },
+    ],
+  },
+  {
+    id: 'account', title: 'Your account and notifications',
+    summary: 'Use the profile menu for your name, password, email preferences, appearance and logout.',
+    keyActions: [
+      'Open Profile options using your name or initials, then choose Account settings. Save a full-name change explicitly; contact an administrator for a sign-in email or role change.',
+      'To change your password, enter the current password, a new password of at least eight characters, and its confirmation. Other sessions are signed out; the current browser remains signed in.',
+      'Choose Notification settings to enable or disable mention emails and manager-sent assessment reminders, then save. Preferences apply across devices.',
+      'Use Appearance for light, dark or system theme, and Logout when you finish. Appearance choices do not change other users’ settings.',
+    ],
+    links: [{ to: '/account?section=account', label: 'Account settings' }, { to: '/account?section=notifications', label: 'Notification settings' }],
+    faqItems: [
+      { question: 'Why did an email not arrive?', answer: 'Check that the relevant notification preference is enabled and saved, and that the installation is configured to send email. Muted emails do not cancel your assignments or remove comments. Ask the installation operator about email delivery if needed.' },
+      { question: 'Are notification settings the same as automatic scheduling?', answer: 'No. They control whether you receive supported review emails. Assessment reminders are sent by a manager, and maintenance assessments are created with Run due plans; saving email preferences does not schedule either action.' },
+      { question: 'Can I change another person’s account from my profile menu?', answer: 'No. My account changes only your own profile, password and email preferences. Account administration and access to confidential work have separate permissions.' },
     ],
   },
   {
