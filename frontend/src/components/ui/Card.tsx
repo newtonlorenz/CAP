@@ -8,7 +8,7 @@ export default function Card({
 }: HTMLAttributes<HTMLDivElement> & { children: ReactNode }) {
   return (
     <div
-      className={cn('app-surface app-surface-default rounded-2xl', className)}
+      className={cn('app-surface app-surface-default rounded-md', className)}
       {...props}
     >
       {children}

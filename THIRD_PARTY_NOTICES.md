@@ -9,7 +9,7 @@ texts from the installed macOS preparation environment. It checks installed pack
 names and versions against both locks; npm integrity values are recorded from the
 lock, not independently verified against installed bytes. Reproduce with
 `.venv/bin/python scripts/dependency-notices.py` after installing the runtime lock
-and frontend lock. The current 108 records have no unresolved local `review_items`:
+and frontend lock. The current 109 records have no unresolved local `review_items`:
 et-xmlfile and openpyxl supply `LICENCE` files in their installed wheel metadata;
 the exact locked agent-base 6.0.2 and https-proxy-agent 5.0.1 packages include their
 full MIT texts in their nested installed READMEs. Review `review_items` again after
@@ -32,6 +32,9 @@ retained at `/usr/local/share/licenses/tesseract/LICENSE` in each OCR image.
 Leptonica and language data retain their distribution notices under `/usr/share/doc`.
 The build options do not change those licences. See the
 [container dependency notes](docs/public/container-dependencies.md) for verification.
+
+Driver.js 1.4.0 supplies the guided product tour under its MIT licence, retained in
+`docs/public/third-party/npm/driver.js/license`.
 
 `certifi` retains its MPL-2.0 licence. DOMPurify offers MPL-2.0 or Apache-2.0 terms;
 retain the distributed notices. The vendored Page Feedback React archive includes

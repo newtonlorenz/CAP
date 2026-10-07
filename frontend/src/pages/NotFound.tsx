@@ -1,32 +1,12 @@
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import LinkButton from '../components/ui/LinkButton'
 
 export default function NotFound() {
   const location = useLocation()
-
-  return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10">
-      <div className="app-surface app-surface-default rounded-2xl p-6">
-        <div className="text-sm font-semibold text-muted">404</div>
-        <h1 className="mt-2 text-2xl font-semibold text-ink">Page not found</h1>
-        <p className="mt-2 text-sm text-muted">
-          No route matches <span className="font-mono">{location.pathname}</span>.
-        </p>
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link
-            to="/"
-            className="inline-flex items-center rounded-lg border border-transparent bg-brand px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-brand-hover"
-          >
-            Go to Dashboard
-          </Link>
-          <Link
-            to="/requirements"
-            className="inline-flex items-center rounded-full border border-line-strong bg-surface/85 px-4 py-2 text-sm font-semibold text-ink hover:border-brand-line hover:text-accent"
-          >
-            Go to Requirements
-          </Link>
-        </div>
-      </div>
-    </div>
-  )
+  return <section className="cap-empty-state mx-auto max-w-3xl" aria-labelledby="missing-page-title">
+    <svg aria-hidden="true" className="mb-5 h-9 w-9 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2-2V9zM14 3v6h6M9 14h6M9 17h4" /></svg>
+    <h1 id="missing-page-title">Page not found</h1>
+    <p>The page at <span className="break-all font-medium text-ink">{location.pathname}</span> is unavailable. The link may have changed.</p>
+    <div className="mt-6 flex flex-wrap gap-3"><LinkButton to="/" variant="primary">Back to overview</LinkButton><LinkButton to="/guide">Open the guide</LinkButton></div>
+  </section>
 }

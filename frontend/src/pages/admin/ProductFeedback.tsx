@@ -1,3 +1,4 @@
+import '../workflow-pages.css'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../../api/client'
@@ -25,7 +26,7 @@ export default function ProductFeedback() {
     mutationFn: ({ id, value }: { id: string; value: ProductFeedbackStatus }) => api.patch(`${endpoint}/${id}`, { status: value }),
     onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['product-feedback'] }) },
   })
-  return <div className="mx-auto max-w-5xl space-y-5">
+  return <div className="workflow-page feedback-page mx-auto max-w-5xl space-y-5">
     <header><h1>Product feedback</h1><p className="mt-2 text-sm text-muted">Bugs and ideas reported by your organization.</p></header>
     {config.isLoading && <p role="status">Loading feedback…</p>}
     {config.isError && <p role="alert">Could not check feedback availability. <button className="underline" onClick={() => void config.refetch()}>Retry</button></p>}
@@ -48,7 +49,7 @@ export default function ProductFeedback() {
         <p className="mt-4 whitespace-pre-wrap break-words text-sm">{report.message}</p>
         <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-muted">
           <span className="break-all">Page: {report.page_path}</span>
-          {report.pin && <span>① Element pinned</span>}
+          {report.pin && <span>Element pinned</span>}
           {report.has_screenshot && <button className="font-semibold text-accent underline" onClick={() => { setImageError(false); setPreview(preview === report.id ? null : report.id) }}>{preview === report.id ? 'Hide screenshot' : 'View screenshot'}</button>}
         </div>
         {report.pin && <details className="mt-3 text-xs text-muted"><summary>Element reference</summary><code className="mt-2 block break-all">{report.pin.selector}</code></details>}

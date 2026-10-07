@@ -24,7 +24,13 @@ from app.schemas.preparation_evidence import (
     EvidenceDetails,
     EvidenceResponse,
 )
-from app.services.access import access_details, initialize_access, require_access
+from app.services.access import (
+    access_details,
+    get_policy,
+    initialize_access,
+    require_access,
+    protect_child,
+)
 from app.services.audit import log_action
 from app.services.file_utils import save_upload_file
 from app.services.preparation_files import (
@@ -111,6 +117,7 @@ async def create_evidence(
 async def upload_evidence(
     file: UploadFile = File(...),
     visibility: Literal["organisation", "restricted", "secret"] = Form("secret"),
+    case_id: uuid.UUID | None = Form(None),
     title: str = Form(..., min_length=1, max_length=255),
     body: str | None = Form(None, max_length=50000),
     valid_from: date | None = Form(None),
@@ -118,6 +125,28 @@ async def upload_evidence(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(editor),
 ):
+    if case_id is not None:
+        case = await require_access(db, "preparation_case", case_id, user, "edit")
+        if case.status == "archived":
+            raise HTTPException(409, "Form is archived")
+        if await get_policy(db, "preparation_case", case.id) is None:
+            # Older pack-generated forms used implicit organisation permissions.
+            # Materialise that exact policy under the case lock so a new file can
+            # inherit it. The recorded creator remains owner; the uploader gains
+            # no access-management authority and cannot choose a broader audience.
+            from app.models.access import ResourceAccess
+
+            db.add(
+                ResourceAccess(
+                    organization_id=case.organization_id,
+                    resource_type="preparation_case",
+                    resource_id=case.id,
+                    visibility="organisation",
+                    owner_id=case.created_by,
+                    revision=1,
+                )
+            )
+            await db.flush()
     try:
         metadata = EvidenceDetails(
             title=title, body=body, valid_from=valid_from, valid_until=valid_until
@@ -151,14 +180,32 @@ async def upload_evidence(
         )
         db.add(item)
         await db.flush()
-        await initialize_access(db, "preparation_evidence", item.id, user, visibility=visibility)
+        # Context uploads share the existing form audience, never an assignment-derived
+        # audience. The forced parent restriction is installed before the first commit,
+        # including for organisation-visible forms, so later restrictions also apply.
+        await initialize_access(
+            db,
+            "preparation_evidence",
+            item.id,
+            user,
+            visibility="organisation" if case_id else visibility,
+        )
+        if case_id is not None:
+            await protect_child(
+                db, "preparation_case", case_id, "preparation_evidence", item.id, user, force=True
+            )
         await log_action(
             db,
             user,
             "upload",
             "preparation_evidence",
             str(item_id),
-            new_value={"title": item.title, "sha256": item.sha256, "size_bytes": size},
+            new_value={
+                "title": item.title,
+                "sha256": item.sha256,
+                "size_bytes": size,
+                "case_id": str(case_id) if case_id else None,
+            },
         )
         await db.commit()
     except BaseException:

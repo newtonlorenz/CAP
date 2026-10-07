@@ -1,3 +1,4 @@
+import './workflow-pages.css'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -919,8 +920,8 @@ export default function RequirementsSetEdit() {
   }
 
   return (
-    <div className="min-w-0">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div className="workflow-page requirement-edit-page min-w-0">
+      <div className="workflow-heading flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-ink">
             Edit: {doc?.name || doc?.filename || 'Requirements Set'}
@@ -1114,7 +1115,7 @@ export default function RequirementsSetEdit() {
         </form>
       </details>
 
-      <div className="bg-surface shadow rounded-lg p-4 mb-6">
+      <div className="workflow-toolbar mb-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-ink mb-1">Search</label>
@@ -1145,7 +1146,7 @@ export default function RequirementsSetEdit() {
         </div>
       </div>
 
-      <div className="sticky top-16 z-20 mb-4 flex flex-wrap items-center justify-between gap-3 bg-canvas py-3" aria-label="Editor navigation">
+      <div className="requirement-editor-navigation sticky top-16 z-20 mb-4 flex flex-wrap items-center justify-between gap-3 bg-canvas py-3" aria-label="Editor navigation">
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" aria-pressed={!showAllEditors} variant={!showAllEditors ? 'primary' : 'secondary'} onClick={() => setSearchParams((previous) => { const next = new URLSearchParams(previous); next.delete('mode'); return next }, { replace: true })}>Focused editing</Button>
           <Button size="sm" aria-pressed={showAllEditors} variant={showAllEditors ? 'primary' : 'secondary'} onClick={() => setSearchParams((previous) => { const next = new URLSearchParams(previous); next.set('mode', 'all'); return next }, { replace: true })}>All requirements</Button>

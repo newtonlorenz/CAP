@@ -380,9 +380,7 @@ async def get_dashboard(
                 action_reasons=(
                     ["Resolve the blocker"]
                     if status == "blocked"
-                    else ["Complete the evidence"]
-                    if status != "evidenced"
-                    else []
+                    else ["Complete the evidence"] if status != "evidenced" else []
                 ),
             )
         )
@@ -495,9 +493,11 @@ async def get_dashboard(
                 item=item,
                 requirement=requirement,
                 document=None,
-                status=item.assessment_status
-                if item.assessment_status is not None
-                else legacy_status or "not_started",
+                status=(
+                    item.assessment_status
+                    if item.assessment_status is not None
+                    else legacy_status or "not_started"
+                ),
                 status_comment=legacy_comment or "",
             )
         )
@@ -1103,3 +1103,42 @@ async def get_dashboard(
         data_quality=data_quality,
     )
     return response
+
+
+@router.get("/team-work")
+async def get_team_work(
+    jurisdiction_id: uuid.UUID | None = None,
+    kind: (
+        Literal["requirement", "review", "form", "answer_review", "authority_query", "change"]
+        | None
+    ) = None,
+    owner_id: uuid.UUID | None = None,
+    unassigned: bool = False,
+    overdue: bool = False,
+    q: str | None = Query(None, max_length=200),
+    context: str | None = Query(None, max_length=255),
+    sort_by: Literal["programme", "owner", "priority"] = "priority",
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from fastapi import HTTPException
+    from app.services.dashboard_team import team_work
+
+    if current_user.role not in {"manager", "admin"}:
+        raise HTTPException(403, "Manager access required")
+    return await team_work(
+        db,
+        current_user,
+        jurisdiction_id=jurisdiction_id,
+        kind=kind,
+        owner_id=owner_id,
+        unassigned=unassigned,
+        overdue=overdue,
+        q=q,
+        context=context,
+        sort_by=sort_by,
+        skip=skip,
+        limit=limit,
+    )

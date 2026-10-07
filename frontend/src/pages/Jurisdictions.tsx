@@ -1,3 +1,4 @@
+import './workflow-pages.css'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useJurisdiction } from '../contexts/JurisdictionContext'
@@ -177,7 +178,7 @@ export default function Jurisdictions() {
   }
 
   return (
-    <div className="min-w-0 space-y-4">
+    <div className="workflow-page jurisdictions-page min-w-0 space-y-4">
       <header className="py-1">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
@@ -210,7 +211,7 @@ export default function Jurisdictions() {
       {isError ? <LoadError subject="Jurisdictions" onRetry={() => refetch()} /> : isLoading ? (
         <Card className="p-6 text-sm text-muted">Loading...</Card>
       ) : (
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden"><div className="workflow-table-heading"><h2>Markets and authorities</h2><p>Open market setup to maintain a licence checklist.</p></div>
           <div className="hidden overflow-x-auto lg:block">
             <Table>
               <THead>

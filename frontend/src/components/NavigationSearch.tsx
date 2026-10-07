@@ -22,7 +22,7 @@ export default function NavigationSearch({ items }: { items: { path: string; lab
   }, [])
   useEffect(() => { list.current?.querySelector('[aria-selected="true"]')?.scrollIntoView?.({ block: 'nearest' }) }, [active])
   return <>
-    <button type="button" className="page-search" onClick={() => { setOpen(true); setQuery(''); setActive(0) }} aria-label="Find a page">
+    <button type="button" className="page-search" title="Find a page (⌘ / Ctrl K)" aria-keyshortcuts="Control+k Meta+k" onClick={() => { setOpen(true); setQuery(''); setActive(0) }} aria-label="Find a page">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></svg>
       <span>Find a page…</span><kbd>⌘ K</kbd>
     </button>

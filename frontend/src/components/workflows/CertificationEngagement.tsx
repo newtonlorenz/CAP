@@ -75,7 +75,7 @@ export default function CertificationEngagement({ project, mode, canManage, savi
         className="mt-1 block w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-ink" />
     </label>
   )
-  return <form onSubmit={submit} className="space-y-4 rounded-lg border border-line p-4">
+  return <form onSubmit={submit} className="certification-engagement space-y-4 border-y border-line py-5">
     <div><h2 className="font-semibold text-ink">{mode === 'testing' ? 'Testing engagement' : 'Recorded test report'}</h2><p className="text-sm text-muted">{mode === 'testing' ? 'Record the provider, scope and testing dates.' : 'Record the provider’s report. A recorded result does not represent an authority decision.'}</p></div>
     <fieldset disabled={!canManage || saving} className="grid gap-3 sm:grid-cols-2">
       {mode === 'testing' ? <>

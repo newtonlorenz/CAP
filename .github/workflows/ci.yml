@@ -88,6 +88,20 @@ jobs:
           npx playwright install --with-deps chromium
           cd ..
           .venv/bin/python scripts/run-e2e.py
+      - name: Product tour browser checks
+        working-directory: frontend
+        run: npm run test:e2e:onboarding
+      - name: Retain failed browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: browser-failure-diagnostics
+          path: |
+            tmp/e2e/browser-batch-*/
+            frontend/test-results/
+            frontend/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
   container_checks:
     runs-on: ubuntu-24.04
     timeout-minutes: 40

@@ -1,3 +1,4 @@
+import './workflow-pages.css'
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -75,9 +76,9 @@ function RequirementContent({ id }: { id: string | undefined }) {
   }
 
   return (
-    <div className="min-w-0">
+    <div className="workflow-page requirement-detail-page min-w-0">
       <Link to={`/requirements/sets/${requirement.document_id}`} className="mb-4 inline-flex text-sm text-accent hover:underline">← Back to requirement set</Link>
-      <div className="mb-6 max-w-prose">
+      <section className="requirement-reading-surface mb-6" aria-label="Requirement wording">
         <div className="flex items-center gap-2"><h1 className="text-2xl font-semibold text-ink">{requirement.reference_id}</h1><CopyButton value={`${editForm.reference_id}\n${stripHtml(editForm.text)}`} label="Copy requirement" /></div>
         <div className="mt-1 text-sm text-muted">
           Jurisdiction:{' '}
@@ -91,11 +92,11 @@ function RequirementContent({ id }: { id: string | undefined }) {
           className="mt-2 space-y-2 break-words leading-relaxed text-ink [&_li]:mb-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_ul]:list-disc [&_ul]:pl-6"
           dangerouslySetInnerHTML={{ __html: normalizeRichText(requirement.text) }}
         />
-      </div>
+      </section>
 
-      <div className="space-y-6">
+      <div className="requirement-detail-grid space-y-6">
         <div className="app-surface app-surface-default rounded-2xl p-6">
-          <h2 className="mb-4 text-lg font-semibold">Details</h2>
+          <h2 className="mb-4 text-lg font-semibold">Source details</h2>
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <dt className="text-sm font-medium text-muted">Type</dt>

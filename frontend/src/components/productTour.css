@@ -1,0 +1,30 @@
+.cap-resources .cap-resource-panel { max-height: calc(100dvh - 100px); overflow-y: auto; }
+.driver-popover.cap-product-tour {
+  max-width: min(340px, calc(100vw - 24px)); min-width: min(250px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px); overflow-y: auto;
+  padding: 20px; border: 1px solid rgb(var(--line-strong)); border-radius: 12px;
+  background: rgb(var(--surface)); color: rgb(var(--ink)); font-family: var(--dashboard-font-sans);
+  box-shadow: var(--elevation);
+}
+.cap-product-tour .driver-popover-title { font-family: inherit; font-size: 17px; }
+.cap-product-tour .driver-popover-description { color: rgb(var(--muted)); font: inherit; line-height: 1.5; }
+.cap-product-tour .cap-tour-path { margin-top: 12px; font-weight: 650; color: rgb(var(--ink)); }
+.cap-product-tour .driver-popover-progress-text { color: rgb(var(--muted)); font-size: 12px; }
+.cap-product-tour .driver-popover-footer button {
+  min-height: 36px; padding: 6px 10px; border: 1px solid rgb(var(--line-strong)); border-radius: 6px;
+  background: rgb(var(--surface)); color: rgb(var(--ink)); text-shadow: none; font: inherit;
+}
+.cap-product-tour .driver-popover-footer button:hover,
+.cap-product-tour .driver-popover-footer button:focus { background: rgb(var(--subtle)); color: rgb(var(--ink)); }
+.cap-product-tour .driver-popover-footer .driver-popover-next-btn { background: rgb(var(--brand)); color: white; border-color: rgb(var(--brand)); }
+.cap-product-tour .driver-popover-footer .driver-popover-next-btn:hover,
+.cap-product-tour .driver-popover-footer .driver-popover-next-btn:focus { background: rgb(var(--brand-hover)); color: white; }
+.cap-product-tour .driver-popover-close-btn { width: 36px; height: 36px; color: rgb(var(--muted)); font-size: 24px; }
+.driver-popover.cap-product-tour .driver-popover-close-btn:hover,
+.driver-popover.cap-product-tour .driver-popover-close-btn:focus { color: rgb(var(--ink)); background: rgb(var(--subtle)); }
+.cap-product-tour button:focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 3px; }
+.driver-popover.cap-product-tour .driver-popover-arrow-side-left { border-left-color: rgb(var(--surface)); }
+.driver-popover.cap-product-tour .driver-popover-arrow-side-right { border-right-color: rgb(var(--surface)); }
+.driver-popover.cap-product-tour .driver-popover-arrow-side-top { border-top-color: rgb(var(--surface)); }
+.driver-popover.cap-product-tour .driver-popover-arrow-side-bottom { border-bottom-color: rgb(var(--surface)); }
+@media (prefers-reduced-motion: reduce) { .driver-active *, .driver-popover { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }

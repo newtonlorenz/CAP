@@ -1,3 +1,4 @@
+import '../workflow-pages.css'
 import { formatDate, formatDateTime } from '../../utils/dateFormat'
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -241,7 +242,7 @@ export default function UserManagement() {
   const users = data?.items || []
 
   return (
-    <div className="min-w-0 space-y-4">
+    <div className="workflow-page users-page min-w-0 space-y-4">
       <header className="py-1">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
@@ -254,7 +255,7 @@ export default function UserManagement() {
         </div>
       </header>
 
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="workflow-toolbar flex flex-wrap items-end justify-between gap-3">
         <div className="w-full sm:max-w-sm"><label htmlFor="user-search" className="mb-1 block text-sm font-medium">Find a colleague</label><input id="user-search" type="search" value={search} onChange={(event) => { setSearch(event.target.value); setPage(0) }} placeholder="Search by name or email" className="w-full px-3 py-2" /></div>
         <div className="w-full sm:w-auto">
           <label htmlFor="user-status" className="mb-1 block text-sm font-medium">Show users</label>
@@ -275,7 +276,7 @@ export default function UserManagement() {
           {isError ? <LoadError subject="Users" onRetry={() => refetch()} /> : isLoading ? (
             <Card className="p-6 text-sm text-muted">Loading...</Card>
           ) : (
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden"><div className="workflow-table-heading"><h2>People and permissions</h2><p>Select a colleague to review their access and activity.</p></div>
               <div data-testid="users-mobile-cards" className="divide-y divide-line lg:hidden">
                 {users.map((user) => {
                   const isSelected = user.id === selectedUserId

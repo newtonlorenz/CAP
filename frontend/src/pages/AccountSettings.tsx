@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useDraftNavigationGuard } from '../hooks/useDraftNavigationGuard'
 import Button from '../components/ui/Button'
 import SectionNav from '../components/ui/SectionNav'
+import PageHeading from '../components/ui/PageHeading'
 
 type NotificationSettings = { review_mentions: boolean; review_reminders: boolean }
 const inputClass = 'mt-2 block w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent'
@@ -62,11 +63,10 @@ export default function AccountSettings() {
     password.mutate()
   }
 
-  return <div className="mx-auto max-w-3xl">
-    <h1 className="text-2xl font-semibold text-ink">My account</h1>
-    <p className="mb-6 mt-2 text-sm text-muted">Manage your profile, password and email notifications.</p>
+  return <div className="cap-account-page mx-auto max-w-5xl">
+    <PageHeading title="My account" description="Manage your profile, password and email notifications." />
     <SectionNav label="Account settings sections" value={section} items={[{ id: 'account', label: 'Account settings' }, { id: 'notifications', label: 'Notifications' }]} onChange={value => setParams({ section: value })} />
-    <div hidden={section !== 'account'}>
+    <div hidden={section !== 'account'} className="cap-panel mt-5 px-6">
       <section className="border-b border-line py-6">
         <h2 className="text-lg font-semibold text-ink">Profile</h2>
         <form className="mt-4 max-w-md space-y-4" onSubmit={event => { event.preventDefault(); profile.mutate() }}>
@@ -74,7 +74,7 @@ export default function AccountSettings() {
           <div><span className="text-sm font-medium text-ink">Email address</span><p className="mt-2 break-words text-sm text-muted">{user?.email}</p><p className="mt-1 text-xs text-muted">Contact your administrator to change your sign-in email.</p></div>
           <div><span className="text-sm font-medium text-ink">Role</span><p className="mt-2 text-sm capitalize text-muted">{user?.role.replace(/_/g, ' ')}</p></div>
           {profile.isError && <p role="alert" className="text-sm text-danger">{getApiErrorMessage(profile.error, 'Your profile could not be saved. Try again.')}</p>}
-          {profile.isSuccess && <p role="status" className="text-sm text-ink">Profile saved.</p>}
+          {profile.isSuccess && <p role="status" className="text-sm text-success">Profile saved.</p>}
           <Button type="submit" variant="primary" loading={profile.isPending} disabled={!profileDirty || !fullName.trim()}>Save profile</Button>
         </form>
       </section>
@@ -88,12 +88,12 @@ export default function AccountSettings() {
             <PasswordField label="Confirm new password" id="confirm-password" visible={!!visiblePasswords.confirm} onToggle={() => togglePassword('confirm')} autoComplete="new-password" required value={confirmation} onChange={event => { setConfirmation(event.target.value); setPasswordError(''); setPasswordSaved(false) }} />
           </fieldset>
           {(passwordError || password.isError) && <p role="alert" className="text-sm text-danger">{passwordError || getApiErrorMessage(password.error, 'Your password could not be changed. Try again.')}</p>}
-          {passwordSaved && <p role="status" className="text-sm text-ink">Password changed. You are still signed in on this browser.</p>}
+          {passwordSaved && <p role="status" className="text-sm text-success">Password changed. You are still signed in on this browser.</p>}
           <Button type="submit" variant="primary" loading={password.isPending}>Change password</Button>
         </form>
       </section>
     </div>
-    <section hidden={section !== 'notifications'} className="py-6">
+    <section hidden={section !== 'notifications'} className="cap-panel mt-5 p-6">
       <h2 className="text-lg font-semibold text-ink">Email notifications</h2>
       <p className="mt-2 text-sm text-muted">Choose which review emails you receive. These settings apply across your devices.</p>
       {notifications.isPending && <p role="status" className="mt-4 text-sm text-muted">Loading notification settings…</p>}
@@ -106,7 +106,7 @@ export default function AccountSettings() {
           </label>)}
         </fieldset>
         {saveNotifications.isError && <p role="alert" className="text-sm text-danger">{getApiErrorMessage(saveNotifications.error, 'Notification settings could not be saved. Try again.')}</p>}
-        {saveNotifications.isSuccess && <p role="status" className="text-sm text-ink">Notification settings saved.</p>}
+        {saveNotifications.isSuccess && <p role="status" className="text-sm text-success">Notification settings saved.</p>}
         <Button type="submit" variant="primary" loading={saveNotifications.isPending} disabled={!notificationsDirty}>Save notification settings</Button>
       </form>}
     </section>

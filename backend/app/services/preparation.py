@@ -302,6 +302,10 @@ async def build_case_response(
         blockers=blockers,
         ready=not blockers,
     )
+    from app.services.preparation_review import feedback_for, review_owner
+
+    feedback = await feedback_for(db, responses)
+    reviewer, reviewer_source = await review_owner(db, case, user)
     access = None
     if user is not None:
         policy = await access_details(db, "preparation_case", case.id, user)
@@ -312,6 +316,9 @@ async def build_case_response(
         }
     return CaseOut(
         access=access,
+        reviewer_id=reviewer.id if reviewer else None,
+        reviewer_name=reviewer.full_name if reviewer else None,
+        reviewer_source=reviewer_source,
         id=case.id,
         name=case.name,
         kind=case.kind,
@@ -332,6 +339,18 @@ async def build_case_response(
         responses=[
             ResponseOut(
                 field_key=response.field_key,
+                review_status=(
+                    "accepted"
+                    if response.accepted_at
+                    else (
+                        "changes_requested"
+                        if response.review_status == "changes_requested"
+                        else "pending_review"
+                    )
+                ),
+                last_saved_at=response.last_saved_at,
+                last_saved_by=response.last_saved_by,
+                feedback=feedback.get(response.id, []),
                 value=json.loads(response.value_json) if response.value_json is not None else None,
                 not_applicable_reason=response.not_applicable_reason,
                 evidence_ids=[item.id for item in evidence_by_response.get(response.id, [])],
@@ -414,6 +433,7 @@ async def save_response(
     value,
     reason: str | None,
     evidence: list[PreparationEvidence],
+    saved_by=None,
     reused_from_case_id=None,
     reused_from_field_key=None,
 ):
@@ -451,6 +471,9 @@ async def save_response(
         await db.flush()
     response.value_json = json.dumps(value) if value is not None else None
     response.not_applicable_reason = reason.strip() if reason and reason.strip() else None
+    response.review_status = "pending_review"
+    response.last_saved_at = datetime.now(UTC)
+    response.last_saved_by = saved_by
     response.accepted_by = None
     response.accepted_at = None
     response.reused_from_case_id = reused_from_case_id

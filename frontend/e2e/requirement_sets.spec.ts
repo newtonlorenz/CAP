@@ -51,7 +51,9 @@ test.describe('Requirement Sets', () => {
   test('should render Not Found for /documents', async ({ page }) => {
     await page.goto('/documents')
     await expect(page.getByRole('heading', { name: /^Page not found$/i })).toBeVisible()
-    await expect(page.getByText(/No route matches/i)).toBeVisible()
+    await expect(page.getByText(/is unavailable\. The link may have changed\./i)).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Back to overview', exact: true })).toHaveAttribute('href', '/')
+    await expect(page.getByRole('link', { name: 'Open the guide', exact: true })).toHaveAttribute('href', '/guide')
     await expect(page.getByText('/documents')).toBeVisible()
   })
 
@@ -111,11 +113,21 @@ test.describe('Requirement Sets', () => {
     await page.getByRole('textbox', { name: 'Requirement text for E2E-REQ-1' }).fill('The synthetic system shall retain its test logs.')
     await page.getByRole('textbox', { name: 'Reference for E2E-REQ-1' }).focus()
     await expect(page.getByLabel('Requirement editor').getByText('Saved', { exact: true })).toBeVisible()
+    const submitted = page.waitForResponse(response =>
+      response.url().endsWith(`/documents/${setId}/submit`) && response.request().method() === 'POST')
     await page.getByRole('button', { name: 'Submit for Approval' }).click()
+    const submitResponse = await submitted
+    expect(submitResponse.ok(), await submitResponse.text()).toBeTruthy()
+    expect((await submitResponse.json()).status).toBe('pending_approval')
     await expect(page.getByRole('button', { name: 'Approve' })).toBeVisible()
 
     await page.getByRole('button', { name: 'Approve', exact: true }).click()
+    const approved = page.waitForResponse(response =>
+      new URL(response.url()).pathname.endsWith(`/documents/${setId}/approve`) && response.request().method() === 'POST')
     await page.getByRole('dialog').getByRole('button', { name: 'Approve', exact: true }).click()
+    const approveResponse = await approved
+    expect(approveResponse.ok(), await approveResponse.text()).toBeTruthy()
+    expect((await approveResponse.json()).status).toBe('approved')
     await page.waitForURL(/\/requirements\/sets\/[^/]+$/)
   })
 })

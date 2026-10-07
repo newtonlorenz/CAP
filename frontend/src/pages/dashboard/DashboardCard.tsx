@@ -24,7 +24,7 @@ export default function DashboardCard({
 
   return (
     <section
-      className={['dashboard-surface min-w-0 rounded-2xl p-5 sm:p-6', variantClass, className || '']
+      className={['dashboard-surface min-w-0 rounded-md p-4 sm:p-5', variantClass, className || '']
         .filter(Boolean)
         .join(' ')}
     >

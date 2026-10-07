@@ -19,6 +19,12 @@ backups, provider responses containing documents, or credentials.
 
 ## Checks
 
+Develop new work in the public `newtonlorenz/CAP` repository. The private
+`newtonlorenz/cap-dev` repository is a deprecated historical archive.
+Use public feature branches and pull requests. Do not transfer private Git history
+or operational records. Follow the [public source procedure](docs/public/releasing.md)
+when reviewing recovered file changes or preparing a release.
+
 See the [contributor architecture map](docs/public/contributor-architecture.md) for
 domain boundaries, transaction ownership and organization-scope rules.
 Use the [content style guide](docs/public/content-style.md) for UI text and public docs.
@@ -65,6 +71,11 @@ The runner validates the target, uses isolated uploads, starts its own backend o
 18000 and a frontend on 15173, and stops its backend afterwards. Playwright stops
 its own frontend. Existing servers are never reused. Stop/remove only the disposable
 database you created once testing is complete. The CI service is disposable by design.
+The default browser suite runs in batches of four spec files. Each batch invokes
+the guarded synthetic seed, clearing only disposable login-throttle state while
+production sign-in limits stay unchanged. Explicit Playwright selectors and options
+run as supplied.
+
 The browser runner uses the dedicated Redis address `127.0.0.1:25490/0`; provide
 that disposable service when testing queue-dependent behavior. Browser assertions
 currently exercise source editing and review workflows; queued extraction needs a
@@ -102,6 +113,6 @@ Inspect the current deployment record and Compose configuration before upgrading
 
 Public image publication retains the full SBOM and installation/upgrade/restore checks. These workflow improvements remove duplicate work without reducing verification coverage.
 
-The first source candidate does not establish a supported container release.
+Public source availability does not establish a supported container release.
 Before accepting external contributions, complete the publisher identity, rights
 and repository configuration checks in the [publication checklist](docs/public/releasing.md).

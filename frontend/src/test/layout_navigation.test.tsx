@@ -65,65 +65,43 @@ describe('Layout navigation', () => {
     window.localStorage.clear()
   })
 
-  it('shows Guide & FAQ and Change notes under Help for contributors', () => {
+  it('keeps primary work routes visible and secondary resources discoverable for contributors', () => {
     currentRole = 'contributor'
     renderLayout()
-
-    const desktopSidebar = screen.getByTestId('desktop-sidebar')
-    const primaryNav = within(desktopSidebar).getByTestId('primary-nav')
-
-    expect(within(primaryNav).getByLabelText('Dashboard')).toBeInTheDocument()
-    expect(within(primaryNav).getByLabelText('Certifications')).toBeInTheDocument()
+    const primaryNav = screen.getByTestId('primary-nav')
+    expect(within(primaryNav).getAllByRole('link').map(link => link.textContent)).toEqual(['Overview', 'Licence Applications', 'Certifications', 'Change Management'])
     expect(within(primaryNav).getByRole('link', { name: 'Licence Applications' })).toHaveAttribute('href', '/licence-applications')
-    expect(within(primaryNav).queryByRole('link', { name: 'Preparation' })).not.toBeInTheDocument()
-    expect(within(primaryNav).getByText('Overview')).toBeInTheDocument()
-    expect(within(primaryNav).getByText('Work')).toBeInTheDocument()
-    expect(within(primaryNav).getByText('Reporting')).toBeInTheDocument()
-    expect(within(primaryNav).queryByText('Library')).not.toBeInTheDocument()
-    expect(within(primaryNav).getByRole('link', { name: 'Teams' })).toHaveAttribute('href', '/access-teams')
-    expect(within(primaryNav).getByText('Resources')).toBeInTheDocument()
-    const work = within(desktopSidebar).getByTestId('nav-section-work')
-    expect(within(work).getAllByRole('link').map(link => link.textContent)).toEqual(['Licence Applications', 'Certifications', 'Change Management'])
-    expect(within(primaryNav).getByText('Help')).toBeInTheDocument()
-    const guideLink = within(primaryNav).getByLabelText('Guide & FAQ')
-    expect(guideLink).toBeInTheDocument()
-
-    expect(guideLink).toHaveAttribute('href', '/guide')
-    expect(within(primaryNav).getByRole('link', { name: 'Change notes' })).toHaveAttribute('href', '/change-notes')
+    fireEvent.click(screen.getByRole('button', { name: 'Resources' }))
+    const resources = screen.getByTestId('nav-resources')
+    expect(within(resources).getByRole('link', { name: 'Teams' })).toHaveAttribute('href', '/access-teams')
+    expect(within(resources).getByRole('link', { name: 'Guide & FAQ' })).toHaveAttribute('href', '/guide')
+    expect(within(resources).getByRole('link', { name: 'Change notes' })).toHaveAttribute('href', '/change-notes')
+    expect(within(resources).queryByRole('link', { name: 'User Management' })).not.toBeInTheDocument()
+    expect(within(resources).queryByRole('link', { name: 'Settings' })).not.toBeInTheDocument()
   })
 
-  it('keeps Guide & FAQ in the list when desktop sidebar is collapsed', () => {
+  it('exposes administration only to admins and dismisses Resources on Escape', () => {
     renderLayout()
-
-    fireEvent.click(screen.getByRole('button', { name: /collapse sidebar/i }))
-
-    const desktopSidebar = screen.getByTestId('desktop-sidebar')
-    const primaryNav = within(desktopSidebar).getByTestId('primary-nav')
-
-    expect(screen.getByRole('button', { name: /expand sidebar/i })).toBeInTheDocument()
-    expect(within(primaryNav).getByLabelText('Guide & FAQ')).toBeInTheDocument()
-    expect(within(primaryNav).getByLabelText('Change notes')).toHaveAttribute('href', '/change-notes')
-    expect(within(primaryNav).getByLabelText('Certifications')).toBeInTheDocument()
-    expect(within(primaryNav).getByRole('link', { name: 'Licence Applications' })).toHaveAttribute('href', '/licence-applications')
-    expect(within(primaryNav).queryByText('Overview')).not.toBeInTheDocument()
-    expect(within(primaryNav).queryByText('Help')).not.toBeInTheDocument()
+    const trigger = screen.getByRole('button', { name: 'Resources' })
+    fireEvent.click(trigger)
+    expect(screen.getByRole('link', { name: 'User Management' })).toHaveAttribute('href', '/admin/users')
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(trigger).toHaveFocus()
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByTestId('nav-resources')).not.toBeInTheDocument()
   })
 
-  it('shows Guide & FAQ and Change notes in the mobile drawer', () => {
+  it('shows every secondary destination in the mobile drawer', () => {
     currentRole = 'contributor'
     renderLayout()
-
     fireEvent.click(screen.getByTestId('mobile-nav-toggle'))
-
-    const mobileDrawer = screen.getByTestId('mobile-nav-drawer')
-    const primaryNav = within(mobileDrawer).getByTestId('primary-nav')
-
-    expect(within(primaryNav).getByLabelText('Dashboard')).toBeInTheDocument()
-    expect(within(primaryNav).getByLabelText('Certifications')).toBeInTheDocument()
+    const primaryNav = within(screen.getByTestId('mobile-nav-drawer')).getByRole('navigation', { name: 'Primary navigation' })
+    expect(within(primaryNav).getByRole('link', { name: 'Overview' })).toBeInTheDocument()
+    expect(within(primaryNav).getByRole('link', { name: 'Certifications' })).toBeInTheDocument()
     expect(within(primaryNav).getByRole('link', { name: 'Licence Applications' })).toHaveAttribute('href', '/licence-applications')
-    const guideLink = within(primaryNav).getByLabelText('Guide & FAQ')
-    expect(guideLink).toHaveAttribute('href', '/guide')
+    expect(within(primaryNav).getByRole('link', { name: 'Guide & FAQ' })).toHaveAttribute('href', '/guide')
     expect(within(primaryNav).getByRole('link', { name: 'Change notes' })).toHaveAttribute('href', '/change-notes')
+    expect(within(primaryNav).getByRole('link', { name: 'My account' })).toHaveAttribute('href', '/account')
   })
 
   it.each([
@@ -136,16 +114,17 @@ describe('Layout navigation', () => {
     ['/library?section=requirements', 'Requirements'],
     ['/program-workspace', 'Certification overview'],
     ['/review-cycles/assessment-1', 'Assessment overview'],
-  ])('opens Resources and highlights %s on desktop and mobile', (path, label) => {
+  ])('highlights the resource %s on desktop and mobile', (path, label) => {
     currentRole = 'contributor'
     renderLayout(path)
-    const sidebar = screen.getByTestId('desktop-sidebar')
-    expect(within(sidebar).getByTestId('nav-resources')).toHaveAttribute('open')
+    const resources = screen.getByRole('button', { name: 'Resources' })
+    expect(resources).toHaveAttribute('data-active', 'true')
+    fireEvent.click(resources)
+    const sidebar = screen.getByTestId('nav-resources')
     expect(within(sidebar).getByRole('link', { name: label })).toHaveAttribute('aria-current', 'page')
     expect(within(sidebar).getAllByRole('link').filter((link) => link.getAttribute('aria-current') === 'page')).toHaveLength(1)
     fireEvent.click(screen.getByTestId('mobile-nav-toggle'))
     const drawer = screen.getByTestId('mobile-nav-drawer')
-    expect(within(drawer).getByTestId('nav-resources')).toHaveAttribute('open')
     expect(within(drawer).getByRole('link', { name: label })).toHaveAttribute('aria-current', 'page')
   })
 
@@ -154,7 +133,8 @@ describe('Layout navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Find a page' }))
     fireEvent.change(screen.getByRole('combobox', { name: 'Search pages' }), { target: { value: 'Requirement assessments' } })
     fireEvent.click(screen.getByRole('option', { name: 'Assessment overview Resources' }))
-    const sidebar = screen.getByTestId('desktop-sidebar')
+    fireEvent.click(screen.getByRole('button', { name: 'Resources' }))
+    const sidebar = screen.getByTestId('nav-resources')
     expect(within(sidebar).getByRole('link', { name: 'Assessment overview' })).toHaveAttribute('aria-current', 'page')
   })
 
@@ -164,7 +144,8 @@ describe('Layout navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Find a page' }))
     fireEvent.change(screen.getByRole('combobox', { name: 'Search pages' }), { target: { value: alias } })
     fireEvent.click(screen.getByRole('option', { name: 'Change notes Help' }))
-    expect(within(screen.getByTestId('desktop-sidebar')).getByRole('link', { name: 'Change notes' })).toHaveAttribute('aria-current', 'page')
+    fireEvent.click(screen.getByRole('button', { name: 'Resources' }))
+    expect(within(screen.getByTestId('nav-resources')).getByRole('link', { name: 'Change notes' })).toHaveAttribute('aria-current', 'page')
     expect(document.title).toMatch(/^Change notes · /)
   })
 
@@ -193,11 +174,28 @@ describe('Layout navigation', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
   })
 
+  it('lets an unsaved-changes dialog own keyboard focus above the mobile drawer', () => {
+    renderLayout()
+    fireEvent.click(screen.getByTestId('mobile-nav-toggle'))
+    const confirmation = document.createElement('div')
+    confirmation.setAttribute('role', 'dialog')
+    confirmation.setAttribute('aria-label', 'Changes are not saved yet')
+    document.body.appendChild(confirmation)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.getByRole('dialog', { name: 'Navigation' })).toBeInTheDocument()
+    confirmation.remove()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: 'Navigation' })).not.toBeInTheDocument()
+  })
+
   it('releases the page when an open mobile drawer becomes desktop navigation', () => {
     renderLayout()
     fireEvent.click(screen.getByTestId('mobile-nav-toggle'))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    fireEvent.resize(window) // The test viewport is the desktop breakpoint, 1024px.
+    const previousWidth = window.innerWidth
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1440 })
+    fireEvent.resize(window)
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: previousWidth })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(document.querySelector('[inert]')).not.toBeInTheDocument()
     expect(document.body.style.overflow).not.toBe('hidden')

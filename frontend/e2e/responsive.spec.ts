@@ -5,7 +5,7 @@ const MOBILE_VIEWPORT = { width: 320, height: 740 }
 const TABLET_VIEWPORT = { width: 768, height: 1024 }
 
 const routeChecks: Array<{ path: string; heading: RegExp }> = [
-  { path: '/', heading: /Compliance Dashboard/i },
+  { path: '/', heading: /My work/i },
   { path: '/requirements', heading: /^Requirements$/i },
   { path: '/review-cycles', heading: /^Assessment overview$/i },
   { path: '/library?section=templates', heading: /^Form templates$/i },
@@ -21,7 +21,7 @@ const routeChecks: Array<{ path: string; heading: RegExp }> = [
 const loginAsAdmin = async (page: Page) => {
   await submitAdminLogin(page)
   await page.waitForURL('/')
-  await expect(page.getByRole('heading', { name: /Compliance Dashboard/i })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /My work/i })).toBeVisible()
 }
 
 const assertNoHorizontalOverflow = async (page: Page) => {
@@ -78,30 +78,28 @@ const openRequirementsDocument = async (page: Page) => {
   await page.waitForURL(/\/requirements\/sets\//)
 }
 
-const openFirstReviewCycle = async (page: Page): Promise<boolean> => {
-  await page.goto('/review-cycles?status=active')
-  await page.getByRole('heading', { name: /^Assessment overview$/i }).waitFor()
-  await expect(page.getByTestId('review-cycles-mobile-cards')).toBeVisible()
-
-  await page.waitForFunction(() => {
-    const cards = document.querySelectorAll('[data-testid="review-cycles-mobile-cards"] > div')
-    const hasCard = Array.from(cards).some((el) => el.querySelector('h2'))
-    const hasEmpty = (document.body.textContent || '').includes('No assessments found.')
-    return hasCard || hasEmpty
+const openResponsiveReviewCycle = async (page: Page) => {
+  const token = (await page.context().cookies()).find(cookie => cookie.name === 'access_token')?.value
+  expect(token, 'The responsive fixture needs the signed-in test session').toBeTruthy()
+  const headers = { Authorization: `Bearer ${token}` }
+  const jurisdictionResponse = await page.request.get('/api/v1/jurisdictions?limit=1000', { headers })
+  expect(jurisdictionResponse.ok()).toBe(true)
+  const jurisdictions = await jurisdictionResponse.json()
+  const jurisdiction = jurisdictions.items.find((item: { code: string }) => item.code === 'example')
+  expect(jurisdiction, 'The global setup supplies the example jurisdiction').toBeTruthy()
+  const setsResponse = await page.request.get(`/api/v1/requirements/sets?jurisdiction_id=${jurisdiction.id}&limit=1000`, { headers })
+  expect(setsResponse.ok()).toBe(true)
+  const sets = await setsResponse.json()
+  const source = sets.items.find((item: { name: string }) => item.name === 'E2E Document')
+  expect(source, 'Use the seeded document with real review items, not an unrelated empty cycle').toBeTruthy()
+  const created = await page.request.post('/api/v1/review-cycles', {
+    headers,
+    data: { name: `E2E responsive detail ${Date.now()}`, jurisdiction_id: jurisdiction.id, document_ids: [source.document_id], scope: 'documents' },
   })
-
-  const hasEmptyState = await page.getByText('No assessments found.', { exact: false }).count()
-  if (hasEmptyState > 0) {
-    return false
-  }
-
-  const firstCard = page
-    .locator('[data-testid="review-cycles-mobile-cards"] > div')
-    .filter({ has: page.locator('h2') })
-    .first()
-  await firstCard.click()
-  await page.waitForURL(/\/review-cycles\/[^/]+/)
-  return true
+  expect(created.status()).toBe(201)
+  const cycle = await created.json()
+  await page.goto(`/review-cycles/${cycle.id}`)
+  await expect(page.getByLabel('Evidence for REQ-001', { exact: true })).toBeVisible()
 }
 
 const labelX = async (page: Page, text: RegExp): Promise<number> => {
@@ -202,8 +200,7 @@ test.describe('Responsive Layout', () => {
     await page.setViewportSize({ width: 390, height: 844 })
     await loginAsAdmin(page)
 
-    const opened = await openFirstReviewCycle(page)
-    test.skip(!opened, 'No review cycles available for responsive detail assertions.')
+    await openResponsiveReviewCycle(page)
 
     const requirementMobileX = await labelX(page, /^Requirement Status$/i)
     const responsibleMobileX = await labelX(page, /^Responsible owner$/i)
@@ -246,7 +243,9 @@ test.describe('Responsive Layout', () => {
     await comment.fill('')
 
     await page.getByRole('button', { name: 'Filters and view options', exact: true }).click()
+    await expect(page.locator('#assessment-tools')).toBeVisible()
     await page.getByRole('button', { name: 'Focus on one requirement', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Focus on one requirement', exact: true })).toHaveAttribute('aria-pressed', 'true')
     await expect(page.locator('[id^="review-item-"]')).toHaveCount(1)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Assessment overview', exact: true })).toBeVisible()
@@ -275,8 +274,14 @@ for (const colorScheme of ['light', 'dark'] as const) {
       await expect(page.getByRole('heading', { name: 'Form templates', exact: true })).toBeVisible()
       await expect(page.getByRole('navigation', { name: 'Library sections' })).toHaveCount(0)
       await expect(page.getByRole('link', { name: 'Return to your workspace' })).toHaveAttribute('href', '/certification-projects')
-      if (viewport.width < 1024) await page.getByRole('button', { name: 'Toggle navigation' }).click()
-      const nav = page.locator('nav[aria-label="Primary navigation"]:visible')
+      if (viewport.width < 1280) {
+        await page.getByRole('button', { name: 'Toggle navigation' }).click()
+      } else {
+        await page.getByRole('button', { name: 'Resources', exact: true }).click()
+      }
+      const nav = viewport.width < 1280
+        ? page.getByRole('dialog', { name: 'Navigation', exact: true }).getByRole('navigation', { name: 'Primary navigation', exact: true })
+        : page.locator('#resource-navigation')
       await expect(nav.getByRole('link', { name: 'Form templates', exact: true })).toHaveAttribute('aria-current', 'page')
       await nav.getByRole('link', { name: 'Evidence', exact: true }).click()
       await expect(page.getByRole('heading', { name: 'Evidence', exact: true }).first()).toBeVisible()

@@ -1,0 +1,73 @@
+.cap-overview-heading { display: flex; justify-content: space-between; gap: 24px; align-items: center; margin-bottom: 24px; }
+.cap-overview-heading p { color: rgb(var(--muted)); margin-top: 7px; }
+.cap-overview-tabs { display: flex; gap: 28px; border-bottom: 1px solid rgb(var(--line)); margin-bottom: 24px; }
+.cap-overview-tabs button { min-height: 48px; border-bottom: 3px solid transparent; padding: 8px 4px; font-weight: 600; color: rgb(var(--muted)); }
+.cap-overview-tabs button[aria-current='page'] { color: rgb(var(--accent)); border-bottom-color: rgb(var(--accent)); }
+.cap-team-work { border: 1px solid rgb(var(--line)); background: rgb(var(--surface)); border-radius: 6px; }
+.cap-work-toolbar { padding: 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.cap-work-toolbar label { display: flex; align-items: center; gap: 8px; color: rgb(var(--muted)); font-size: 13px; }
+.cap-work-toolbar select { padding: 9px 30px 9px 10px; max-width: 210px; min-height: 40px; color: rgb(var(--ink)); }
+.cap-work-filters { display: flex; flex-wrap: wrap; gap: 4px; }
+.cap-work-filters button { min-height: 40px; padding: 8px 12px; border: 1px solid rgb(var(--line)); border-radius: 5px; color: rgb(var(--muted)); }
+.cap-work-filters button[aria-pressed='true'] { border-color: rgb(var(--accent)); color: rgb(var(--accent)); background: rgb(var(--brand-soft)); }
+.cap-work-summary { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 12px 20px; border-top: 1px solid rgb(var(--line)); color: rgb(var(--muted)); font-size: 13px; }
+.cap-work-table-scroll { max-width: 100%; overflow-x: auto; }
+.cap-work-table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+.cap-work-table th { color: rgb(var(--muted)); background: rgb(var(--subtle)); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .035em; padding: 14px 18px; }
+.cap-work-table td { padding: 14px 18px; border-bottom: 1px solid rgb(var(--line)); max-width: 280px; vertical-align: middle; overflow-wrap: anywhere; }
+.cap-work-table tr:last-child td { border-bottom: 0; }
+.cap-work-table tbody tr:hover { background: rgb(var(--subtle) / .55); }
+.cap-work-title { color: rgb(var(--accent)); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.cap-work-kind { display: block; color: rgb(var(--muted)); font-size: 12px; margin-top: 4px; }
+.cap-work-person { display: flex; align-items: center; gap: 9px; }
+.cap-work-action { color: rgb(var(--accent)); display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; }
+.cap-work-action:hover { text-decoration: underline; }
+.cap-work-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; border-top: 1px solid rgb(var(--line)); padding: 16px 20px; color: rgb(var(--muted)); font-size: 13px; }
+.cap-work-footer nav { display: flex; gap: 8px; }
+.cap-density { display: flex; align-items: center; gap: 8px; }
+.cap-team-work.comfortable td { padding-top: 23px; padding-bottom: 23px; }
+.cap-work-empty { padding: 44px 24px; color: rgb(var(--muted)); }
+.cap-work-empty h2 { color: rgb(var(--ink)); font-size: 18px; font-weight: 650; }
+.cap-work-empty p { margin: 8px 0 20px; }
+.cap-workload { border-top: 1px solid rgb(var(--line)); padding: 16px 20px; }
+.cap-workload summary { color: rgb(var(--ink)); font-weight: 600; }
+.cap-workload > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.cap-workload button { display: flex; gap: 16px; padding: 10px 12px; border: 1px solid rgb(var(--line)); border-radius: 5px; }
+.cap-workload button span { color: rgb(var(--muted)); }
+.cap-programme-table { border: 1px solid rgb(var(--line)); border-radius: 6px; background: rgb(var(--surface)); overflow-x: auto; }
+.cap-personal-work .dashboard-surface { border-radius: 6px; }
+.cap-personal-work .dashboard-surface > div:first-child { border-bottom: 1px solid rgb(var(--line)); padding-bottom: 16px; }
+.cap-personal-work .dashboard-surface [aria-label='Assignment scope'] { margin-bottom: 12px; }
+.cap-personal-work .dashboard-surface [aria-label='Assignment scope'] p { font-size: 13px; }
+.cap-overview-insights { margin-top: 24px; border-top: 1px solid rgb(var(--line)); padding-top: 20px; }
+.cap-overview-insights summary { width: fit-content; font-weight: 600; color: rgb(var(--muted)); min-height: 40px; }
+@media(max-width: 767px) {
+ .cap-overview-heading { align-items: flex-start; gap: 14px; flex-direction: column; margin-bottom: 16px; }
+ .cap-overview-tabs { gap: 20px; margin-bottom: 16px; }
+ .cap-work-toolbar { padding: 14px; gap: 12px; }
+ .cap-work-toolbar label { width: calc(50% - 6px); display: block; }
+ .cap-work-toolbar select { display: block; width: 100%; max-width: none; margin-top: 5px; min-height: 44px; }
+ .cap-work-table { min-width: 830px; }
+ .cap-work-summary { padding-inline: 14px; }
+ .cap-work-footer { padding: 14px; }
+ .cap-work-footer nav { width: 100%; }
+ .cap-work-footer nav button { flex: 1; }
+ .cap-work-filters button { min-height: 44px; }
+}
+
+/* Keep wide tables inside their own scroller, including inside flex/grid layouts. */
+.dashboard-content, .cap-team-work, .cap-programme-table { min-width: 0; max-width: 100%; }
+.cap-team-work { width: 100%; }
+.cap-work-toolbar, .cap-work-summary, .cap-work-footer, .cap-workload { min-width: 0; }
+.cap-work-toolbar label, .cap-work-toolbar select { min-width: 0; }
+.cap-work-table-scroll { width: 100%; min-width: 0; }
+.cap-work-footer nav { min-width: 0; flex-wrap: wrap; }
+.cap-workload button { max-width: 100%; min-width: 0; flex-wrap: wrap; text-align: left; overflow-wrap: anywhere; }
+@media(max-width: 767px) {
+ .cap-work-toolbar label { flex: 1 1 calc(50% - 6px); }
+ .cap-work-filters { flex-basis: 100%; min-width: 0; }
+ .cap-work-footer nav button { min-width: 0; white-space: normal; }
+ .cap-overview-tabs { flex-wrap: wrap; column-gap: 16px; }
+}
+/* Anchor visually hidden table headings inside the scroller's clipping context. */
+.cap-work-table-scroll, .cap-programme-table { position: relative; }

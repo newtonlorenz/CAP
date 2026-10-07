@@ -63,7 +63,7 @@ class RequirementFieldSource(BaseModel):
 class PreparationField(BaseModel):
     key: str = Field(max_length=64)
     label: str = Field(max_length=2000)
-    section: str = Field(default="General", max_length=100)
+    section: str = Field(default="General", max_length=1000)
     help_text: str | None = Field(default=None, max_length=10000)
     type: FieldType
     required: bool = True
@@ -204,6 +204,7 @@ class CaseCreate(BaseModel):
     jurisdiction_id: uuid.UUID
     name: str = Field(min_length=1, max_length=255)
     owner_id: uuid.UUID | None = None
+    reviewer_id: uuid.UUID | None = None
     due_date: date | None = None
     project_id: uuid.UUID | None = None
 
@@ -227,6 +228,7 @@ class CasePatch(BaseModel):
     expected_revision: int = Field(ge=1)
     name: str | None = Field(default=None, min_length=1, max_length=255)
     owner_id: uuid.UUID | None = None
+    reviewer_id: uuid.UUID | None = None
     due_date: date | None = None
     project_id: uuid.UUID | None = None
     status: Literal["active", "archived"] | None = None
@@ -259,6 +261,28 @@ class RevisionRequest(BaseModel):
     expected_revision: int = Field(ge=1)
 
 
+class ReturnResponseRequest(RevisionRequest):
+    comment: str = Field(min_length=1, max_length=10000)
+
+    @field_validator("comment")
+    @classmethod
+    def nonblank_comment(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Feedback is required")
+        return value.strip()
+
+
+class ReviewFeedbackOut(BaseModel):
+    id: uuid.UUID
+    comment: str
+    created_by: uuid.UUID
+    created_by_name: str | None
+    created_at: datetime
+    returned_revision: int
+    resolved_at: datetime | None
+    resolved_by: uuid.UUID | None
+
+
 class ReuseRequest(RevisionRequest):
     source_case_id: uuid.UUID
     source_field_key: str
@@ -279,6 +303,10 @@ class Readiness(BaseModel):
 
 
 class ResponseOut(BaseModel):
+    review_status: Literal["pending_review", "changes_requested", "accepted"] = "pending_review"
+    last_saved_at: datetime | None = None
+    last_saved_by: uuid.UUID | None = None
+    feedback: list[ReviewFeedbackOut] = Field(default_factory=list)
     field_key: str
     value: str | float | bool | None
     not_applicable_reason: str | None
@@ -290,6 +318,9 @@ class ResponseOut(BaseModel):
 
 
 class CaseOut(BaseModel):
+    reviewer_id: uuid.UUID | None = None
+    reviewer_name: str | None = None
+    reviewer_source: Literal["case", "project", "pack"] | None = None
     access: dict | None = None
     id: uuid.UUID
     name: str

@@ -16,6 +16,7 @@ import type {
 } from '../../types/preparation'
 import {
   PREPARATION_FIELD_TYPES,
+  PREPARATION_SECTION_MAX_LENGTH,
   PREPARATION_KINDS,
   nextPreparationFieldKey,
   preparationLabel,
@@ -435,7 +436,7 @@ export default function TemplateBuilder({
                   <label className="text-sm font-medium">
                     Section
                     <input
-                      maxLength={100}
+                      maxLength={PREPARATION_SECTION_MAX_LENGTH}
                       className={fieldClass}
                       value={field.section}
                       onChange={(event) =>

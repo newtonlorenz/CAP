@@ -9,9 +9,9 @@ import NavigationSearch from './NavigationSearch'
 import ToastViewport from './ToastViewport'
 import ProductFeedback from './ProductFeedback'
 import { useSiteContent } from '../contexts/SiteContentContext'
-import Tooltip from './ui/Tooltip'
-
-const DESKTOP_SIDEBAR_COLLAPSED_KEY = 'cap:desktopSidebarCollapsed'
+import useProductTour from './useProductTour'
+import ProductTourInvitation from './ProductTourInvitation'
+import './productTour.css'
 
 type NavItem = {
   path: string
@@ -61,7 +61,8 @@ const HamburgerIcon = () => (
 
 const dashboardItem: NavItem = {
   path: '/',
-  label: 'Dashboard',
+  label: 'Overview',
+  aliases: ['Dashboard'],
   icon: (
     <Icon>
       <path d="M3 10.5L12 3l9 7.5" />
@@ -250,71 +251,29 @@ const adminItems: NavItem[] = [
 ]
 
 export default function Layout() {
-  const { user, sessionError } = useAuth()
-  const {
-    jurisdictionId,
-    jurisdictions,
-    isLoading: isJurisdictionLoading,
-    error: jurisdictionError,
-    retry: retryJurisdictions,
-    setJurisdictionId,
-  } = useJurisdiction()
+  const { user, sessionError, isLoading: isAuthLoading } = useAuth()
+  const { jurisdictionId, jurisdictions, isLoading: isJurisdictionLoading, error: jurisdictionError, retry: retryJurisdictions, setJurisdictionId } = useJurisdiction()
+  const { brand } = useSiteContent()
   const location = useLocation()
-  const [resourcesExpanded, setResourcesExpanded] = useState<boolean | null>(() => { try { const stored = localStorage.getItem('cap:resourcesExpanded'); return stored === null ? null : stored === 'true' } catch { return null } })
+  const [resourcesOpen, setResourcesOpen] = useState(false)
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
+  const tour = useProductTour({
+    userId: user?.id, ready: !!user && !isAuthLoading,
+    routeKey: `${location.pathname}${location.search}${location.hash}`,
+    prepare: () => setIsMobileNavOpen(false),
+  })
+  const isResourcesVisible = resourcesOpen || (tour.isRunning && window.innerWidth >= 1280)
+  const resourcesRef = useRef<HTMLDivElement>(null)
+  const resourcesTrigger = useRef<HTMLButtonElement>(null)
   const mobileDrawerRef = useRef<HTMLElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!isMobileNavOpen) return
-    const previous = document.activeElement as HTMLElement | null
-    const previousOverflow = document.body.style.overflow
-    const content = contentRef.current
-    const desktop = document.querySelector<HTMLElement>('[data-testid="desktop-sidebar"]')
-    content?.setAttribute('inert', '')
-    desktop?.setAttribute('inert', '')
-    document.body.style.overflow = 'hidden'
-    const focusable = () => Array.from(mobileDrawerRef.current?.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), select:not([disabled]), [tabindex="0"]'
-    ) || [])
-    focusable()[0]?.focus()
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        setIsMobileNavOpen(false)
-      }
-      if (event.key !== 'Tab') return
-      const items = focusable()
-      const first = items[0]
-      const last = items[items.length - 1]
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault(); last?.focus()
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault(); first?.focus()
-      }
-    }
-    const onResize = () => {
-      if (window.innerWidth >= 1024) setIsMobileNavOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    window.addEventListener('resize', onResize)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      window.removeEventListener('resize', onResize)
-      content?.removeAttribute('inert')
-      desktop?.removeAttribute('inert')
-      document.body.style.overflow = previousOverflow
-      previous?.focus()
-    }
-  }, [isMobileNavOpen])
-  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false
-    try { return window.localStorage.getItem(DESKTOP_SIDEBAR_COLLAPSED_KEY) === '1' } catch { return false }
-  })
-
-  const linkClass = ({ collapsed }: { isActive: boolean; collapsed: boolean }) =>
-    `app-nav-link group flex w-full items-center ${collapsed ? 'justify-center px-2' : 'gap-3 px-3'} py-2`
-
+  const coreItems = [dashboardItem, licenceApplicationsItem, certificationProjectsItem, changeManagementItem]
+  const secondarySections: NavSection[] = [
+    { id: 'resources', label: 'Resources', items: resourceItems },
+    { id: 'workspace', label: 'Workspace', items: [teamsItem, reportsItem] },
+    { id: 'help', label: 'Help', items: [guideItem, changeNotesItem] },
+    ...(user?.role === 'admin' ? [{ id: 'admin', label: 'Administration', items: adminItems }] : []),
+  ]
   const requestedLibrarySection = new URLSearchParams(location.search).get('section')
   const librarySection = ['requirements', 'templates', 'evidence', 'forms'].includes(requestedLibrarySection || '') ? requestedLibrarySection : 'templates'
   const itemActive = (item: NavItem) => {
@@ -326,161 +285,112 @@ export default function Layout() {
     return Array.from(new URLSearchParams(search)).every(([key, value]) =>
       (key === 'section' ? librarySection : new URLSearchParams(location.search).get(key)) === value)
   }
-  const renderNavLink = (item: NavItem, collapsed: boolean) => (
-    <Tooltip key={item.path} content={collapsed ? item.label : undefined}><Link
-      to={item.path}
-      aria-current={itemActive(item) ? 'page' : undefined}
-      aria-label={item.label}
-      className={linkClass({ isActive: itemActive(item), collapsed })}
-    >
-      {item.icon}
-      {collapsed ? null : <span className="truncate">{item.label}</span>}
-    </Link></Tooltip>
-  )
-
-  const renderNav = ({
-    collapsed,
-    includeAdmin,
-  }: {
-    collapsed: boolean
-    includeAdmin: boolean
-  }) => (
-    <div className="min-h-0 flex-1 overflow-y-auto pb-6">
-      <nav
-        aria-label="Primary navigation"
-        data-testid="primary-nav"
-        className="flex flex-col gap-1 px-2"
-      >
-        {primaryNavSections.map((section, index) => (
-          <div
-            key={section.id}
-            data-testid={`nav-section-${section.id}`}
-            className={index === 0 ? undefined : 'mt-5'}
-          >
-            {collapsed ? null : (
-              <div className="app-nav-section mb-2 px-3">
-                {section.label}
-              </div>
-            )}
-            <div className="flex flex-col gap-1">
-              {section.items.map((item) => renderNavLink(item, collapsed))}
-            </div>
-          </div>
-        ))}
-        <details open={resourcesExpanded ?? resourceItems.some(itemActive)} className="mt-5 px-3" data-testid="nav-resources">
-          <summary className="app-nav-section cursor-pointer" onClick={event => {
-            event.preventDefault()
-            const open = !(resourcesExpanded ?? resourceItems.some(itemActive))
-            setResourcesExpanded(open)
-            try { localStorage.setItem('cap:resourcesExpanded', String(open)) } catch { /* Keep navigation usable without storage. */ }
-          }}>Resources</summary>
-          <div className="mt-2 flex flex-col gap-1">{resourceItems.map((item) => renderNavLink(item, collapsed))}</div>
-        </details>
-        {includeAdmin && user?.role === 'admin' && (
-          <>
-            <div className="mb-1 mt-5" aria-hidden={collapsed ? 'true' : undefined}>
-              {collapsed ? null : (
-                <div className="app-nav-section mb-2 px-3">
-                  Admin
-                </div>
-              )}
-            </div>
-            {adminItems.map((item) => renderNavLink(item, collapsed))}
-          </>
-        )}
-      </nav>
-    </div>
-  )
-
-  useEffect(() => {
-    setIsMobileNavOpen(false)
-  }, [location.pathname, location.search])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    try { window.localStorage.setItem(
-      DESKTOP_SIDEBAR_COLLAPSED_KEY,
-      isDesktopSidebarCollapsed ? '1' : '0',
-    ) } catch { /* Navigation remains usable when storage is blocked. */ }
-  }, [isDesktopSidebarCollapsed])
-
-  const pageItems = primaryNavSections.flatMap((section) => section.items.map((item) => ({ ...item, section: section.label })))
-    .concat(resourceItems.map((item) => ({ ...item, section: 'Resources' })))
-    .concat(user?.role === 'admin' ? adminItems.map((item) => ({ ...item, section: 'Admin' })) : [])
+  const pageItems = primaryNavSections.flatMap(section => section.items.map(item => ({ ...item, section: section.label })))
+    .concat(resourceItems.map(item => ({ ...item, section: 'Resources' })))
+    .concat(user?.role === 'admin' ? adminItems.map(item => ({ ...item, section: 'Administration' })) : [])
+    .concat([{ path: '/account', label: 'My account', section: 'Account', icon: <></> }])
   const currentPage = pageItems.find(itemActive)
-  const pageLabel = location.pathname === '/market-setup' ? 'Market setup' : location.pathname.startsWith('/review-cycles/') ? 'Requirement assessment' : location.pathname === '/account' ? 'My account' : currentPage?.label || 'Overview'
-  const { brand } = useSiteContent()
+  const pageLabel = location.pathname === '/market-setup' ? 'Market setup' : location.pathname.startsWith('/review-cycles/') ? 'Requirement assessment' : currentPage?.label || 'Overview'
   useEffect(() => { document.title = `${pageLabel} · ${brand.name}` }, [pageLabel, brand.name])
+  useEffect(() => { setIsMobileNavOpen(false); setResourcesOpen(false) }, [location.pathname, location.search])
+  useEffect(() => {
+    if (!resourcesOpen || tour.isRunning) return
+    const dismiss = (event: PointerEvent) => { if (!resourcesRef.current?.contains(event.target as Node)) setResourcesOpen(false) }
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); setResourcesOpen(false); resourcesTrigger.current?.focus() }
+    }
+    document.addEventListener('pointerdown', dismiss)
+    document.addEventListener('keydown', escape)
+    return () => { document.removeEventListener('pointerdown', dismiss); document.removeEventListener('keydown', escape) }
+  }, [resourcesOpen, tour.isRunning])
+  useEffect(() => {
+    if (!isMobileNavOpen) return
+    const previous = document.activeElement as HTMLElement | null
+    const previousOverflow = document.body.style.overflow
+    const content = contentRef.current
+    content?.setAttribute('inert', '')
+    document.body.style.overflow = 'hidden'
+    const focusable = () => Array.from(mobileDrawerRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), select:not([disabled]), [tabindex="0"]') || [])
+    focusable()[0]?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      // A draft confirmation opened from navigation owns focus until it closes.
+      if (document.querySelector('[role="dialog"]:not([aria-label="Navigation"])')) return
+      if (event.key === 'Escape') { event.preventDefault(); setIsMobileNavOpen(false) }
+      if (event.key !== 'Tab') return
+      const items = focusable(), first = items[0], last = items[items.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus() }
+    }
+    const onResize = () => { if (window.innerWidth >= 1280) setIsMobileNavOpen(false) }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('resize', onResize)
+    return () => {
+      window.removeEventListener('keydown', onKey); window.removeEventListener('resize', onResize)
+      content?.removeAttribute('inert'); document.body.style.overflow = previousOverflow; previous?.focus()
+    }
+  }, [isMobileNavOpen])
   const needsJurisdiction = !['/jurisdictions', '/guide', '/change-notes', '/access-teams', '/library'].includes(location.pathname) && !location.pathname.startsWith('/admin/')
   const noJurisdiction = needsJurisdiction && !isJurisdictionLoading && !jurisdictionError && jurisdictions.length === 0
-  const jurisdictionSelector = (variant: string) => (
-    <div className="mx-3 mb-5 rounded-lg border border-line bg-canvas px-3 py-2.5">
-      <label className="mb-1 block text-[10px] font-semibold text-muted" htmlFor={`jurisdiction-${variant}`}>Jurisdiction</label>
-      <div className="relative">
-        <select id={`jurisdiction-${variant}`} aria-label="Jurisdiction selector"
-          value={jurisdictionId || ''} onChange={(event) => setJurisdictionId(event.target.value)}
-          disabled={isJurisdictionLoading || jurisdictions.length <= 1}
-          className="min-h-9 w-full appearance-none border border-line-strong bg-surface py-1.5 pl-2.5 pr-8 text-xs font-semibold text-ink disabled:opacity-100">
-          {!jurisdictions.length && <option value="">{isJurisdictionLoading ? 'Loading…' : 'No active jurisdictions'}</option>}
-          {jurisdictions.map((item) => <option className="bg-surface text-ink" key={item.id} value={item.id}>{item.name}</option>)}
-        </select>
-        <svg aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="m6 9 6 6 6-6" /></svg>
+  const jurisdictionSelector = (variant: string) => <div className="cap-market-selector">
+    <label className="sr-only" htmlFor={`jurisdiction-${variant}`}>Jurisdiction</label>
+    <select id={`jurisdiction-${variant}`} aria-label="Jurisdiction selector" value={jurisdictionId || ''}
+      onChange={event => setJurisdictionId(event.target.value)} disabled={isJurisdictionLoading || jurisdictions.length <= 1}>
+      {!jurisdictions.length && <option value="">{isJurisdictionLoading ? 'Loading…' : 'No active jurisdictions'}</option>}
+      {jurisdictions.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+    </select>
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="m6 9 6 6 6-6" /></svg>
+  </div>
+  const resourceLink = (item: NavItem) => <Link key={item.path} to={item.path} aria-current={itemActive(item) ? 'page' : undefined}
+    data-tour={item === requirementsItem ? 'requirements' : item === reviewsItem ? 'assessment' : item === evidenceItem ? 'evidence' : item === reportsItem ? 'reports' : undefined}
+    className="app-nav-link flex items-center gap-3 px-3 py-2">{item.icon}<span>{item.label}</span></Link>
+  const tourEntry = <button type="button" aria-label="Product tour" disabled={tour.isRunning}
+    className="app-nav-link flex w-full items-center gap-3 px-3 py-2 text-left" onClick={() => { void tour.start() }}>
+    <Icon><circle cx="12" cy="12" r="9" /><path d="m10 8 6 4-6 4z" /></Icon><span>Product tour</span>
+  </button>
+
+  return <ToastProvider>
+    <div className="app-modern-shell min-h-screen">
+      <a href="#main-content" className="skip-link">Skip to content</a>
+      <ToastViewport /><ProductFeedback />
+      {isMobileNavOpen && <>
+        <div className="fixed inset-0 z-40 bg-slate-950/60 xl:hidden" onClick={() => setIsMobileNavOpen(false)} aria-hidden="true" />
+        <aside data-testid="mobile-nav-drawer" id="mobile-navigation" ref={mobileDrawerRef} role="dialog" aria-modal="true" aria-label="Navigation" className="cap-mobile-drawer fixed inset-y-0 left-0 z-50 flex w-80 max-w-[90vw] flex-col bg-surface xl:hidden">
+          <div className="flex items-center justify-between border-b border-line px-5 py-4"><Brand /><button type="button" onClick={() => setIsMobileNavOpen(false)} className="min-h-11 rounded-md px-3 text-sm text-muted">Close</button></div>
+          <div className="border-b border-line px-5 py-3">{jurisdictionSelector('mobile')}</div>
+          <nav aria-label="Primary navigation" className="min-h-0 overflow-y-auto p-3">
+            {coreItems.map(resourceLink)}
+            {secondarySections.map(section => <section key={section.id} className="mt-5"><h2 className="mb-1 px-3 text-xs font-semibold text-muted">{section.label}</h2>{section.items.map(resourceLink)}{section.id === 'help' && tourEntry}</section>)}
+            <div className="mt-4 border-t border-line pt-3"><Link to="/account" className="app-nav-link block px-3 py-2">My account</Link></div>
+          </nav>
+        </aside>
+      </>}
+      <div ref={contentRef} className="min-w-0">
+        <header className="app-topbar">
+          <button type="button" data-testid="mobile-nav-toggle" onClick={() => setIsMobileNavOpen(value => !value)} className="cap-mobile-toggle" aria-label="Toggle navigation" aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation"><HamburgerIcon /></button>
+          <Link to="/" className="cap-header-brand" aria-label={`${brand.name} overview`}><Brand /></Link>
+          <div className="cap-header-market">{jurisdictionSelector('desktop')}</div>
+          <nav aria-label="Primary navigation" data-testid="primary-nav" className="cap-primary-nav">
+            {coreItems.map(item => <Link key={item.path} to={item.path} className="cap-primary-link" aria-current={itemActive(item) ? 'page' : undefined}>{item.label}</Link>)}
+            <div className="cap-resources" ref={resourcesRef} onBlur={event => { if (!tour.isRunning && !event.currentTarget.contains(event.relatedTarget as Node | null)) setResourcesOpen(false) }}>
+              <button ref={resourcesTrigger} data-testid="resources-trigger" type="button" className="cap-primary-link" aria-expanded={isResourcesVisible} aria-controls="resource-navigation" data-active={secondarySections.some(section => section.items.some(itemActive)) || undefined}
+                onClick={() => setResourcesOpen(value => !value)} onKeyDown={event => {
+                  if (event.key === 'ArrowDown') { event.preventDefault(); setResourcesOpen(true); requestAnimationFrame(() => resourcesRef.current?.querySelector<HTMLAnchorElement>('a')?.focus()) }
+                }}>Resources<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m6 9 6 6 6-6" /></svg></button>
+              {isResourcesVisible && <div id="resource-navigation" className="cap-resource-panel" data-testid="nav-resources">
+                {secondarySections.map(section => <section key={section.id}><h2>{section.label}</h2>{section.items.map(resourceLink)}{section.id === 'help' && tourEntry}</section>)}
+              </div>}
+            </div>
+          </nav>
+          <div className="cap-header-actions"><NavigationSearch items={pageItems} /><div className="cap-profile"><ProfileDropdown /></div></div>
+        </header>
+        <main id="main-content" tabIndex={-1} className="app-modern-content">
+          {tour.showInvitation && <ProductTourInvitation interrupted={tour.record?.status === 'interrupted'} onStart={() => { void tour.start(tour.record?.status === 'interrupted') }} onDismiss={tour.dismiss} />}
+          {tour.error && <p role="alert" className="mb-4 rounded-lg border border-warning-line bg-warning-soft p-3 text-sm text-warning">{tour.error}</p>}
+          {sessionError && <p role="alert" className="mb-4 rounded-md border border-danger-line bg-danger-soft p-3 text-sm text-danger">{sessionError}</p>}
+          {jurisdictionError && <p role="alert" className="mb-4 rounded-md border border-warning-line bg-warning-soft p-3 text-sm text-warning">{jurisdictionError} <button type="button" className="underline" onClick={retryJurisdictions}>Retry</button></p>}
+          {noJurisdiction && location.pathname !== '/account' ? <section className="cap-empty-state"><h1>Set up a jurisdiction</h1><p>An active jurisdiction is needed to organise requirements, projects and reviews.</p>{user?.role === 'admin' ? <NavLink className="mt-4 inline-block text-sm font-semibold text-accent underline" to="/jurisdictions">Manage jurisdictions</NavLink> : <p>Ask an administrator to activate your jurisdiction.</p>}</section> : <Suspense fallback={<p role="status" className="py-12 text-center text-muted">Loading workspace…</p>}><Outlet /></Suspense>}
+        </main>
       </div>
     </div>
-  )
-
-  return (
-    <ToastProvider>
-      <div className="app-modern-shell min-h-screen">
-        <a href="#main-content" className="skip-link">Skip to content</a>
-        <ToastViewport />
-        <ProductFeedback />
-        <div className="flex min-h-screen">
-          <aside data-testid="desktop-sidebar" className={`app-sidebar hidden shrink-0 lg:flex lg:flex-col ${isDesktopSidebarCollapsed ? 'w-16' : 'w-60'}`}>
-            <div className={`flex min-h-20 items-center gap-2 ${isDesktopSidebarCollapsed ? 'justify-center px-2' : 'justify-between px-5'}`}>
-              {!isDesktopSidebarCollapsed && <Brand />}
-              <Tooltip content={isDesktopSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}><button type="button" onClick={() => setIsDesktopSidebarCollapsed((value) => !value)}
-                className="shrink-0 rounded-md p-1.5 text-muted hover:bg-subtle hover:text-ink"
-                aria-label={isDesktopSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}><HamburgerIcon /></button></Tooltip>
-            </div>
-            {!isDesktopSidebarCollapsed && jurisdictionSelector('desktop')}
-            {renderNav({ collapsed: isDesktopSidebarCollapsed, includeAdmin: true })}
-            {!isDesktopSidebarCollapsed && <div className="mx-5 border-t border-line py-4 text-[11px] text-muted">Internal compliance workspace</div>}
-          </aside>
-          {isMobileNavOpen && <>
-            <div className="fixed inset-0 z-40 bg-slate-950/60 lg:hidden" onClick={() => setIsMobileNavOpen(false)} aria-hidden="true" />
-            <aside data-testid="mobile-nav-drawer" id="mobile-navigation" ref={mobileDrawerRef}
-              role="dialog" aria-modal="true" aria-label="Navigation"
-              className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-line bg-surface lg:hidden">
-              <div className="flex items-center justify-between px-5 py-6"><Brand />
-                <button type="button" onClick={() => setIsMobileNavOpen(false)} className="rounded-md border border-line px-2 py-1.5 text-xs text-muted">Close</button>
-              </div>
-              {jurisdictionSelector('mobile')}
-              {renderNav({ collapsed: false, includeAdmin: true })}
-            </aside>
-          </>}
-          <div ref={contentRef} className="min-w-0 flex-1">
-            <header className="app-topbar flex items-center justify-between gap-3 px-4 sm:px-7">
-              <div className="flex min-w-0 items-center gap-3">
-                <button type="button" data-testid="mobile-nav-toggle" onClick={() => setIsMobileNavOpen((value) => !value)}
-                  className="rounded-md p-2 text-muted hover:bg-subtle lg:hidden" aria-label="Toggle navigation"
-                  aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation"><HamburgerIcon /></button>
-                <div className="hidden items-center gap-2 text-xs sm:flex"><span className="text-faint">Workspace</span><span className="text-line-strong" aria-hidden="true">/</span><span className="font-semibold text-ink">{pageLabel}</span></div>
-                <span className="truncate text-xs font-semibold text-ink sm:hidden">{pageLabel}</span>
-              </div>
-              <div className="flex shrink-0 items-center gap-3 sm:gap-5">
-                <div className="hidden xl:block"><NavigationSearch items={pageItems} /></div>
-                <ProfileDropdown />
-              </div>
-            </header>
-            <main id="main-content" tabIndex={-1} className="app-modern-content p-4 sm:p-7">
-              {sessionError && <p role="alert" className="mb-4 rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger">{sessionError}</p>}
-              {jurisdictionError && <p role="alert" className="mb-4 rounded-lg border border-warning-line bg-warning-soft p-3 text-sm text-warning">{jurisdictionError} <button type="button" className="underline" onClick={retryJurisdictions}>Retry</button></p>}
-              {noJurisdiction && location.pathname !== '/account' ? <section className="rounded-xl border border-line bg-surface p-6"><h1 className="text-2xl font-semibold">Set up a jurisdiction</h1><p className="mt-3 text-sm text-muted">An active jurisdiction is needed to organise requirements, projects and reviews.</p>{user?.role === 'admin' ? <NavLink className="mt-4 inline-block text-sm font-semibold text-accent underline" to="/jurisdictions">Manage jurisdictions</NavLink> : <p className="mt-3 text-sm text-muted">Ask an administrator to activate your jurisdiction.</p>}</section> : <Suspense fallback={<p role="status" className="py-12 text-center text-muted">Loading workspace…</p>}><Outlet /></Suspense>}
-            </main>
-          </div>
-        </div>
-      </div>
-    </ToastProvider>
-  )
+  </ToastProvider>
 }

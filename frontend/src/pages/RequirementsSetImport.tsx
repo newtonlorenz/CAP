@@ -1,3 +1,4 @@
+import './workflow-pages.css'
 import { formatDate, formatDateTime } from '../utils/dateFormat'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -1032,7 +1033,7 @@ export default function RequirementsSetImport() {
   const structuredEngineUnavailable = isLocalStructuredExtraction && !pdfStructure?.available
 
   return (
-    <div className="min-w-0">
+    <div className="workflow-page requirement-import-page min-w-0">
       <div className="mb-6">
         <button
           onClick={() => navigate('/requirements')}
@@ -1050,7 +1051,7 @@ export default function RequirementsSetImport() {
 
 
 
-      <div className="mb-4 rounded-lg border border-line bg-surface p-4 sm:p-5">
+      <div className="import-source-heading mb-4 rounded-lg border border-line bg-surface p-4 sm:p-5">
         <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row">
           <div className="min-w-0">
             <h1 className="text-2xl font-bold text-ink">
@@ -1277,7 +1278,7 @@ export default function RequirementsSetImport() {
       />
 
       {effectiveCurrentStepId === 'metadata' && (user?.role === 'admin' || user?.role === 'manager' || user?.role === 'approver') && (
-        <div className="bg-surface shadow rounded-lg p-6 mb-6">
+        <div className="import-metadata-section bg-surface border border-line rounded-lg p-6 mb-6">
           <h2 className="text-lg font-semibold text-ink mb-4">Requirement Set Metadata</h2>
           <form
             onSubmit={(e) => {

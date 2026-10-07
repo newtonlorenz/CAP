@@ -36,26 +36,20 @@ test.describe('Change Management', () => {
     const registerSelect = page.getByLabel('Component Register', { exact: true })
     await expect(registerSelect).toBeVisible()
 
-    const registerOptionValues = await registerSelect
-      .locator('option')
-      .evaluateAll((options) => options.map((opt) => ({ value: opt.getAttribute('value') ?? '', text: opt.textContent ?? '' })))
-
-    const existingRegister = registerOptionValues.find((opt) => opt.value)
-    if (!existingRegister) {
-      const registerName = `E2E Register ${Date.now()}`
-      await page.getByRole('button', { name: /create register/i }).click()
-      await page.getByPlaceholder('Register name').fill(registerName)
-      await page.getByRole('button', { name: /save register/i }).click()
-      await expect(registerSelect.locator('option')).toHaveCount(2)
-    }
-
-    const updatedRegisterOptions = await registerSelect
-      .locator('option')
-      .evaluateAll((options) => options.map((opt) => opt.getAttribute('value') ?? ''))
-    const selectedRegister = updatedRegisterOptions.find((value) => value)
-    if (selectedRegister) {
-      await registerSelect.selectOption(selectedRegister)
-    }
+    // Create and select this workflow's own register, independent of prior fixtures.
+    const registerName = `E2E Register ${Date.now()}`
+    await page.getByRole('button', { name: /create register/i }).click()
+    await page.getByPlaceholder('Register name').fill(registerName)
+    const savedRegister = page.waitForResponse(response =>
+      response.url().endsWith('/change-management/registers') && response.request().method() === 'POST')
+    await page.getByRole('button', { name: /save register/i }).click()
+    const registerResponse = await savedRegister
+    expect(registerResponse.ok(), await registerResponse.text()).toBeTruthy()
+    const register = await registerResponse.json()
+    expect(register.name).toBe(registerName)
+    await expect(registerSelect.locator(`option[value="${register.id}"]`)).toContainText(registerName)
+    await registerSelect.selectOption(register.id)
+    await expect(registerSelect).toHaveValue(register.id)
 
     await page.getByRole('button',{name:'Components',exact:true}).click()
     await page.locator('summary', { hasText: /^Add Component$/ }).click()
@@ -97,10 +91,13 @@ test.describe('Change Management', () => {
     await editor.getByLabel('Next testing due date').fill(new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 16))
     await editor.getByRole('button', { name: 'Save draft', exact: true }).click()
 
+    await expect(page.getByRole('heading', { name: changeTitle, level: 2 })).toBeVisible()
+    await page.getByRole('button', { name: '← Back to changes', exact: true }).click()
     const changeRow = page.getByRole('list', { name: 'Changes' }).locator('li', { hasText: changeTitle })
     await expect(changeRow).toBeVisible()
     await changeRow.getByRole('button', { name: 'Details' }).click()
-    await page.getByRole('button', { name: 'Approve', exact: true }).click()
+    const selectedChangeHeader = page.getByRole('heading', { name: changeTitle, level: 2 }).locator('..')
+    await page.getByRole('button', { name: 'Review proposal', exact: true }).click()
     const approval = page.getByRole('dialog', { name: `Approve: ${changeTitle}` })
     await approval.getByPlaceholder('Enter required rationale').fill('CAB approval rationale')
     const approvalResponse = page.waitForResponse(response => response.url().endsWith('/approve') && response.request().method() === 'POST')
@@ -108,7 +105,7 @@ test.describe('Change Management', () => {
     const approvedResponse = await approvalResponse
     expect(approvedResponse.ok(), await approvedResponse.text()).toBeTruthy()
     const approved = await approvedResponse.json()
-    await expect(changeRow.getByText('Approved', { exact: true })).toBeVisible()
+    await expect(selectedChangeHeader.getByText('Approved', { exact: true })).toBeVisible()
 
     await page.getByRole('button', { name: 'Record implementation', exact: true }).click()
     const implementation = page.getByRole('dialog', { name: `Implement: ${changeTitle}` })
@@ -121,14 +118,15 @@ test.describe('Change Management', () => {
     await implementation.getByLabel('Implemented End').fill(actualStamp)
     await implementation.getByLabel(/actual version/).fill('1.1.0')
     await implementation.getByRole('button', { name: 'Implement Change', exact: true }).click()
-    await expect(changeRow.getByText('Implemented', { exact: true })).toBeVisible()
+    await expect(selectedChangeHeader.getByText('Implemented', { exact: true })).toBeVisible()
 
     await page.getByRole('button', { name: 'Verify', exact: true }).click()
     const verification = page.getByRole('dialog', { name: `Verify: ${changeTitle}` })
     await verification.getByPlaceholder('Enter required rationale').fill('Verification rationale')
     await verification.getByRole('button', { name: 'Verify Change', exact: true }).click()
-    await expect(changeRow.getByText('Verified', { exact: true })).toBeVisible()
+    await expect(selectedChangeHeader.getByText('Verified', { exact: true })).toBeVisible()
 
+    if (process.env.CAP_REVIEW_EVIDENCE_DIR) await page.screenshot({path: `${process.env.CAP_REVIEW_EVIDENCE_DIR}/generic-change-selected.png`, fullPage: true})
     await page.getByRole('button', { name: /baselines/i }).click()
     const baselineLabel = `E2E Baseline ${Date.now()}`
     await page.getByPlaceholder('Baseline label').fill(baselineLabel)

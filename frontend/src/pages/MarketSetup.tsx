@@ -1,3 +1,4 @@
+import './workflow-pages.css'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
@@ -97,14 +98,14 @@ export default function MarketSetup() {
     setBusy(false)
   }
   if (!canManage) return <Card className="p-5"><p role="alert">Only organization managers can edit market setup.</p><Link to="/licence-applications" className="text-accent underline">Return to licence packs</Link></Card>
-  return <div className="space-y-5 pb-10">
-    <div><Link to="/jurisdictions" className="text-sm text-accent underline">Jurisdictions</Link><h1 className="mt-2 text-3xl font-semibold">Market setup</h1><p className="mt-2 max-w-prose text-sm text-muted">Maintain the proposed checklist and authority sources for {jurisdictionById[jurisdictionId || '']?.name || 'the selected market'}. This is not a legal form definition.</p></div>
+  return <div className="workflow-page market-setup-page space-y-5 pb-10">
+    <div className="workflow-heading"><Link to="/jurisdictions" className="text-sm text-accent underline">Jurisdictions</Link><h1 className="mt-2 text-3xl font-semibold">Market setup</h1><p className="mt-2 max-w-prose text-sm text-muted">Maintain the proposed checklist and authority sources for {jurisdictionById[jurisdictionId || '']?.name || 'the selected market'}. This is not a legal form definition.</p></div>
     {!jurisdictionId && <p>Select a market to continue.</p>}
     {profile.isLoading && <p role="status">Loading market profile…</p>}
     {profile.isError && <p role="alert">Market profile could not be loaded. <Button onClick={() => void profile.refetch()}>Retry</Button></p>}
     {draft && <Card className="p-5 sm:p-7">
       <fieldset ref={editor} disabled={busy} className="min-w-0 space-y-5">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <section aria-label="Authority and source details" className="market-source-section"><h2 className="mb-4 text-lg font-semibold">Authority and source details</h2><div className="grid gap-4 sm:grid-cols-2">
           <Field label="Profile label"><input {...errorProps('label')} className={inputClass} value={draft.label} onChange={(e) => set({ label: e.target.value })} />{error('label')}</Field>
           <Field label="Authority"><input {...errorProps('authority')} className={inputClass} value={draft.authority} onChange={(e) => set({ authority: e.target.value })} />{error('authority')}</Field>
           <Field label="Status"><select className={inputClass} value={isSweden ? 'draft' : draft.status} disabled={isSweden} onChange={(e) => set({ status: e.target.value as MarketProfile['status'] })}><option value="draft">Draft</option><option value="published">Published</option></select>{isSweden && <span className="text-xs text-muted">Sweden remains a blank custom setup until its checklist is verified.</span>}</Field>
@@ -112,7 +113,7 @@ export default function MarketSetup() {
         </div>
         <Field label="Authority source URLs, one per line"><textarea {...errorProps('sources')} className={inputClass} rows={3} value={draft.source_urls.join('\n')} onChange={(e) => set({ source_urls: e.target.value.split('\n') })} />{error('sources')}</Field>
         <Field label="Guidance, one paragraph per line"><textarea className={inputClass} rows={3} value={draft.guidance.join('\n')} onChange={(e) => set({ guidance: e.target.value.split('\n') })} /></Field>
-        <section className="space-y-3"><h2 className="text-lg font-semibold">Setup questions</h2><p className="text-sm text-muted">Choose the questions shown when a pack starts. Answers shape the proposed checklist.</p>
+        </section><section className="market-questions-section space-y-3"><h2 className="text-lg font-semibold">Setup questions</h2><p className="text-sm text-muted">Choose the questions shown when a pack starts. Answers shape the proposed checklist.</p>
           {draft.setup_questions.map((question, index) => <div key={`${String(question.key)}-${index}`} className="flex flex-wrap items-end gap-3"><Field label="Question"><input {...errorProps(`question-${index}`)} className={inputClass} value={String(question.label || '')} onChange={(event) => set({ setup_questions: draft.setup_questions.map((current, i) => i === index ? { ...current, label: event.target.value } : current) })} />{error(`question-${index}`)}</Field><Button size="sm" onClick={() => set({ setup_questions: draft.setup_questions.filter((_, i) => i !== index) })}>Remove question</Button></div>)}
           <Field label="Add supported question"><select className={inputClass} value="" onChange={(event) => { const key = event.target.value; if (key) set({ setup_questions: [...draft.setup_questions, { key, label: questionLabels[key], type: key === 'people' ? 'people' : 'boolean' }] }) }}><option value="">Choose question</option>{supportedQuestions.filter((key) => !draft.setup_questions.some((question) => question.key === key)).map((key) => <option key={key} value={key}>{questionLabels[key]}</option>)}</select></Field>
         </section>

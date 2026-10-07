@@ -1,6 +1,6 @@
 import { formatDateTime } from '../utils/dateFormat'
 import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../api/client'
 import type { DashboardData, ProgramWorkspaceSummary } from '../types'
@@ -22,6 +22,8 @@ import NextBestActionsPanel from './dashboard/NextBestActionsPanel'
 import GettingStartedGuide from './dashboard/GettingStartedGuide'
 import { useGettingStarted } from './dashboard/useGettingStarted'
 import './dashboard/dashboard.css'
+import './dashboard/overview.css'
+import TeamWorkPanel from './dashboard/TeamWorkPanel'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -60,6 +62,8 @@ export default function Dashboard() {
   const role = user?.role || 'contributor'
   const canCreateSnapshots = role === 'admin' || role === 'manager'
   const canSeeOpsInsights = role === 'admin' || role === 'manager'
+  const view = canSeeOpsInsights && ['team', 'programmes'].includes(searchParams.get('view') || '') ? searchParams.get('view')! : 'mine'
+  const viewTitle = view === 'team' ? 'Team work' : view === 'programmes' ? 'Programmes' : 'My work'
   const gettingStarted = useGettingStarted(jurisdictionId, canSeeOpsInsights)
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -108,7 +112,7 @@ export default function Dashboard() {
     }
     return (
       <div className="dashboard-shell min-w-0">
-        <h1 className="dashboard-page-title mb-5 text-2xl font-semibold text-ink">Compliance Dashboard</h1>
+        <h1 className="dashboard-page-title mb-5 text-2xl font-semibold text-ink">Overview</h1>
         {jurisdictionError ? <div role="alert" className="mb-4 text-danger">{jurisdictionError} <button type="button" onClick={retryJurisdictions} className="underline">Try again</button></div> : null}
         {!jurisdictionError && <GettingStartedGuide stage="jurisdiction" isOperator={!!user?.installation_operator} />}
       </div>
@@ -152,29 +156,24 @@ export default function Dashboard() {
   return (
     <div className="dashboard-shell min-w-0">
       <div className="dashboard-content space-y-6">
-        <div className="mb-1 flex flex-wrap items-center justify-between gap-4">
+        <header className="cap-overview-heading">
           <div>
-            <h1 className="dashboard-page-title text-2xl font-semibold text-ink">
-              Compliance Dashboard
-            </h1>
-            {jurisdictionId && jurisdictionById[jurisdictionId] && (
-              <div className="mt-1 text-sm text-muted">
-                Jurisdiction: {jurisdictionById[jurisdictionId].name}
-              </div>
-            )}
-            <div className="mt-1 text-sm text-muted">
-              Generated: {formatDateTime(data.generated_at)}
-            </div>
+            <h1 className="dashboard-page-title">{viewTitle}</h1>
+            <p>{view === 'team' ? 'See what is delayed, who owns it and what can move next.' : view === 'programmes' ? 'Follow readiness, assessments and the next decisions across your programmes.' : 'Your assignments, next actions and work waiting for your review.'}</p>
           </div>
-          <nav aria-label="Compliance workflows" className="flex flex-wrap gap-2"><LinkButton to="/licence-applications">Licence Applications</LinkButton><LinkButton to="/certification-projects">Certifications</LinkButton><LinkButton to="/change-management">Change Management</LinkButton></nav>
-        </div>
+          {canSeeOpsInsights ? <LinkButton to="/answer-review">Review answers</LinkButton> : <LinkButton to="/licence-applications">Licence Applications</LinkButton>}
+        </header>
+        <nav className="cap-overview-tabs" aria-label="Overview views">
+          <button type="button" aria-current={view === 'mine' ? 'page' : undefined} onClick={() => updateWork({ view: 'mine' })}>My work</button>
+          {canSeeOpsInsights && <><button type="button" aria-current={view === 'team' ? 'page' : undefined} onClick={() => updateWork({ view: 'team' })}>Team work</button><button type="button" aria-current={view === 'programmes' ? 'page' : undefined} onClick={() => updateWork({ view: 'programmes' })}>Programmes</button></>}
+        </nav>
 
         {canSeeOpsInsights && !gettingStarted.isLoading && (gettingStarted.isError || gettingStarted.stage !== 'complete') ? (
           <GettingStartedGuide stage={gettingStarted.stage} isOperator={!!user?.installation_operator} error={gettingStarted.isError} onRetry={gettingStarted.retry} />
         ) : null}
 
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-          <div className="space-y-6">
+        {view === 'team' && <TeamWorkPanel key={jurisdictionId} jurisdictionId={jurisdictionId} />}
+        {view === 'mine' && <div className="cap-personal-work">
             <MyWorkPanel assignedRequirements={data.my_work.assigned_requirements} assignedReviewItems={data.my_work.assigned_review_items} assignedForms={data.my_work.assigned_forms} authorityQueries={data.my_work.authority_queries} primaryMode={primaryMyWorkMode}
               scope={workScope} page={workPage} pageSize={workPageSize} expanded={workExpanded}
               onScopeChange={scope => updateWork({ work_scope: scope, work_page: '1', work_mode: primaryMyWorkMode })}
@@ -182,13 +181,17 @@ export default function Dashboard() {
               onPageChange={page => updateWork({ work_page: String(page), work_mode: primaryMyWorkMode })}
               onExpand={() => updateWork({ work_all: 'true', work_page: '1', work_mode: primaryMyWorkMode })}
             />
-            {canSeeOpsInsights && <NextBestActionsPanel actions={orchestrationQuery.data?.next_actions ?? []} projects={orchestrationQuery.data?.items ?? []} isLoading={orchestrationQuery.isLoading} isError={orchestrationQuery.isError} onRetry={() => { void orchestrationQuery.refetch() }} />}
-          </div>
-          <div className="space-y-6">
-            <ReviewCyclesPanel cycles={data.review_cycles.active} />
-          </div>
-        </div>
-
+        </div>}
+        {view === 'programmes' && <div className="space-y-6">
+          <nav aria-label="Compliance workflows" className="flex flex-wrap gap-2"><LinkButton to="/licence-applications">Licence Applications</LinkButton><LinkButton to="/certification-projects">Certifications</LinkButton><LinkButton to="/change-management">Change Management</LinkButton></nav>
+          <section aria-label="Certification programme readiness" className="cap-programme-table">
+            {orchestrationQuery.isLoading ? <p role="status" className="p-6 text-muted">Loading programmes…</p> : orchestrationQuery.isError ? <p role="alert" className="p-6 text-danger">Unable to load programme readiness. <button type="button" className="underline" onClick={() => void orchestrationQuery.refetch()}>Try again</button></p> : orchestrationQuery.data?.items.length ? <table className="cap-work-table"><thead><tr><th>Certification programme</th><th>Current stage</th><th>Readiness</th><th>Target submission</th><th><span className="sr-only">Action</span></th></tr></thead><tbody>{orchestrationQuery.data.items.map(item => <tr key={item.project_id}><td><Link className="cap-work-title" to={item.deep_links.project}>{item.project_name}</Link></td><td>{item.stage.replace(/_/g, ' ')}</td><td><span className={item.current_stage_readiness.ready ? 'text-success' : 'text-warning'}>{item.current_stage_readiness.ready ? 'Ready for next stage' : `${item.current_stage_readiness.blocker_count} outstanding checks`}</span></td><td>{item.target_submission_date ? formatDateTime(item.target_submission_date) : 'Not set'}</td><td><Link className="cap-work-action" to={`/program-workspace?project=${item.project_id}`}>View readiness</Link></td></tr>)}</tbody></table> : <div className="cap-work-empty"><h2>No certification programmes in this market</h2><p>Create a certification project to organise its baseline, assessments and submission readiness.</p><LinkButton to="/certification-projects">Open Certifications</LinkButton></div>}
+          </section>
+          <NextBestActionsPanel actions={orchestrationQuery.data?.next_actions ?? []} projects={orchestrationQuery.data?.items ?? []} isLoading={orchestrationQuery.isLoading} isError={orchestrationQuery.isError} onRetry={() => { void orchestrationQuery.refetch() }} />
+          <ReviewCyclesPanel cycles={data.review_cycles.active} />
+        </div>}
+        <details className="cap-overview-insights"><summary>Activity and reporting</summary>
+        <p className="my-3 text-xs text-muted">{jurisdictionById[jurisdictionId]?.name} · Updated {formatDateTime(data.generated_at)}</p>
         {(data.kpis.overall.total > 0 || data.kpis.mandatory.total > 0 || data.kpis.at_risk_count > 0) && <KpiCards overall={data.kpis.overall} mandatory={data.kpis.mandatory} atRiskCount={data.kpis.at_risk_count} />}
 
         <RecentActivityFeed items={data.recent_activity} />
@@ -222,6 +225,7 @@ export default function Dashboard() {
             ) : null}
           </section>
         ) : null}
+        </details>
       </div>
       <DecisionModal
         open={isSnapshotModalOpen}

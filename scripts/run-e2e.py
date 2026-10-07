@@ -15,6 +15,36 @@ sys.path.insert(0, str(ROOT / "backend"))
 from app.test_environment import validate_test_database
 
 
+def run_browser_checks(env, extra_args, *, root=ROOT):
+    """Batch the default suite without relaxing the application's login limits."""
+    validate_test_database(env)
+    if extra_args:
+        # Keep explicitly selected Playwright runs and filters unchanged.
+        batches = [list(extra_args)]
+    else:
+        specs = [
+            str(path.relative_to(root / "frontend"))
+            for path in sorted((root / "frontend" / "e2e").glob("*.spec.ts"))
+            if path.name != "product_tour.spec.ts"
+        ]
+        if not specs:
+            raise RuntimeError("No browser workflow specifications were found.")
+        batches = [specs[start : start + 4] for start in range(0, len(specs), 4)]
+    failed = False
+    for index, batch in enumerate(batches, start=1):
+        print(f"Browser workflow batch {index}/{len(batches)}", flush=True)
+        args = list(batch)
+        if not extra_args:
+            args.append(f"--output={root / 'tmp' / 'e2e' / f'browser-batch-{index}'}")
+        # Every Playwright invocation runs global-setup.ts, whose guarded synthetic
+        # seed resets only the disposable database's login-throttle records.
+        result = subprocess.run(
+            ["npm", "run", "test:e2e", "--", *args], cwd=root / "frontend", env=env
+        )
+        failed |= result.returncode != 0
+    return 1 if failed else 0
+
+
 def main():
     env = dict(os.environ)
     env.update(
@@ -96,9 +126,7 @@ def main():
                     time.sleep(0.2)
             else:
                 raise RuntimeError("Test backend did not become healthy.")
-            return subprocess.run(
-                ["npm", "run", "test:e2e", "--", *sys.argv[1:]], cwd=ROOT / "frontend", env=env
-            ).returncode
+            return run_browser_checks(env, sys.argv[1:])
         finally:
             server.terminate()
             try:

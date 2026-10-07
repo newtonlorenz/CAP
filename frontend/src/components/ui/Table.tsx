@@ -17,7 +17,7 @@ export function THead({
   className,
   ...props
 }: HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn('bg-canvas', className)} {...props} />
+  return <thead className={cn('bg-subtle', className)} {...props} />
 }
 
 export function TBody({
@@ -41,7 +41,7 @@ export function TH({
   return (
     <th
       className={cn(
-        'px-6 py-3 text-left text-[11px] font-semibold tracking-wide text-muted',
+        'px-4 py-3 text-left text-[11px] font-semibold tracking-wide text-muted',
         className
       )}
       {...props}
@@ -53,7 +53,7 @@ export function TD({
   className,
   ...props
 }: HTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn('px-6 py-4 text-sm text-ink', className)} {...props} />
+  return <td className={cn('px-4 py-3 text-sm text-ink', className)} {...props} />
 }
 
 export function TableEmpty({

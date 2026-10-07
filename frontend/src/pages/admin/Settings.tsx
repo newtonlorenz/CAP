@@ -1,3 +1,4 @@
+import '../workflow-pages.css'
 import { Link, useSearchParams } from 'react-router-dom'
 import SectionNav from '../../components/ui/SectionNav'
 import InstallationServiceSettings from '../../components/admin/InstallationServiceSettings'
@@ -250,14 +251,14 @@ export default function Settings() {
   if (!isAdmin) return <Card className="p-5"><h1 className="text-xl font-semibold">Settings</h1><p className="mt-3 text-muted">Contact a company admin to manage your company's settings.</p></Card>
 
   return (
-    <div className="min-w-0 space-y-4">
+    <div className="workflow-page settings-page min-w-0 space-y-4">
       <header className="py-1">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold text-ink">Settings</h1>
           <p className="mt-1 text-sm text-muted">
             Configure your company's Jira integration. System admins also manage shared email, AI, backups and restore.
           </p>
-          <p className="mt-2 text-sm font-medium text-ink">Your access: {isSystemAdmin ? 'System admin' : 'Company admin'}</p>
+          <p className="settings-access-note mt-2 text-sm font-medium text-ink">Your access: {isSystemAdmin ? 'System admin' : 'Company admin'}</p>
           <Link to="/admin/users" className="mt-2 inline-block text-sm font-semibold text-accent underline">Manage your team</Link>
         </div>
       </header>

@@ -10,6 +10,19 @@ export type ReleaseNote = {
 // See docs/public/change-notes.md for the release procedure.
 export const releaseNotes: ReleaseNote[] = [
   {
+    version: '2026.10.07',
+    date: '2026-10-07',
+    title: 'Guided onboarding and clearer team workflows',
+    summary: 'Explore the main resources with a short product tour and keep answers, evidence and review work together.',
+    features: [
+      { title: 'Guided product tour', description: 'First-time users can choose a short tour of Requirements, Assessment overview, Evidence and Reports. Skip, resume or replay it from Resources → Help → Product tour.' },
+      { title: 'Work and resources at the top', description: 'The top navigation keeps the main workspaces in view and groups reusable resources and Help in a dropdown. Smaller screens use the menu drawer.' },
+      { title: 'Answers ready for review', description: 'Assign reviewers, follow answer history and open evidence beside the answer. Team work on the dashboard makes review assignments easier to find.' },
+      { title: 'Clearer preparation and packs', description: 'Licence forms, certification work and controlled changes show focused sections, next actions and pack contents.' },
+      { title: 'Bilingual form headings', description: 'Form headings retain their Danish and English labels when preparing answers.' },
+    ],
+  },
+  {
     version: '2026.10.03',
     date: '2026-10-03',
     title: 'Clearer daily work and safer drafts',

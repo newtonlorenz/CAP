@@ -1,5 +1,6 @@
 import json
 import uuid
+from typing import Literal
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -25,6 +26,7 @@ from app.schemas.preparation import (
     ReuseRequest,
     ReuseSuggestion,
     RevisionRequest,
+    ReturnResponseRequest,
     SpreadsheetPreview,
     TemplateCreate,
     TemplateFields,
@@ -55,6 +57,13 @@ from app.services.preparation import (
     set_case_originals,
     valid_value,
 )
+from app.services.preparation_review import (
+    validate_reviewer,
+    review_queue_items,
+    filter_review_items,
+    eligible_reviewer,
+)
+from app.models.preparation import PreparationReviewFeedback
 from app.services.preparation_import import MAX_UPLOAD_BYTES, preview_spreadsheet
 from app.services.preparation_requirements import (
     checked_template_fields,
@@ -321,6 +330,8 @@ async def create_case(
             )
         if body.original_evidence_ids:
             await set_case_originals(db, case, body.original_evidence_ids, user)
+    await validate_reviewer(db, case, body.reviewer_id)
+    case.reviewer_id = body.reviewer_id
     await log_action(
         db, user, "create", "preparation_case", str(case.id), new_value={"revision": 1}
     )
@@ -399,6 +410,8 @@ async def patch_case(
             raise HTTPException(422, "Name is required")
     if "owner_id" in changes:
         await get_active_user_in_org_or_404(db, changes["owner_id"], user)
+    if "reviewer_id" in changes:
+        await validate_reviewer(db, case, changes["reviewer_id"])
     if "project_id" in changes:
         await validate_project(db, changes["project_id"], case.jurisdiction_id, user)
     if changes.get("status") is None and "status" in changes:
@@ -515,6 +528,7 @@ async def put_response(
         value=body.value,
         reason=body.not_applicable_reason,
         evidence=evidence,
+        saved_by=user.id,
     )
     await log_action(
         db,
@@ -560,10 +574,21 @@ async def accept_response(
         await require_access(db, "preparation_evidence", item.id, user)
         if await checked_evidence_problem(item, datetime.now(UTC).date()):
             raise HTTPException(422, "Evidence is not currently valid")
+    if response.reused_from_case_id:
+        await require_access(db, "preparation_case", response.reused_from_case_id, user)
     before = await audit_response_snapshot(db, response)
     await advance_case(db, case, body.expected_revision)
     response.accepted_by = user.id
     response.accepted_at = datetime.now(UTC)
+    response.review_status = "accepted"
+    await db.execute(
+        update(PreparationReviewFeedback)
+        .where(
+            PreparationReviewFeedback.response_id == response.id,
+            PreparationReviewFeedback.resolved_at.is_(None),
+        )
+        .values(resolved_at=response.accepted_at, resolved_by=user.id)
+    )
     await log_action(
         db,
         user,
@@ -743,6 +768,7 @@ async def reuse_response(
         value=value,
         reason=None,
         evidence=evidence,
+        saved_by=user.id,
         reused_from_case_id=source.id,
         reused_from_field_key=source_field.key,
     )
@@ -764,3 +790,167 @@ async def reuse_response(
     await db.commit()
     await db.refresh(target)
     return await build_case_response(db, target, user=user)
+
+
+@router.get("/review-queue")
+async def review_queue(
+    jurisdiction_id: uuid.UUID | None = None,
+    case_id: uuid.UUID | None = None,
+    reviewer_id: uuid.UUID | None = None,
+    status: Literal["pending_review", "changes_requested", "all"] = "pending_review",
+    unassigned: bool = False,
+    overdue: bool = False,
+    include_excluded: bool = False,
+    changed_evidence: bool = False,
+    q: str | None = Query(None, max_length=200),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    items = await review_queue_items(db, user, jurisdiction_id, case_id, include_excluded)
+    items = filter_review_items(
+        items,
+        reviewer_id=reviewer_id,
+        status=status,
+        unassigned=unassigned,
+        overdue=overdue,
+        changed_evidence=changed_evidence,
+        q=q,
+    )
+    return {"items": items[skip : skip + limit], "total": len(items), "skip": skip, "limit": limit}
+
+
+@router.get("/cases/{case_id}/reviewers")
+async def case_reviewers(
+    case_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_role(*MANAGER)),
+):
+    case = await get_case(db, case_id, user, "edit")
+    candidates = (
+        await db.scalars(
+            apply_org_scope(
+                select(User).where(User.active.is_(True), User.role.in_(MANAGER)), User, user
+            ).order_by(User.full_name, User.id)
+        )
+    ).all()
+    return {
+        "items": [
+            {"id": candidate.id, "full_name": candidate.full_name}
+            for candidate in candidates
+            if await eligible_reviewer(db, case, candidate.id)
+        ]
+    }
+
+
+@router.post("/cases/{case_id}/responses/{field_key}/return", response_model=CaseOut)
+async def return_response(
+    case_id: uuid.UUID,
+    field_key: str,
+    body: ReturnResponseRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_role(*MANAGER)),
+):
+    case = await get_case(db, case_id, user, "approve")
+    field_for(case, field_key)
+    response = await db.scalar(
+        select(PreparationResponse).where(
+            PreparationResponse.case_id == case.id, PreparationResponse.field_key == field_key
+        )
+    )
+    if response is None:
+        raise HTTPException(422, "Response is missing")
+    for item in (await response_evidence(db, [response.id])).get(response.id, []):
+        await require_access(db, "preparation_evidence", item.id, user)
+    if response.reused_from_case_id:
+        await require_access(db, "preparation_case", response.reused_from_case_id, user)
+    before = await audit_response_snapshot(db, response)
+    await advance_case(db, case, body.expected_revision)
+    response.accepted_at = None
+    response.accepted_by = None
+    response.review_status = "changes_requested"
+    db.add(
+        PreparationReviewFeedback(
+            response_id=response.id,
+            comment=body.comment,
+            created_by=user.id,
+            returned_revision=case.revision,
+        )
+    )
+    await log_action(
+        db,
+        user,
+        "return_for_changes",
+        "preparation_response",
+        f"{case.id}:{field_key}",
+        old_value=before,
+        new_value={
+            "revision": case.revision,
+            "comment": body.comment,
+            "response": await audit_response_snapshot(db, response),
+        },
+    )
+    await db.commit()
+    await db.refresh(case)
+    return await build_case_response(db, case, user=user)
+
+
+@router.get("/cases/{case_id}/responses/{field_key}/history")
+async def response_history(
+    case_id: uuid.UUID,
+    field_key: str,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    from app.models.audit import AuditLog
+
+    case = await get_case(db, case_id, user)
+    field_for(case, field_key)
+    projection = await build_case_response(db, case, user=user)
+    if not any(response.field_key == field_key for response in projection.responses):
+        return {"items": []}
+    entries = (
+        await db.scalars(
+            apply_org_scope(
+                select(AuditLog).where(
+                    AuditLog.entity_type == "preparation_response",
+                    AuditLog.entity_id == f"{case.id}:{field_key}",
+                ),
+                AuditLog,
+                user,
+            )
+            .order_by(AuditLog.timestamp.desc(), AuditLog.id.desc())
+            .limit(100)
+        )
+    ).all()
+    items = []
+    for entry in entries:
+        old_value = json.loads(entry.old_value) if entry.old_value else None
+        new_value = json.loads(entry.new_value) if entry.new_value else None
+        allowed = True
+        for snapshot in (old_value, new_value):
+            if not snapshot:
+                continue
+            snapshot = snapshot.get("response", snapshot)
+            for evidence_id in snapshot.get("evidence_ids", []):
+                if "view" not in await effective_permissions(
+                    db, "preparation_evidence", uuid.UUID(evidence_id), user
+                ):
+                    allowed = False
+            source_id = snapshot.get("reused_from_case_id")
+            if source_id and "view" not in await effective_permissions(
+                db, "preparation_case", uuid.UUID(source_id), user
+            ):
+                allowed = False
+        if allowed:
+            items.append(
+                dict(
+                    id=entry.id,
+                    action=entry.action,
+                    user_name=entry.user_name,
+                    timestamp=entry.timestamp,
+                    details=dict(old_value=old_value, new_value=new_value),
+                )
+            )
+    return {"items": items}
