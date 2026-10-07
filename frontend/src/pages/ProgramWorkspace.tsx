@@ -61,7 +61,7 @@ export default function ProgramWorkspace() {
   }
 
   return (
-    <div className="workflow-page programme-page space-y-4">
+    <div data-tour="readiness-page" className="workflow-page programme-page space-y-4">
       <header className="py-1">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>

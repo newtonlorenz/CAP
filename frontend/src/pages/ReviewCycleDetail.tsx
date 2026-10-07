@@ -985,7 +985,7 @@ export default function ReviewCycleDetail() {
   const contextPath = cycle.change_entry_id ? `/change-management?change=${cycle.change_entry_id}&tab=changes` : cycle.certification_project_id ? `/certification-projects?project=${cycle.certification_project_id}&section=review` : '/review-cycles'
   const contextLabel = cycle.change_entry_id ? 'Back to change' : cycle.certification_project_id ? 'Back to certification project' : 'All requirement assessments'
   return (
-    <div className={`workflow-page assessment-detail-page review-document ${focused ? 'review-document-focus' : ''}`}>
+    <div data-tour="assessment-detail" className={`workflow-page assessment-detail-page review-document ${focused ? 'review-document-focus' : ''}`}>
       <div className="w-full">
         <div className="review-page-shell bg-surface rounded-xl border border-line px-4 sm:px-5 py-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1125,7 +1125,7 @@ export default function ReviewCycleDetail() {
                 <button type="button" aria-pressed={focused} onClick={() => updateLocation({ mode: 'focus', item: requestedItemId })} className={`rounded-md border px-3 py-2 text-sm ${focused ? 'bg-strong text-white' : 'bg-surface text-ink'}`}>Focus on one requirement</button>
               </div>
           </div>
-          <section aria-label="Review filters" className="assessment-filter-toolbar space-y-3 border-y border-line py-3">
+          <section data-tour="assessment-filters" aria-label="Review filters" className="assessment-filter-toolbar space-y-3 border-y border-line py-3">
             <div className="flex flex-wrap items-center gap-2">
               {queueViews.map(view => <button key={view.key} type="button" aria-pressed={view.active}
                 onClick={() => toggleQueueView(view)}

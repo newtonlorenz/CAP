@@ -159,7 +159,7 @@ export default function InstallationServiceSettings({ section, isSystemAdmin, us
     if (!result.data) throw new Error('Settings unavailable')
     return result.data
   }
-  return <>{(['email', 'ai'] as const).map(kind => <section key={kind} hidden={section !== kind} aria-label={`${kind === 'email' ? 'Email' : 'AI'} settings`}>
+  return <>{(['email', 'ai'] as const).map(kind => <section data-tour={`settings-${kind}`} key={kind} hidden={section !== kind} aria-label={`${kind === 'email' ? 'Email' : 'AI'} settings`}>
     <Card className="p-4 sm:p-5">
       <h2 className="text-lg font-semibold text-ink">{kind === 'email' ? 'Email' : 'AI'}</h2>
       {!isSystemAdmin ? <p className="mt-2 text-sm text-muted">These settings are shared across the installation. Only system admins can manage them. Contact a system admin to make changes. You can manage your company's Jira connection in Jira integration.</p> : <>

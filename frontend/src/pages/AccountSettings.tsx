@@ -67,7 +67,7 @@ export default function AccountSettings() {
     <PageHeading title="My account" description="Manage your profile, password and email notifications." />
     <SectionNav label="Account settings sections" value={section} items={[{ id: 'account', label: 'Account settings' }, { id: 'notifications', label: 'Notifications' }]} onChange={value => setParams({ section: value })} />
     <div hidden={section !== 'account'} className="cap-panel mt-5 px-6">
-      <section className="border-b border-line py-6">
+      <section data-tour="account-profile" className="border-b border-line py-6">
         <h2 className="text-lg font-semibold text-ink">Profile</h2>
         <form className="mt-4 max-w-md space-y-4" onSubmit={event => { event.preventDefault(); profile.mutate() }}>
           <label className="block text-sm font-medium text-ink">Full name<input className={inputClass} autoComplete="name" required maxLength={255} value={fullName} disabled={profile.isPending} onChange={event => { setFullName(event.target.value); profile.reset() }} /></label>
@@ -78,7 +78,7 @@ export default function AccountSettings() {
           <Button type="submit" variant="primary" loading={profile.isPending} disabled={!profileDirty || !fullName.trim()}>Save profile</Button>
         </form>
       </section>
-      <section className="py-6">
+      <section data-tour="account-password" className="py-6">
         <h2 className="text-lg font-semibold text-ink">Change password</h2>
         <p className="mt-2 text-sm text-muted">Use at least 8 characters. Changing your password signs out your other sessions.</p>
         <form className="mt-4 max-w-md space-y-4" onSubmit={changePassword}>
@@ -93,7 +93,7 @@ export default function AccountSettings() {
         </form>
       </section>
     </div>
-    <section hidden={section !== 'notifications'} className="cap-panel mt-5 p-6">
+    <section data-tour="account-notifications" hidden={section !== 'notifications'} className="cap-panel mt-5 p-6">
       <h2 className="text-lg font-semibold text-ink">Email notifications</h2>
       <p className="mt-2 text-sm text-muted">Choose which review emails you receive. These settings apply across your devices.</p>
       {notifications.isPending && <p role="status" className="mt-4 text-sm text-muted">Loading notification settings…</p>}

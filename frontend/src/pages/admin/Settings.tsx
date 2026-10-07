@@ -264,7 +264,7 @@ export default function Settings() {
       </header>
 
       <SectionNav label="Settings sections" value={settingsSection} items={[{id: 'jira', label: 'Jira integration'}, {id: 'email', label: 'Email'}, {id: 'ai', label: 'AI'}, {id: 'backups', label: 'Backups & restore'}]} onChange={value => setSearchParams(previous => { const next = new URLSearchParams(previous); next.set('section', value); return next })} />
-      <section hidden={settingsSection !== 'jira'} aria-label="Jira integration settings">
+      <section data-tour="settings-jira" hidden={settingsSection !== 'jira'} aria-label="Jira integration settings">
       <Card className="p-4 sm:p-5">
         <div className="mb-4 min-w-0">
           <h2 className="text-lg font-semibold text-ink">Jira Integration</h2>
@@ -386,7 +386,7 @@ export default function Settings() {
       </Card>
       </section>
 
-      <section hidden={settingsSection !== 'backups'} aria-label="Backup settings">
+      <section data-tour="settings-backups" hidden={settingsSection !== 'backups'} aria-label="Backup settings">
       {isSystemAdmin ? (
       <Card className="p-4 sm:p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

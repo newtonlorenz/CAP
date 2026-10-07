@@ -78,7 +78,7 @@ function RequirementContent({ id }: { id: string | undefined }) {
   return (
     <div className="workflow-page requirement-detail-page min-w-0">
       <Link to={`/requirements/sets/${requirement.document_id}`} className="mb-4 inline-flex text-sm text-accent hover:underline">← Back to requirement set</Link>
-      <section className="requirement-reading-surface mb-6" aria-label="Requirement wording">
+      <section data-tour="requirement-wording" className="requirement-reading-surface mb-6" aria-label="Requirement wording">
         <div className="flex items-center gap-2"><h1 className="text-2xl font-semibold text-ink">{requirement.reference_id}</h1><CopyButton value={`${editForm.reference_id}\n${stripHtml(editForm.text)}`} label="Copy requirement" /></div>
         <div className="mt-1 text-sm text-muted">
           Jurisdiction:{' '}

@@ -242,7 +242,7 @@ export default function UserManagement() {
   const users = data?.items || []
 
   return (
-    <div className="workflow-page users-page min-w-0 space-y-4">
+    <div data-tour="admin-users" className="workflow-page users-page min-w-0 space-y-4">
       <header className="py-1">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">

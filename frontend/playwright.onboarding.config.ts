@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test'
 // Only synthetic account/API responses are used. No database seeding or shared server.
 export default defineConfig({
   testDir: './e2e',
-  testMatch: 'product_tour.spec.ts',
+  testMatch: ['product_tour.spec.ts', 'section_product_tours.spec.ts'],
   fullyParallel: false,
   workers: 1,
   timeout: 30_000,

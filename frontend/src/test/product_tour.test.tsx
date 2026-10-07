@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Config, Driver } from 'driver.js'
 import useProductTour from '../components/useProductTour'
+import { getProductTour, PRODUCT_OVERVIEW_TOUR } from '../components/productTourCatalog'
 import { productTourKey, readProductTour, writeProductTour } from '../components/productTourState'
 
 const mocked = vi.hoisted(() => ({ config: null as Config | null, index: 0, active: false, omitDestroyed: false, destroy: vi.fn() }))
@@ -9,13 +10,13 @@ vi.mock('driver.js', () => ({
   driver: (config: Config) => {
     mocked.config = config
     const hooks = () => ({ config, state: {}, driver: tour as unknown as Driver })
-    const highlight = () => config.onHighlightStarted?.(undefined, {}, hooks())
+    const highlight = () => { config.onHighlightStarted?.(undefined, {}, hooks()); config.onHighlighted?.(undefined, {}, hooks()) }
     const tour = {
       drive: (index: number) => { mocked.index = index; mocked.active = true; highlight() },
       destroy: () => { mocked.destroy(); mocked.active = false; if (!mocked.omitDestroyed) config.onDestroyed?.(undefined, {}, hooks()) },
       isActive: () => mocked.active,
       getActiveIndex: () => mocked.index,
-      hasNextStep: () => mocked.index < 3,
+      hasNextStep: () => mocked.index < (config.steps?.length || 0) - 1,
       moveNext: () => { mocked.index += 1; highlight() },
       movePrevious: () => { mocked.index = Math.max(0, mocked.index - 1); highlight() },
     }
@@ -24,7 +25,7 @@ vi.mock('driver.js', () => ({
 }))
 
 function Harness({ userId = 'one', ready = true, routeKey = '/' }: { userId?: string; ready?: boolean; routeKey?: string }) {
-  const tour = useProductTour({ userId, ready, routeKey, prepare: () => {} })
+  const tour = useProductTour({ userId, ready, routeKey, tour: PRODUCT_OVERVIEW_TOUR, prepare: () => {} })
   return <>
     {tour.showInvitation && <span>Invitation</span>}
     {tour.isRunning && <span>Running</span>}
@@ -42,7 +43,7 @@ describe('product tour persistence and lifecycle', () => {
   })
 
   it('rejects corrupt, invalid and unknown-version records', () => {
-    for (const value of ['{', '{"status":"done","step":0}', '{"status":"interrupted","step":4}', '{"status":"dismissed","step":-1}', '{"status":"interrupted","step":0.5}']) {
+    for (const value of ['{', '{"status":"done","step":0}', JSON.stringify({ status: 'interrupted', step: PRODUCT_OVERVIEW_TOUR.steps.length }), '{"status":"dismissed","step":-1}', '{"status":"interrupted","step":0.5}']) {
       localStorage.setItem(productTourKey('one'), value)
       expect(readProductTour('one')).toBeNull()
     }
@@ -69,11 +70,62 @@ describe('product tour persistence and lifecycle', () => {
     expect(screen.queryByText('Invitation')).not.toBeInTheDocument()
   })
 
+  it('retains each section dismissal across routes while storage is blocked', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked') })
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked') })
+    const overview = PRODUCT_OVERVIEW_TOUR
+    const section = getProductTour('/licence-applications', '')
+    function Sections({ definition = overview, userId = 'one' }: { definition?: typeof overview; userId?: string }) {
+      const state = useProductTour({ userId, ready: true, routeKey: definition.id, tour: definition, prepare: () => {} })
+      return <>{state.showInvitation && <span>Section invitation</span>}<button onClick={state.dismiss}>Section dismiss</button></>
+    }
+    const view = render(<Sections />)
+    fireEvent.click(screen.getByText('Section dismiss'))
+    view.rerender(<Sections definition={section} />)
+    expect(screen.getByText('Section invitation')).toBeInTheDocument()
+    fireEvent.click(screen.getByText('Section dismiss'))
+    view.rerender(<Sections />)
+    expect(screen.queryByText('Section invitation')).not.toBeInTheDocument()
+    view.rerender(<Sections userId="two" />)
+    expect(screen.getByText('Section invitation')).toBeInTheDocument()
+    view.rerender(<Sections userId="one" />)
+    expect(screen.queryByText('Section invitation')).not.toBeInTheDocument()
+  })
+
   it('does not invite or load Driver before authentication is ready', () => {
     render(<Harness ready={false} />)
     expect(screen.queryByText('Invitation')).not.toBeInTheDocument()
     fireEvent.click(screen.getByText('Replay'))
     expect(mocked.config).toBeNull()
+  })
+
+  it('does not start over an existing edit dialog', () => {
+    render(<><Harness /><div role="dialog" aria-modal="true">Draft confirmation</div></>)
+    fireEvent.click(screen.getByText('Replay'))
+    expect(mocked.config).toBeNull()
+  })
+
+  it('resolves visible mobile page controls and escapes literal catalog text', async () => {
+    const definition = { id: 'literal', title: 'Literal', summary: 'Synthetic tour', steps: [
+      { target: '[data-tour="synthetic-control"]', title: '<strong>Literal</strong>', description: 'Use <Save> & keep your draft.' },
+    ] }
+    const control = document.createElement('button')
+    control.dataset.tour = 'synthetic-control'
+    document.body.append(control)
+    vi.spyOn(control, 'getClientRects').mockReturnValue([{}] as unknown as DOMRectList)
+    function PageControls() {
+      const state = useProductTour({ userId: 'one', ready: true, routeKey: '/synthetic', tour: definition, prepare: () => {} })
+      return <button onClick={() => { void state.start() }}>Tour controls</button>
+    }
+    render(<PageControls />)
+    fireEvent.click(screen.getByText('Tour controls'))
+    await waitFor(() => expect(mocked.active).toBe(true))
+    const step = mocked.config!.steps![0]
+    expect((step.element as () => Element)()).toBe(control)
+    expect(step.popover?.title).toBe('&lt;strong&gt;Literal&lt;/strong&gt;')
+    expect(step.popover?.description).toBe('Use &lt;Save&gt; &amp; keep your draft.')
+    fireEvent.keyDown(document, { key: 'Escape' })
+    control.remove()
   })
 
   it('keeps an eligible invitation mounted while focus moves between form controls', () => {
@@ -118,8 +170,8 @@ describe('product tour persistence and lifecycle', () => {
     render(<Harness />)
     fireEvent.click(screen.getByText('Replay'))
     await waitFor(() => expect(mocked.active).toBe(true))
-    act(() => { for (let i = 0; i < 4; i += 1) fireEvent.keyDown(document, { key: 'ArrowRight' }) })
-    expect(readProductTour('one')).toEqual({ status: 'completed', step: 3 })
+    act(() => { for (let i = 0; i < PRODUCT_OVERVIEW_TOUR.steps.length; i += 1) fireEvent.keyDown(document, { key: 'ArrowRight' }) })
+    expect(readProductTour('one')).toEqual({ status: 'completed', step: PRODUCT_OVERVIEW_TOUR.steps.length - 1 })
     fireEvent.click(screen.getByText('Replay'))
     await waitFor(() => expect(mocked.active).toBe(true))
     fireEvent.keyDown(document, { key: 'Escape' })

@@ -397,7 +397,7 @@ export default function ReviewCycles() {
   }
 
   return (
-    <div className="workflow-page assessments-page min-w-0 space-y-4">
+    <div data-tour="assessments-page" className="workflow-page assessments-page min-w-0 space-y-4">
       <header className="py-1">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">

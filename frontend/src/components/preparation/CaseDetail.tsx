@@ -143,7 +143,7 @@ export default function CaseDetail({
   }
   if (item.summary_only || (item.access && !item.access.permissions.includes('view'))) return <Card className="space-y-4 p-5"><Button onClick={onBack}>{backLabel}</Button><Heading>{item.name}</Heading><p>You have summary access. Form details are restricted.</p></Card>
   return (
-    <div className="pilot-case space-y-4">
+    <div data-tour="form-detail" className="pilot-case space-y-4">
       {pack && <header className="pilot-dossier-heading"><button type="button" onClick={backWithDraftGuard}>Licence Applications / {pack.name}</button><div className="flex flex-wrap items-center justify-between gap-3"><h1><span className="pilot-desktop-pack-name">{pack.name}</span><span className="pilot-mobile-form-name">{item.name}</span></h1>{pack.access && <span className="flex items-center gap-2 text-sm text-accent"><PilotIcon name="lock" size={19} />{visibilityLabels[pack.access.visibility]}</span>}</div><p>{pack.status === 'draft' ? 'Working draft' : 'Pack version'} v{pack.snapshots.length ? Math.max(...pack.snapshots.map(snapshot => snapshot.version)) + (pack.status === 'draft' ? 1 : 0) : 1} · {pack.status === 'draft' ? 'Preparing revision' : pack.status.replace(/_/g, ' ')}{pack.snapshots.length > 0 && <> · <button type="button" onClick={() => { if (canLeave()) onPackSection?.('history') }}>View approved v{Math.max(...pack.snapshots.map(snapshot => snapshot.version))}</button></>}</p><nav aria-label="Licence pack sections">{[['forms', 'Contents'], ['approval', 'Internal approval and submission'], ['history', 'History']].map(([key, label]) => <button key={key} type="button" aria-current={key === 'forms' ? 'page' : undefined} onClick={() => { if (canLeave()) onPackSection?.(key) }}>{label}</button>)}</nav></header>}
       <div className={pack ? "pilot-dossier" : ""}>
       {pack && <PackContents pack={pack} currentCaseId={item.id} onOpenCase={id => { if (canLeave()) onOpenCase?.(id) }} onOpenContents={() => { if (canLeave()) onPackSection?.('forms') }} />}
@@ -200,7 +200,7 @@ export default function CaseDetail({
       {(writes.hasPendingDrafts || writes.isWriting) && (
         <p role="status" className="text-xs text-muted">Unsaved changes remain. Keep this form open until every draft is saved.</p>
       )}
-      <div className="pilot-form-readiness border-y border-line py-2">
+      <div data-tour="form-readiness" className="pilot-form-readiness border-y border-line py-2">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
           <h3 className="font-semibold">Form completion and acceptance</h3>
           <span className="text-muted">{item.readiness.answered_count} of {item.readiness.required_count} required answers · {item.readiness.accepted_count} accepted</span>
@@ -229,7 +229,7 @@ export default function CaseDetail({
         <div className="mt-3"><EvidenceAttachments ids={item.original_evidence_ids} /></div>
         <p className="mt-2 text-xs text-muted">Retained for reference. Review imported questions against these documents; this form export does not reproduce the authority’s original layout.</p>
       </details>}
-      <section className="pilot-question-workspace" aria-label="Answers">
+      <section data-tour="form-answers" className="pilot-question-workspace" aria-label="Answers">
         <div className="pilot-question-navigation">
           <Button size="sm" disabled={questionIndex === 0} onClick={() => chooseQuestion(item.fields[questionIndex - 1].key)}>Previous question</Button>
           <select aria-label="Current question" value={question} onChange={event => chooseQuestion(event.target.value)}>{item.fields.map((field, index) => <option key={field.key} value={field.key}>{index + 1} · {field.label}</option>)}</select>

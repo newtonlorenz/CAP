@@ -173,7 +173,7 @@ export default function Dashboard() {
         ) : null}
 
         {view === 'team' && <TeamWorkPanel key={jurisdictionId} jurisdictionId={jurisdictionId} />}
-        {view === 'mine' && <div className="cap-personal-work">
+        {view === 'mine' && <div data-tour="my-work" className="cap-personal-work">
             <MyWorkPanel assignedRequirements={data.my_work.assigned_requirements} assignedReviewItems={data.my_work.assigned_review_items} assignedForms={data.my_work.assigned_forms} authorityQueries={data.my_work.authority_queries} primaryMode={primaryMyWorkMode}
               scope={workScope} page={workPage} pageSize={workPageSize} expanded={workExpanded}
               onScopeChange={scope => updateWork({ work_scope: scope, work_page: '1', work_mode: primaryMyWorkMode })}
@@ -190,7 +190,7 @@ export default function Dashboard() {
           <NextBestActionsPanel actions={orchestrationQuery.data?.next_actions ?? []} projects={orchestrationQuery.data?.items ?? []} isLoading={orchestrationQuery.isLoading} isError={orchestrationQuery.isError} onRetry={() => { void orchestrationQuery.refetch() }} />
           <ReviewCyclesPanel cycles={data.review_cycles.active} />
         </div>}
-        <details className="cap-overview-insights"><summary>Activity and reporting</summary>
+        <details data-tour="work-insights" className="cap-overview-insights"><summary>Activity and reporting</summary>
         <p className="my-3 text-xs text-muted">{jurisdictionById[jurisdictionId]?.name} · Updated {formatDateTime(data.generated_at)}</p>
         {(data.kpis.overall.total > 0 || data.kpis.mandatory.total > 0 || data.kpis.at_risk_count > 0) && <KpiCards overall={data.kpis.overall} mandatory={data.kpis.mandatory} atRiskCount={data.kpis.at_risk_count} />}
 

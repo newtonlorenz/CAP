@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useJurisdiction } from '../contexts/JurisdictionContext'
@@ -10,6 +10,7 @@ import ToastViewport from './ToastViewport'
 import ProductFeedback from './ProductFeedback'
 import { useSiteContent } from '../contexts/SiteContentContext'
 import useProductTour from './useProductTour'
+import { getProductTour } from './productTourCatalog'
 import ProductTourInvitation from './ProductTourInvitation'
 import './productTour.css'
 
@@ -257,12 +258,16 @@ export default function Layout() {
   const location = useLocation()
   const [resourcesOpen, setResourcesOpen] = useState(false)
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
+  const definition = useMemo(() => getProductTour(location.pathname, location.search, location.hash), [location.pathname, location.search, location.hash])
   const tour = useProductTour({
+    tour: definition,
     userId: user?.id, ready: !!user && !isAuthLoading,
     routeKey: `${location.pathname}${location.search}${location.hash}`,
     prepare: () => setIsMobileNavOpen(false),
   })
-  const isResourcesVisible = resourcesOpen || (tour.isRunning && window.innerWidth >= 1280)
+  const isResourcesVisible = tour.isRunning
+    ? definition.steps.some(step => step.target?.includes('primary-nav')) && window.innerWidth >= 1280
+    : resourcesOpen
   const resourcesRef = useRef<HTMLDivElement>(null)
   const resourcesTrigger = useRef<HTMLButtonElement>(null)
   const mobileDrawerRef = useRef<HTMLElement>(null)
@@ -341,7 +346,7 @@ export default function Layout() {
     <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="m6 9 6 6 6-6" /></svg>
   </div>
   const resourceLink = (item: NavItem) => <Link key={item.path} to={item.path} aria-current={itemActive(item) ? 'page' : undefined}
-    data-tour={item === requirementsItem ? 'requirements' : item === reviewsItem ? 'assessment' : item === evidenceItem ? 'evidence' : item === reportsItem ? 'reports' : undefined}
+    data-tour={item === dashboardItem ? 'overview' : item === licenceApplicationsItem ? 'licences' : item === certificationProjectsItem ? 'certifications' : item === changeManagementItem ? 'changes' : item === requirementsItem ? 'requirements' : item === reviewsItem ? 'assessment' : item === evidenceItem ? 'evidence' : item === reportsItem ? 'reports' : undefined}
     className="app-nav-link flex items-center gap-3 px-3 py-2">{item.icon}<span>{item.label}</span></Link>
   const tourEntry = <button type="button" aria-label="Product tour" disabled={tour.isRunning}
     className="app-nav-link flex w-full items-center gap-3 px-3 py-2 text-left" onClick={() => { void tour.start() }}>
@@ -370,7 +375,7 @@ export default function Layout() {
           <Link to="/" className="cap-header-brand" aria-label={`${brand.name} overview`}><Brand /></Link>
           <div className="cap-header-market">{jurisdictionSelector('desktop')}</div>
           <nav aria-label="Primary navigation" data-testid="primary-nav" className="cap-primary-nav">
-            {coreItems.map(item => <Link key={item.path} to={item.path} className="cap-primary-link" aria-current={itemActive(item) ? 'page' : undefined}>{item.label}</Link>)}
+            {coreItems.map(item => <Link key={item.path} to={item.path} data-tour={item === dashboardItem ? 'overview' : item === licenceApplicationsItem ? 'licences' : item === certificationProjectsItem ? 'certifications' : 'changes'} className="cap-primary-link" aria-current={itemActive(item) ? 'page' : undefined}>{item.label}</Link>)}
             <div className="cap-resources" ref={resourcesRef} onBlur={event => { if (!tour.isRunning && !event.currentTarget.contains(event.relatedTarget as Node | null)) setResourcesOpen(false) }}>
               <button ref={resourcesTrigger} data-testid="resources-trigger" type="button" className="cap-primary-link" aria-expanded={isResourcesVisible} aria-controls="resource-navigation" data-active={secondarySections.some(section => section.items.some(itemActive)) || undefined}
                 onClick={() => setResourcesOpen(value => !value)} onKeyDown={event => {
@@ -384,7 +389,7 @@ export default function Layout() {
           <div className="cap-header-actions"><NavigationSearch items={pageItems} /><div className="cap-profile"><ProfileDropdown /></div></div>
         </header>
         <main id="main-content" tabIndex={-1} className="app-modern-content">
-          {tour.showInvitation && <ProductTourInvitation interrupted={tour.record?.status === 'interrupted'} onStart={() => { void tour.start(tour.record?.status === 'interrupted') }} onDismiss={tour.dismiss} />}
+          {tour.showInvitation && <ProductTourInvitation title={definition.title} summary={definition.summary} stepCount={definition.steps.length} interrupted={tour.record?.status === 'interrupted'} onStart={() => { void tour.start(tour.record?.status === 'interrupted') }} onDismiss={tour.dismiss} />}
           {tour.error && <p role="alert" className="mb-4 rounded-lg border border-warning-line bg-warning-soft p-3 text-sm text-warning">{tour.error}</p>}
           {sessionError && <p role="alert" className="mb-4 rounded-md border border-danger-line bg-danger-soft p-3 text-sm text-danger">{sessionError}</p>}
           {jurisdictionError && <p role="alert" className="mb-4 rounded-md border border-warning-line bg-warning-soft p-3 text-sm text-warning">{jurisdictionError} <button type="button" className="underline" onClick={retryJurisdictions}>Retry</button></p>}

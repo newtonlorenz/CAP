@@ -991,7 +991,7 @@ export default function CertificationProjects() {
       {projectsQuery.isError ? <Card className="p-5"><p role="alert">Projects could not be loaded.</p><Button onClick={() => projectsQuery.refetch()}>Try again</Button></Card> : projectsQuery.isLoading ? (
         <Card className="p-6 text-sm text-muted">Loading projects...</Card>
       ) : !selectedProjectId ? (
-        <Card className="overflow-hidden"><div className="workflow-table-heading"><h2>Certification projects</h2><p>{filteredProjects.length} matching {filteredProjects.length === 1 ? 'project' : 'projects'}</p></div>
+        <Card data-tour="certification-list" className="overflow-hidden"><div className="workflow-table-heading"><h2>Certification projects</h2><p>{filteredProjects.length} matching {filteredProjects.length === 1 ? 'project' : 'projects'}</p></div>
           <div className="divide-y divide-line lg:hidden">{filteredProjects.map((project) => <article key={project.id} className="space-y-3 p-4"><button type="button" className="text-left text-base font-semibold text-accent" onClick={() => setSelectedProjectId(project.id)}>{project.name}</button><div className="flex flex-wrap gap-2"><Badge tone={stageTone(project.stage)}>{formatStage(project.stage)}</Badge><Badge tone={statusTone(project.status)}>{project.status.replace(/_/g, ' ')}</Badge></div><p className="text-sm text-muted">{jurisdictionsById[project.jurisdiction_id]?.name || 'Jurisdiction unavailable'} · Target {formatDate(project.target_submission_date)}</p><Button className="w-full" onClick={() => setSelectedProjectId(project.id)} aria-label={`Open ${project.name}`}>Open project</Button></article>)}{!filteredProjects.length && <p className="p-5 text-sm text-muted">{projects.length ? 'No projects match your filters.' : 'Create a certification project to select requirement sets and plan submission.'}</p>}</div>
           <div className="hidden overflow-x-auto lg:block"><Table>
             <THead>
@@ -1040,7 +1040,7 @@ export default function CertificationProjects() {
 
       {selectedProject ? (
         <Card className="space-y-6 p-4 sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+          <div data-tour="certification-heading" className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold text-ink">{selectedProject.name}</h1>
               <p className="text-sm text-muted">
@@ -1084,7 +1084,7 @@ export default function CertificationProjects() {
             {canManageProjects && <details className="border-t border-line pt-3"><summary className="cursor-pointer text-sm text-muted">Project administration</summary><div className="pt-3"><Button variant="destructive" size="sm" onClick={() => handleDeleteProject(selectedProject)} aria-label="Delete project">Delete project</Button></div></details>}
           </section>
 
-          <section hidden={projectSection !== 'requirements'} aria-label="Project requirement sets" className="space-y-3">
+          <section hidden={projectSection !== 'requirements'} data-tour="certification-baseline" aria-label="Project requirement sets" className="space-y-3">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <h3 className="text-base font-semibold text-ink">Project baseline</h3>
               <Button variant="secondary" size="sm" loading={updateProjectBaselineMutation.isPending} disabled={!canSaveBaseline} onClick={() => setConfirmBaseline(true)}>Save baseline</Button>
@@ -1127,7 +1127,7 @@ export default function CertificationProjects() {
             )}
           </section>
 
-          <section hidden={projectSection !== 'requirements'} aria-label="Project assessments" className="space-y-3 border-t border-line pt-4">
+          <section hidden={projectSection !== 'requirements'} data-tour="certification-assessments" aria-label="Project assessments" className="space-y-3 border-t border-line pt-4">
             <div className="border-b border-line pb-4"><h2 className="text-lg font-semibold">Requirement assessments</h2><p className="mt-1 text-sm text-muted">Work through requirements and record reviewer decisions for submission, changes and ongoing maintenance.</p></div>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -1265,9 +1265,9 @@ export default function CertificationProjects() {
           </section>
 
           <section hidden={projectSection !== 'requirements'} aria-label="Project forms and evidence" className="border-t border-line pt-4"><ProjectForms key={`forms-${selectedProject.id}`} projectId={selectedProject.id} jurisdictionId={selectedProject.jurisdiction_id} canManage={canManageProjects} /></section>
-          <section hidden={projectSection !== 'history'} aria-label="Project history" className="space-y-4"><h2 className="text-lg font-semibold">Earlier assessments and maintenance</h2>{(submissionCyclesQuery.data?.items || []).filter(cycle => cycle.id !== submissionCycle?.id).map(cycle => <div key={cycle.id} className="flex flex-wrap justify-between gap-2 border-b border-line py-3"><Link className="text-accent underline" to={`/review-cycles/${cycle.id}`}>{cycle.name}</Link><span className="text-sm text-muted">{cycle.cycle_type || 'Operational'} · {cycle.status}</span></div>)}<h3 className="font-semibold">Previous submission packages</h3>{submissionPackages.slice(1).map(pkg => <div key={pkg.id} className="flex justify-between border-b border-line py-2 text-sm"><span>Version {pkg.version}</span><span className="text-muted">{pkg.status}</span></div>)}<ProjectMaintenance key={`maintenance-${selectedProject.id}`} projectId={selectedProject.id} jurisdictionId={selectedProject.jurisdiction_id} canManage={canManageProjects} assessments={submissionCyclesQuery.data?.items || []} /></section>
+          <section hidden={projectSection !== 'history'} data-tour="certification-history" aria-label="Project history" className="space-y-4"><h2 className="text-lg font-semibold">Earlier assessments and maintenance</h2>{(submissionCyclesQuery.data?.items || []).filter(cycle => cycle.id !== submissionCycle?.id).map(cycle => <div key={cycle.id} className="flex flex-wrap justify-between gap-2 border-b border-line py-3"><Link className="text-accent underline" to={`/review-cycles/${cycle.id}`}>{cycle.name}</Link><span className="text-sm text-muted">{cycle.cycle_type || 'Operational'} · {cycle.status}</span></div>)}<h3 className="font-semibold">Previous submission packages</h3>{submissionPackages.slice(1).map(pkg => <div key={pkg.id} className="flex justify-between border-b border-line py-2 text-sm"><span>Version {pkg.version}</span><span className="text-muted">{pkg.status}</span></div>)}<ProjectMaintenance key={`maintenance-${selectedProject.id}`} projectId={selectedProject.id} jurisdictionId={selectedProject.jurisdiction_id} canManage={canManageProjects} assessments={submissionCyclesQuery.data?.items || []} /></section>
 
-          <section hidden={projectSection !== 'testing'} aria-label="Testing and findings" className="space-y-4">
+          <section hidden={projectSection !== 'testing'} data-tour="certification-testing" aria-label="Testing and findings" className="space-y-4">
             {submissionCycle && (
               <div className="flex flex-col gap-4 rounded-lg border border-line bg-subtle p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -1382,7 +1382,7 @@ export default function CertificationProjects() {
             </details>
           </section>
 
-          <section hidden={projectSection !== 'reports'} aria-label="Submission packages" className="space-y-3">
+          <section hidden={projectSection !== 'reports'} data-tour="certification-reports" aria-label="Submission packages" className="space-y-3">
             <CertificationEngagement key={`report-${selectedProject.id}`} mode="report" project={selectedProject} canManage={canManageProjects} saving={updateEngagementMutation.isPending} onSave={(update) => updateEngagementMutation.mutateAsync({ id: selectedProject.id, update })} />
             <h3 className="text-base font-semibold text-ink">Submission packages</h3>
             <p className="text-sm text-muted">Package approval records an internal submission decision. Regulator approval is recorded separately.</p>

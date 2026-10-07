@@ -708,7 +708,7 @@ export default function RequirementsSetView() {
   if (documentError) return <LoadError subject="This requirement set" onRetry={() => refetchDocument()} />
 
   return (
-    <div className="workflow-page requirement-source-page min-w-0">
+    <div data-tour="requirement-source" className="workflow-page requirement-source-page min-w-0">
       <div className="workflow-heading flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-ink">

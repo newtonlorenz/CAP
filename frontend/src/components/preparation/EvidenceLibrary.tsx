@@ -140,8 +140,8 @@ export function EvidenceLibrary({ canEdit }: { canEdit: boolean }) {
     }
   }
   return (
-    <div className="space-y-6">
-      <Card hidden={editorOpen} className="p-5 sm:p-7">
+    <div data-tour="evidence-library" className="space-y-6">
+      <Card data-tour="evidence-collection" hidden={editorOpen} className="p-5 sm:p-7">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold">Shared evidence library</h2>
