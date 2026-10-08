@@ -97,6 +97,123 @@ async def ready_pack(client, manager, jurisdiction, scope="annex_only"):
     return pack, case_id
 
 
+async def test_remove_placeholder_recalculates_readiness_and_retains_approved_bytes(
+    client, actors, approver, default_jurisdiction, db_session
+):
+    manager = actors["manager"]
+    pack, case_id = await ready_pack(client, manager, default_jurisdiction)
+    pack = await component(
+        client,
+        manager,
+        pack,
+        name="Unused document",
+        kind="document",
+        required=False,
+        included=False,
+    )
+    placeholder = next(item for item in pack["components"] if not item["case_id"])
+    pack = await action(client, manager, pack, "request-review")
+    pack = await action(client, approver, pack, "approve")
+    snapshot = pack["snapshots"][0]
+    archive_url = f"{BASE}/{pack['id']}/snapshots/{snapshot['id']}/export"
+    original = (await client.get(archive_url, headers=headers(manager))).content
+    url = f"{BASE}/{pack['id']}/components/{placeholder['id']}"
+    denied = await client.delete(
+        url, headers=headers(manager), params={"expected_revision": pack["revision"]}
+    )
+    assert denied.status_code == 409
+    pack = await action(client, manager, pack, "return-to-draft", reason="Adjust pack contents")
+    revision = pack["revision"]
+    removed = await client.delete(
+        url, headers=headers(manager), params={"expected_revision": revision}
+    )
+    assert removed.status_code == 200, removed.text
+    saved = removed.json()
+    assert saved["revision"] == revision + 1
+    assert [item["case_id"] for item in saved["components"]] == [case_id]
+    assert saved["readiness"]["ready"] is True
+    assert (await client.get(archive_url, headers=headers(manager))).content == original
+    refreshed = (await client.get(f"{BASE}/{pack['id']}", headers=headers(manager))).json()
+    assert refreshed["components"] == saved["components"]
+    audit = (
+        await db_session.scalars(
+            select(AuditLog).where(
+                AuditLog.entity_id == pack["id"], AuditLog.action == "remove_component"
+            )
+        )
+    ).one()
+    assert json.loads(audit.new_value)["component_id"] == placeholder["id"]
+
+
+async def test_remove_placeholder_enforces_access_revision_and_child_scope(
+    client, actors, default_jurisdiction
+):
+    manager = actors["manager"]
+    pack = await create(client, manager, default_jurisdiction)
+    pack = await component(client, manager, pack)
+    cid = pack["components"][0]["id"]
+    url = f"{BASE}/{pack['id']}/components/{cid}"
+    for actor, status in [
+        (actors["reader"], 403),
+        (actors["contributor"], 403),
+        (actors["other"], 404),
+        (actors["null_manager"], 404),
+    ]:
+        response = await client.delete(
+            url, headers=headers(actor), params={"expected_revision": pack["revision"]}
+        )
+        assert response.status_code == status, response.text
+    response = await client.delete(url, headers=headers(manager), params={"expected_revision": 1})
+    assert response.status_code == 409
+    sibling = await create(client, manager, default_jurisdiction)
+    response = await client.delete(
+        f"{BASE}/{sibling['id']}/components/{cid}",
+        headers=headers(manager),
+        params={"expected_revision": sibling["revision"]},
+    )
+    assert response.status_code == 404
+    # Rejected requests must not advance the revision or remove the item.
+    unchanged = (await client.get(f"{BASE}/{pack['id']}", headers=headers(manager))).json()
+    assert unchanged["revision"] == pack["revision"]
+    assert unchanged["components"][0]["id"] == cid
+    removed = await client.delete(
+        url, headers=headers(manager), params={"expected_revision": pack["revision"]}
+    )
+    assert removed.status_code == 200, removed.text
+    assert removed.json()["components"] == []
+    assert any(issue["code"] == "empty_pack" for issue in removed.json()["readiness"]["blockers"])
+
+
+@pytest.mark.parametrize("kind", ["form", "document"])
+async def test_remove_placeholder_rejects_linked_content(
+    client, actors, default_jurisdiction, kind
+):
+    manager = actors["manager"]
+    pack = await create(client, manager, default_jurisdiction)
+    if kind == "form":
+        template = await make_template(client, manager)
+        pack = await component(client, manager, pack, kind=kind, template_id=template["id"])
+    else:
+        uploaded = await client.post(
+            f"{PREP}/evidence/upload",
+            headers=headers(manager),
+            data={"visibility": "organisation", "title": "Document"},
+            files={"file": ("document.pdf", b"%PDF-synthetic", "application/pdf")},
+        )
+        assert uploaded.status_code == 201, uploaded.text
+        pack = await component(client, manager, pack, kind=kind, evidence_id=uploaded.json()["id"])
+    item = pack["components"][0]
+    response = await client.delete(
+        f"{BASE}/{pack['id']}/components/{item['id']}",
+        headers=headers(manager),
+        params={"expected_revision": pack["revision"]},
+    )
+    assert response.status_code == 422, response.text
+    unchanged = (await client.get(f"{BASE}/{pack['id']}", headers=headers(manager))).json()
+    assert unchanged["revision"] == pack["revision"]
+    assert unchanged["components"] == pack["components"]
+
+
 @pytest.mark.parametrize("scope", ["annex_only", "licence", "full_pack"])
 async def test_scope_does_not_impose_a_main_form_or_annex(
     client, actors, approver, default_jurisdiction, scope

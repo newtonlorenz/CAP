@@ -12,6 +12,7 @@ export const applicationsApi = {
   update: async (id: string, body: Partial<ApplicationMetadata> & { expected_revision: number }) => (await api.patch<LicenceApplication>(`${root}/${id}`, body)).data,
   addComponent: async (id: string, body: ComponentInput & { expected_revision: number }) => (await api.post<LicenceApplication>(`${root}/${id}/components`, body)).data,
   updateComponent: async (id: string, componentId: string, body: Partial<ComponentInput> & { expected_revision: number }) => (await api.patch<LicenceApplication>(`${root}/${id}/components/${componentId}`, body)).data,
+  removeComponent: async (id: string, componentId: string, expected_revision: number) => (await api.delete<LicenceApplication>(`${root}/${id}/components/${componentId}`, { params: { expected_revision } })).data,
   duplicateComponent: async (id: string, componentId: string, body: { expected_revision: number; name: string }) => (await api.post<LicenceApplication>(`${root}/${id}/components/${componentId}/duplicate`, body)).data,
   action: async (id: string, action: string, body: { expected_revision: number; notes?: string; reason?: string; submitted_at?: string; reference?: string; outcome?: string }) => (await api.post<LicenceApplication>(`${root}/${id}/${action}`, body)).data,
   addFollowup: async (id: string, body: { expected_revision: number; question: string; owner_id: string | null; due_date: string | null }) => (await api.post<LicenceApplication>(`${root}/${id}/followups`, body)).data,

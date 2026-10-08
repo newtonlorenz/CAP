@@ -295,7 +295,7 @@
     },
     {
       "path": "backend/app/api/applications.py",
-      "sha256": "1a5f940b15b86a2be13e11e32b5dcaa02e6696a75f5995593ff9af4f7e9f893b"
+      "sha256": "f26eeddb29b8dd63fa25e9bd2ffff1f2fee9080bd80d434c08bb897f88832c68"
     },
     {
       "path": "backend/app/api/auth.py",
@@ -983,7 +983,7 @@
     },
     {
       "path": "backend/tests/test_applications_api.py",
-      "sha256": "fcc8721c4f27b9eb596cb5dba773c85f1ea5d00b1b4b5ff91d3fbd8e5bef095d"
+      "sha256": "882ec9fb629f2963287ee584ece7fb51d1db4438e1a3768f31712fba9cb7b3c5"
     },
     {
       "path": "backend/tests/test_applications_postgres.py",
@@ -2239,7 +2239,7 @@
     },
     {
       "path": "frontend/src/api/applications.ts",
-      "sha256": "0e658af18ac604ca934fd2df0f769e9d9183e8ede048225ffc222d389d4bd729"
+      "sha256": "b9de9cb4a7028194dc016ab3de98a315897420584a6ed158dfe6e05a4dbda6c3"
     },
     {
       "path": "frontend/src/api/client.ts",
@@ -2363,7 +2363,7 @@
     },
     {
       "path": "frontend/src/components/applications/ApplicationDetail.tsx",
-      "sha256": "9da975957b46b45d232556cdcf3a6c7c186cf1eb71f02c262c43d71222d6133b"
+      "sha256": "4657c47c8f2bdd4e7ce541c99650e85cd0d673600b2c79c1bc3ceb2e373ae458"
     },
     {
       "path": "frontend/src/components/applications/ApplicationMetadataForm.tsx",
@@ -2907,7 +2907,7 @@
     },
     {
       "path": "frontend/src/test/application_workflow.test.tsx",
-      "sha256": "da2ff87a314aed86ccbb5d18c18b2b543ca92b90cbd7596f2b094fd7f33b69e6"
+      "sha256": "989a0e516904ef3030a707e4758e109e0888423adc54a63a6e985f1ca9827e26"
     },
     {
       "path": "frontend/src/test/auth_cache_lifecycle.test.tsx",
