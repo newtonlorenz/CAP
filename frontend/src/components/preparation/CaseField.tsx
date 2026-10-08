@@ -105,7 +105,7 @@ export default function CaseField({
             )}
           </h5>
           {field.help_text && (
-            <p id={helpId} className="mt-1 max-w-prose text-sm text-muted">
+            <p id={helpId} className="mt-1 max-w-prose whitespace-pre-wrap break-words text-sm text-muted">
               {field.help_text}
             </p>
           )}

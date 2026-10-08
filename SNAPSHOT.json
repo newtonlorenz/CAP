@@ -2415,7 +2415,7 @@
     },
     {
       "path": "frontend/src/components/preparation/CaseField.tsx",
-      "sha256": "41f902a4c2970d87f31ea85ccc7d633085d63c64d5e0f99d63ee84b0857d31a9"
+      "sha256": "52f3b07dfce13a5ad7e3e0853fb6230bb50d81807fa34c560ea1234d429578dd"
     },
     {
       "path": "frontend/src/components/preparation/CasePortfolio.tsx",
