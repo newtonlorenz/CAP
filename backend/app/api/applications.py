@@ -483,6 +483,26 @@ async def patch_component(
     )
 
 
+@router.delete("/{application_id}/components/{component_id}")
+async def remove_component(
+    application_id: uuid.UUID,
+    component_id: uuid.UUID,
+    db: DB,
+    user: Manager,
+    expected_revision: int = Query(ge=1),
+):
+    row = await get_application(db, application_id, user, "edit")
+    await advance(db, row, expected_revision, {"draft"})
+    item = await child(db, ApplicationComponent, component_id, row)
+    if item.case_id or item.evidence_id:
+        raise HTTPException(
+            422, "Only placeholders without a linked form or evidence can be removed"
+        )
+    changes = {"component_id": str(item.id), "name": item.name, "kind": item.kind}
+    await db.delete(item)
+    return await finish(db, user, row, "remove_component", changes)
+
+
 @router.post("/{application_id}/components/{component_id}/duplicate", status_code=201)
 async def duplicate_component(
     application_id: uuid.UUID,

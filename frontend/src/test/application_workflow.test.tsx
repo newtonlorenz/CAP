@@ -6,7 +6,7 @@ import Applications from '../pages/Applications'
 import api from '../api/client'
 import type { LicenceApplication } from '../types/applications'
 
-vi.mock('../api/client', () => ({ default: { get: vi.fn(), post: vi.fn(), patch: vi.fn() } }))
+vi.mock('../api/client', () => ({ default: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() } }))
 let role = 'manager'
 let space = 'dk'
 const setJurisdictionId = vi.fn()
@@ -43,6 +43,50 @@ beforeEach(() => {
 })
 
 describe('flexible application workspace', () => {
+  it('confirms placeholder removal and retains the row after cancellation or a failed request', async () => {
+    const placeholder = { ...component, id: 'unused', name: 'Unused document', kind: 'document' as const, required: false, included: false, case_id: null, case_name: null, ready: false }
+    stored = makeApplication({ components: [component, placeholder], revision: 4, readiness: ready })
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    try {
+      renderPage('?application=app-1&tab=forms')
+      const remove = await screen.findByRole('button', { name: 'Remove Unused document' })
+      expect(screen.queryByRole('button', { name: 'Remove Annex A' })).not.toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Remove Unused document' }))
+      expect(api.delete).not.toHaveBeenCalled()
+      fireEvent.click(screen.getByRole('button', { name: 'Edit Unused document' }))
+      const editor = within(remove.closest('article')!).getByRole('textbox', { name: 'Form or document name' })
+      fireEvent.change(editor, { target: { value: 'Unsaved name' } })
+      expect(screen.getByRole('button', { name: 'Remove Unused document' })).toBeDisabled()
+      expect(editor).toHaveValue('Unsaved name')
+      confirm.mockReturnValue(true)
+      fireEvent.click(screen.getByRole('button', { name: 'Close editor' }))
+      expect(screen.getByRole('button', { name: 'Remove Unused document' })).toBeEnabled()
+      vi.mocked(api.delete).mockRejectedValueOnce(new Error('Unavailable'))
+      fireEvent.click(screen.getByRole('button', { name: 'Remove Unused document' }))
+      await screen.findByRole('alert')
+      expect(screen.getByRole('heading', { name: 'Unused document' })).toBeInTheDocument()
+      vi.mocked(api.delete).mockImplementationOnce(async () => {
+        stored = { ...stored, revision: 5, components: [component] }
+        return { data: stored }
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Remove Unused document' }))
+      await waitFor(() => expect(screen.queryByRole('heading', { name: 'Unused document' })).not.toBeInTheDocument())
+      expect(api.delete).toHaveBeenLastCalledWith('/applications/app-1/components/unused', { params: { expected_revision: 4 } })
+      expect(screen.getByRole('heading', { name: 'Annex A' })).toBeInTheDocument()
+    } finally { confirm.mockRestore() }
+  })
+
+  it.each(['viewer', 'restricted', 'approved'])('hides placeholder removal for %s access or stage', async (mode) => {
+    if (mode === 'viewer') role = 'viewer'
+    stored = makeApplication({ components: [{ ...component, case_id: null, case_name: null }],
+      ...(mode === 'approved' ? { status: 'approved' as const } : {}),
+      ...(mode === 'restricted' ? { access: { permissions: ['view'] } as LicenceApplication['access'] } : {}),
+    })
+    renderPage('?application=app-1&tab=forms')
+    await screen.findByRole('heading', { name: 'Annex A', level: 4 })
+    expect(screen.queryByRole('button', { name: 'Remove Annex A' })).not.toBeInTheDocument()
+  })
+
   it('creates a blank Swedish pack without empty question or checklist steps', async () => {
     space = 'se'
     currentProfile = { ...profile, code: 'SE', status: 'draft', setup_questions: [], items: [] }
