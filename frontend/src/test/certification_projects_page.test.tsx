@@ -248,6 +248,30 @@ describe('Certification Projects Page', () => {
     await waitFor(() => expect(router!.state.location.search).toBe(''))
   })
 
+  it('retains an existing package checklist on Cancel and continues navigation once its save completes', async () => {
+    let finishSave!: () => void
+    vi.mocked(api.patch).mockImplementationOnce(() => new Promise((resolve) => { finishSave = () => resolve(makeAxiosResponse({})) }))
+    const { router } = renderPackageWorkspace({ navigationEntry: '/?project=proj-1&section=reports' })
+    const checklist = within((await screen.findByRole('button', { name: 'Save checklist' })).closest('div')!)
+    const checkbox = checklist.getByRole('checkbox', { name: 'Submission assessment is closed' })
+    expect(checkbox).not.toBeChecked()
+    fireEvent.click(checkbox)
+    await act(async () => { await router!.navigate('/') })
+    const dialog = await screen.findByRole('dialog', { name: 'Changes are not saved yet' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(router!.state.location.search).toContain('project=proj-1')
+    expect(checkbox).toBeChecked()
+    expect(api.patch).not.toHaveBeenCalled()
+    fireEvent.click(checklist.getByRole('button', { name: 'Save checklist' }))
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith('/submission-packages/pkg-1', { checklist: expect.objectContaining({ sections: [expect.objectContaining({ items: expect.arrayContaining([expect.objectContaining({ id: 'review-cycle-closed', completed: true })]) })] }) }))
+    await act(async () => { await router!.navigate('/') })
+    expect(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).toBeInTheDocument()
+    expect(router!.state.location.search).toContain('project=proj-1')
+    await act(async () => { finishSave() })
+    await waitFor(() => expect(router!.state.location.search).toBe(''))
+    expect(screen.getByRole('heading', { name: 'Certifications' })).toBeInTheDocument()
+  })
+
   it('retains engagement edits after a failed save and clears the draft after success', async () => {
     const onSave = vi.fn().mockRejectedValueOnce(new Error('network')).mockResolvedValueOnce(undefined)
     const view = render(<CertificationEngagement mode="testing" project={baseProject as CertificationProject} canManage saving={false} onSave={onSave} />)

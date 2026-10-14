@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useDraftNavigationGuard } from '../../hooks/useDraftNavigationGuard'
 import type { ExtractedRequirement } from '../../types'
 
 export type RecoveryDecision = {
@@ -25,6 +26,13 @@ export default function RecoveryPanel({ rows, allRows, sourceUrl, working, onRes
   const [text, setText] = useState('')
   const [kind, setKind] = useState('mandatory')
   const [targetId, setTargetId] = useState('')
+  const selectedRow = rows.find(row => row.id === selectedId)
+  const hasCorrection = Boolean(selectedRow && (
+    reference !== (selectedRow.reference_id.startsWith('unresolved-') ? '' : selectedRow.reference_id) ||
+    parent !== (selectedRow.reference_id.includes('.') && !selectedRow.reference_id.startsWith('unresolved-') ? selectedRow.reference_id.split('.').slice(0, -1).join('.') : '') ||
+    text !== selectedRow.text || kind !== selectedRow.requirement_type || Boolean(targetId)
+  ))
+  useDraftNavigationGuard(hasCorrection || working)
   if (!rows.length) return null
 
   const select = (row: ExtractedRequirement) => {

@@ -336,7 +336,7 @@ describe('RequirementsSetImport editing behaviors', () => {
     router.dispose()
   })
 
-  it('shows a rejected structured row as a source-linked correction', async () => {
+  it('protects source corrections, retaining failed edits until explicitly cancelled', async () => {
     const fixture = setupImportFixture()
     fixture.run.pipeline_version = 'opendataloader_v1'
     fixture.extractions[1] = {
@@ -347,22 +347,44 @@ describe('RequirementsSetImport editing behaviors', () => {
       needs_review: true,
       review_reason: 'Local draft extraction; duplicate_reference:1.2',
     }
-    await renderImportPage(fixture)
+    const router = await renderImportPage(fixture)
     expect(await screen.findByRole('region', { name: 'Structured import recovery' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Source PDF, page 2' })).toHaveAttribute(
       'href', `/api/v1/documents/${fixture.documentId}/source#page=2`
     )
     fireEvent.click(screen.getByRole('button', { name: 'Resolve candidate' }))
+    await act(async () => { await router.navigate('/requirements/sets') })
+    expect(await screen.findByRole('heading', { name: 'Requirement sets destination' })).toBeVisible()
+    await act(async () => { await router.navigate(`/requirements/sets/${fixture.documentId}/import`) })
+    fireEvent.click(await screen.findByRole('button', { name: 'Resolve candidate' }))
     fireEvent.change(screen.getByRole('textbox', { name: 'Correct source reference' }), { target: { value: '1.4' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'Immediate parent reference' }), { target: { value: '1' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Corrected text' }), { target: { value: 'Corrected source wording' } })
+    fireEvent.change(screen.getByRole('combobox', { name: 'Recovered requirement type' }), { target: { value: 'recommended' } })
+    await act(async () => { await router.navigate('/requirements/sets') })
+    const warning = await screen.findByRole('dialog', { name: 'Changes are not saved yet' })
+    fireEvent.click(within(warning).getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByRole('textbox', { name: 'Correct source reference' })).toHaveValue('1.4')
+    expect(screen.getByRole('textbox', { name: 'Immediate parent reference' })).toHaveValue('1')
+    expect(screen.getByRole('textbox', { name: 'Corrected text' })).toHaveValue('Corrected source wording')
+    expect(screen.getByRole('combobox', { name: 'Recovered requirement type' })).toHaveValue('recommended')
+    vi.mocked(api.post).mockRejectedValueOnce(new Error('Synthetic recovery failure'))
     fireEvent.click(screen.getByRole('button', { name: 'Save correction' }))
     await waitFor(() => expect(api.post).toHaveBeenCalledWith(
       `/requirements/sets/${fixture.documentId}/import-recovery/${fixture.extractions[1].id}`,
       expect.objectContaining({ action: 'correct', reference_id: '1.4', parent_reference: '1' })
     ))
+    expect(await screen.findByText('Could not resolve the source candidate.')).toBeVisible()
+    await act(async () => { await router.navigate('/requirements/sets') })
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByRole('textbox', { name: 'Corrected text' })).toHaveValue('Corrected source wording')
+    fireEvent.click(within(screen.getByRole('region', { name: 'Structured import recovery' })).getByRole('button', { name: 'Cancel' }))
+    await act(async () => { await router.navigate('/requirements/sets') })
+    expect(await screen.findByRole('heading', { name: 'Requirement sets destination' })).toBeVisible()
+    router.dispose()
   })
 
-  it('routes a missing immediate parent to explicit recovery', async () => {
+  it('protects a pending recovery write even without edited fields', async () => {
     const fixture = setupImportFixture()
     fixture.run.pipeline_version = 'opendataloader_v1'
     fixture.extractions[1] = {
@@ -370,9 +392,21 @@ describe('RequirementsSetImport editing behaviors', () => {
       needs_review: true,
       review_reason: 'Missing immediate parent 1; repair the hierarchy before approval',
     }
-    await renderImportPage(fixture)
+    const router = await renderImportPage(fixture)
     const panel = await screen.findByRole('region', { name: 'Structured import recovery' })
     expect(within(panel).getByText(/Missing immediate parent 1; repair/)).toBeInTheDocument()
+    fireEvent.click(within(panel).getByRole('button', { name: 'Resolve candidate' }))
+    let finishRecovery!: () => void
+    vi.mocked(api.post).mockImplementation(() => new Promise((resolve) => {
+      finishRecovery = () => resolve(makeAxiosResponse({}))
+    }))
+    fireEvent.click(within(panel).getByRole('button', { name: 'Exclude candidate' }))
+    await waitFor(() => expect(api.post).toHaveBeenCalled())
+    await act(async () => { await router.navigate('/requirements/sets') })
+    expect(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).toBeVisible()
+    await act(async () => { finishRecovery() })
+    expect(await screen.findByRole('heading', { name: 'Requirement sets destination' })).toBeVisible()
+    router.dispose()
   })
 
   it('keeps focus in extraction edit modal while typing', async () => {

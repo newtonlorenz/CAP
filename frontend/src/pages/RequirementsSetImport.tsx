@@ -671,7 +671,8 @@ export default function RequirementsSetImport() {
   useDraftNavigationGuard(hasMetadataChanges || extractionDirty ||
     Boolean(decisionDialog && decisionComment.trim()) ||
     updateMetadataMutation.isPending || updateExtractionMutation.isPending ||
-    feedbackMutation.isPending || approveMutation.isPending || rejectMutation.isPending)
+    feedbackMutation.isPending || applyFeedbackBatchMutation.isPending ||
+    approveMutation.isPending || rejectMutation.isPending)
 
   if (documentError) return <LoadError subject="This PDF import" onRetry={() => retryDocument()} />
 

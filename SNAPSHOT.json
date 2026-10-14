@@ -2339,7 +2339,7 @@
     },
     {
       "path": "frontend/src/components/SubmissionChecklistEditor.tsx",
-      "sha256": "ecbbf5b95ce6b144a10f31b67180457fe1d696c78658a94dcc0feb7aaa40464f"
+      "sha256": "32f383f20d155ae3f84bcb6f0b3089657ee98c2c53117fd575f473a0047959e1"
     },
     {
       "path": "frontend/src/components/ThemeSwitcher.tsx",
@@ -2351,7 +2351,7 @@
     },
     {
       "path": "frontend/src/components/access/AccessPanel.tsx",
-      "sha256": "a183222b5f48b30d578bd9bb3f37f554a4c7941f3da4bef0d917afbf2c68bad0"
+      "sha256": "6443293d1971d352e8b8d50af6d5d71e19d534c7af3fd14d25b4264f83ccfcf0"
     },
     {
       "path": "frontend/src/components/access/TeamsPanel.tsx",
@@ -2479,7 +2479,7 @@
     },
     {
       "path": "frontend/src/components/review/ReviewBaselineMigration.tsx",
-      "sha256": "fd980c661a976d1723f75babe9e112aab7221abcd9a36820193dc026b360b2ff"
+      "sha256": "c6a19f0bd8b5b547f3307a13f31c3d08c80336ef17174f2a6d32745da80d6333"
     },
     {
       "path": "frontend/src/components/review/ReviewEvidenceEditor.tsx",
@@ -2591,7 +2591,7 @@
     },
     {
       "path": "frontend/src/components/workflows/ProjectMaintenance.tsx",
-      "sha256": "b8e4427318644ac10257122fc6d208993e26d8d946abd14762ca859272f8f03c"
+      "sha256": "abe5c7b494378477b56c40f2dc0de34caf0faee6d58fb3b3aafd85da973924c1"
     },
     {
       "path": "frontend/src/config/siteContent.ts",
@@ -2755,7 +2755,7 @@
     },
     {
       "path": "frontend/src/pages/RequirementsSetImport.tsx",
-      "sha256": "7fd651936f9ae73527380dc4e7c9b9f3bbd5985b261a6d5c84e69aaf9266062f"
+      "sha256": "6c3da18adf667ffeb74896fb0906ead10390b878961de55f416e1d58f952b037"
     },
     {
       "path": "frontend/src/pages/RequirementsSetView.tsx",
@@ -2855,7 +2855,7 @@
     },
     {
       "path": "frontend/src/pages/requirements-import/BulkTriagePanel.tsx",
-      "sha256": "e416794f577a2b6ca3da9a476b2073322f2376ead168f971966c00bde8c86f45"
+      "sha256": "eeb67788897673f235d528931d0f2818bf1467288eb3da69599923b82d8323bc"
     },
     {
       "path": "frontend/src/pages/requirements-import/ImportStepper.tsx",
@@ -2863,7 +2863,7 @@
     },
     {
       "path": "frontend/src/pages/requirements-import/RecoveryPanel.tsx",
-      "sha256": "105a94f1f300a566316a7b091bd51696fea23c37045a80ba043061129433aa50"
+      "sha256": "26baba3e5268ecd95ae328441e715e403d5e2f8f294191a12358672266988577"
     },
     {
       "path": "frontend/src/pages/requirements-import/ReviewQueueKpiPanel.tsx",
@@ -2875,7 +2875,7 @@
     },
     {
       "path": "frontend/src/test/access_panel.test.tsx",
-      "sha256": "d088b4ac73ef3a6b6ef0a47e5df28a54dd1a97facd274fb42600b33be48c9655"
+      "sha256": "a32902deb5393f87ad41a5c411926991666af89e29002e2c55f359560862e556"
     },
     {
       "path": "frontend/src/test/account_settings.test.tsx",
@@ -2915,7 +2915,7 @@
     },
     {
       "path": "frontend/src/test/certification_projects_page.test.tsx",
-      "sha256": "85b0ae6c5781744ae88e94051fa70eafd9d9284573a7059836b0d4d0b7791cfe"
+      "sha256": "d06cb208c1cc8fd1e74996c7a55c5142d7f49f62040c947618650e85167c0a3a"
     },
     {
       "path": "frontend/src/test/change_management_page.test.tsx",
@@ -2935,7 +2935,7 @@
     },
     {
       "path": "frontend/src/test/contextual_workflows.test.tsx",
-      "sha256": "d2d7b9ae428873c48c5545cae9b0510deecc27111e6c4880d27855311546f830"
+      "sha256": "f99a54aff0876c6ab9fae30fe1510cf16af972df13a10133e0f731ece9448000"
     },
     {
       "path": "frontend/src/test/dashboard_components.test.tsx",
@@ -3059,11 +3059,11 @@
     },
     {
       "path": "frontend/src/test/requirements_set_import_bulk_triage.test.tsx",
-      "sha256": "d9240db62c4df3933af599cc0462539aebdf23692791154946128f07da970f1e"
+      "sha256": "d4d29be73863ca9dc42f5c1ef829e7b7685b7f4adf076574b23955cf4681c21f"
     },
     {
       "path": "frontend/src/test/requirements_set_import_editing.test.tsx",
-      "sha256": "afe4f561882fd173cec4c8d7720be18c73f08260850a2033fc87284323572611"
+      "sha256": "d2a5cee992f5f54f3302100a7e71ddc2851b205b612ecce0bbd97789c56942b3"
     },
     {
       "path": "frontend/src/test/requirements_set_import_navigation.test.tsx",
@@ -3095,7 +3095,7 @@
     },
     {
       "path": "frontend/src/test/review_cycle_detail_evidence_paste.test.tsx",
-      "sha256": "5fc0cb70e5b7bd129d3182242736db3577d0ff82438b391fd066a416c4218bd6"
+      "sha256": "e0e9df3b0cb0b92aed3641084c6de4ffe1cb2901d11acd54d0ee9ace24f4e2fa"
     },
     {
       "path": "frontend/src/test/review_cycle_detail_filters.test.tsx",
