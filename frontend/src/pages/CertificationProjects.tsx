@@ -31,6 +31,7 @@ import type {
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { notifyApiError } from '../utils/notify'
+import { useDraftNavigationGuard } from '../hooks/useDraftNavigationGuard'
 import SectionNav from '../components/ui/SectionNav'
 import Badge from '../components/ui/Badge'
 import LoadError from '../components/ui/LoadError'
@@ -770,6 +771,36 @@ export default function CertificationProjects() {
   const currentBaseline = selectedProject?.baseline_versions || []
   const currentBaselineIds = currentBaseline.map((item) => item.document_id)
   const baselineChanged = baselineSelection.length !== currentBaselineIds.length || baselineSelection.some((id) => !currentBaselineIds.includes(id)) || Object.keys(baselineUpgrades).some((id) => baselineSelection.includes(id))
+  // Match the baseline used to initialise the editor, including legacy projects
+  // whose requirement set IDs have no version rows yet.
+  const savedBaselineIds = selectedProject?.requirement_set_ids?.length ? selectedProject.requirement_set_ids : currentBaselineIds
+  const hasProjectDraft = !!selectedProject && (
+    projectDraft.stage !== selectedProject.stage || projectDraft.status !== selectedProject.status ||
+    baselineSelection.length !== savedBaselineIds.length || baselineSelection.some((id) => !savedBaselineIds.includes(id)) ||
+    Object.keys(baselineUpgrades).some((id) => baselineSelection.includes(id)) ||
+    Object.values(changedDecisions).some((decision) => decision === 'carry_forward') ||
+    (milestonesQuery.data?.items ?? []).some((milestone) => {
+      const draft = milestoneDrafts[milestone.id]
+      return draft && (draft.status !== milestone.status || draft.due_at !== dateInputValue(milestone.due_at) || draft.notes !== (milestone.notes || ''))
+    }) ||
+    artifacts.some((artifact) => {
+      const draft = artifactDrafts[artifact.id]
+      return draft && (draft.artifact_type !== artifact.artifact_type || draft.name !== artifact.name ||
+        draft.file_path !== (artifact.file_path || '') || draft.link_url !== (artifact.link_url || '') ||
+        draft.required !== artifact.required || draft.included !== artifact.included || draft.notes !== (artifact.notes || ''))
+    }) ||
+    packageForm.version !== '' || Object.values(packageChecklistState).some(Boolean) ||
+    artifactForm.artifact_type !== 'report' || artifactForm.name !== '' || artifactForm.file_path !== '' ||
+    artifactForm.link_url !== '' || artifactForm.required || !artifactForm.included || artifactForm.notes !== '' ||
+    (!!returnPackageId && returnReason !== '')
+  )
+  const hasPendingWrite = [
+    createProjectMutation, ensureSubmissionCycleMutation, updateProjectMutation, updateEngagementMutation,
+    deleteProjectMutation, updateProjectBaselineMutation, executeBaselineMigrationMutation, updateMilestoneMutation,
+    createPackageMutation, saveChecklistMutation, returnPackageMutation, createArtifactMutation,
+    updateArtifactMutation, createBundleManifestMutation, requestApprovalMutation, approvePackageMutation, lockPackageMutation,
+  ].some((mutation) => mutation.isPending)
+  useDraftNavigationGuard(hasProjectDraft || hasPendingWrite)
   const baselineOptions = [
     ...selectedProjectApprovedSets,
     ...currentBaseline.filter((item) => !selectedProjectApprovedSets.some((set) => set.document_id === item.document_id)).map((item) => ({ document_id: item.document_id, name: item.set_name || requirementSetNameById[item.document_id], filename: '', current_version_id: null, current_version_number: null })),

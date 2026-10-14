@@ -23,6 +23,7 @@ import type {
 } from '../types'
 import { useAuth } from '../contexts/AuthContext'
 import { useJurisdiction } from '../contexts/JurisdictionContext'
+import { useDraftNavigationGuard } from '../hooks/useDraftNavigationGuard'
 import DecisionModal from '../components/ui/DecisionModal'
 import Modal from '../components/ui/Modal'
 import ImportStepper from './requirements-import/ImportStepper'
@@ -653,6 +654,24 @@ export default function RequirementsSetImport() {
     cancelled: 'bg-subtle text-ink',
     timed_out: 'bg-danger-soft text-danger',
   }
+
+  const hasMetadataChanges = Boolean(document) && (
+    metadataForm.name !== metadataName || metadataForm.testing_frequency !== metadataTestingFrequency
+  )
+  const originalExtraction = editingExtraction
+    ? extractionResults?.items.find((item) => item.id === editingExtraction.id)
+    : undefined
+  const extractionDirty = Boolean(editingExtraction && (
+    editingExtraction.reference_id !== (originalExtraction?.reference_id || '') ||
+    editingExtraction.title !== (originalExtraction?.title || '') ||
+    editingExtraction.text !== (originalExtraction?.text || '') ||
+    editingExtraction.requirement_type !== (originalExtraction?.requirement_type || 'mandatory') ||
+    editingExtraction.status !== (originalExtraction?.status || 'pending')
+  ))
+  useDraftNavigationGuard(hasMetadataChanges || extractionDirty ||
+    Boolean(decisionDialog && decisionComment.trim()) ||
+    updateMetadataMutation.isPending || updateExtractionMutation.isPending ||
+    feedbackMutation.isPending || approveMutation.isPending || rejectMutation.isPending)
 
   if (documentError) return <LoadError subject="This PDF import" onRetry={() => retryDocument()} />
 

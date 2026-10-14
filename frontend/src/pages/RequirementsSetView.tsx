@@ -26,6 +26,7 @@ import HierarchyDepthSelect from '../components/HierarchyDepthSelect'
 import { useHierarchyDepth } from '../hooks/useHierarchyDepth'
 import { normalizeRichText, stripHtml } from '../utils/richText'
 import { useJurisdiction } from '../contexts/JurisdictionContext'
+import { useDraftNavigationGuard } from '../hooks/useDraftNavigationGuard'
 import { buildHierarchyTree, flattenHierarchyTree } from '../utils/requirementHierarchy'
 import { notifyApiError } from '../utils/notify'
 
@@ -703,6 +704,28 @@ export default function RequirementsSetView() {
       },
     })
   }
+
+  const hasMetadataChanges = metadataDirty && Boolean(doc) && (
+    metadataForm.name !== (doc?.name || '') ||
+    metadataForm.document_type !== (doc?.document_type || '') ||
+    metadataForm.version !== (doc?.version || '') ||
+    metadataForm.effective_date !== (doc?.effective_date ? new Date(doc.effective_date).toISOString().slice(0, 10) : '') ||
+    metadataForm.testing_frequency !== (doc?.testing_frequency || '')
+  )
+  const originalExtraction = editingExtraction
+    ? extractionResults?.items.find((item) => item.id === editingExtraction.id)
+    : undefined
+  const extractionDirty = Boolean(editingExtraction && (
+    editingExtraction.reference_id !== (originalExtraction?.reference_id || '') ||
+    editingExtraction.title !== (originalExtraction?.title || '') ||
+    editingExtraction.text !== (originalExtraction?.text || '') ||
+    editingExtraction.requirement_type !== (originalExtraction?.requirement_type || 'mandatory') ||
+    editingExtraction.status !== (originalExtraction?.status || 'pending')
+  ))
+  useDraftNavigationGuard(hasMetadataChanges || extractionDirty ||
+    Boolean(decisionAction && decisionComment.trim()) ||
+    updateMetadataMutation.isPending || updateExtractionMutation.isPending ||
+    feedbackMutation.isPending || approveMutation.isPending || rejectMutation.isPending)
 
   if (documentLoading) return <p role="status" className="py-8 text-muted">Loading requirement set…</p>
   if (documentError) return <LoadError subject="This requirement set" onRetry={() => refetchDocument()} />

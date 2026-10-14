@@ -1,5 +1,5 @@
-import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useJurisdiction } from '../contexts/JurisdictionContext'
 import { ToastProvider } from '../contexts/ToastContext'
@@ -256,6 +256,36 @@ export default function Layout() {
   const { jurisdictionId, jurisdictions, isLoading: isJurisdictionLoading, error: jurisdictionError, retry: retryJurisdictions, setJurisdictionId } = useJurisdiction()
   const { brand } = useSiteContent()
   const location = useLocation()
+  const navigate = useNavigate()
+  const jurisdictionRequest = useRef(0)
+  const pendingJurisdiction = useRef<{ id: string; fromKey: string; request: number } | null>(null)
+  useLayoutEffect(() => {
+    const pending = pendingJurisdiction.current
+    if (!pending || location.key === pending.fromKey) return
+    pendingJurisdiction.current = null
+    // Apply only the requested navigation after the draft blocker lets it commit.
+    // The local pending request prevents history entries from replaying a switch.
+    if (location.state?.jurisdictionChange === pending.request) setJurisdictionId(pending.id)
+  }, [location, setJurisdictionId])
+  const changeJurisdiction = (next: string) => {
+    if (next === jurisdictionId) return
+    const params = new URLSearchParams(location.search)
+    const resourceKeys: Record<string, string[]> = {
+      '/licence-applications': ['application', 'case', 'create'],
+      '/certification-projects': ['project'],
+      '/change-management': ['change'],
+      '/preparation': ['case'],
+    }
+    const collection = location.pathname.startsWith('/requirements/') ? '/requirements'
+      : location.pathname.startsWith('/review-cycles/') ? '/review-cycles' : location.pathname
+    const hasResource = collection !== location.pathname || resourceKeys[collection]?.some(key => params.has(key))
+    if (!hasResource) { setJurisdictionId(next); return }
+    // Resource pages align the market with their record. Leave that record first
+    // so its effect cannot overwrite the user's selection.
+    const request = ++jurisdictionRequest.current
+    pendingJurisdiction.current = { id: next, fromKey: location.key, request }
+    navigate({ pathname: collection, search: '', hash: '' }, { state: { jurisdictionChange: request } })
+  }
   const [resourcesOpen, setResourcesOpen] = useState(false)
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const definition = useMemo(() => getProductTour(location.pathname, location.search, location.hash), [location.pathname, location.search, location.hash])
@@ -339,7 +369,7 @@ export default function Layout() {
   const jurisdictionSelector = (variant: string) => <div className="cap-market-selector">
     <label className="sr-only" htmlFor={`jurisdiction-${variant}`}>Jurisdiction</label>
     <select id={`jurisdiction-${variant}`} aria-label="Jurisdiction selector" value={jurisdictionId || ''}
-      onChange={event => setJurisdictionId(event.target.value)} disabled={isJurisdictionLoading || jurisdictions.length <= 1}>
+      onChange={event => changeJurisdiction(event.target.value)} disabled={isJurisdictionLoading || jurisdictions.length <= 1}>
       {!jurisdictions.length && <option value="">{isJurisdictionLoading ? 'Loading…' : 'No active jurisdictions'}</option>}
       {jurisdictions.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
     </select>
