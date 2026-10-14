@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../../api/client'
@@ -6,6 +7,7 @@ import type { ReviewCycleBaselineMigrationExecuteResponse, ReviewCycleBaselineMi
 import { stripHtml } from '../../utils/richText'
 import { notifyApiError } from '../../utils/notify'
 import { useToast } from '../../contexts/ToastContext'
+import { useDraftNavigationGuard } from '../../hooks/useDraftNavigationGuard'
 import Tooltip from '../ui/Tooltip'
 
 const truncatePreviewText = (value: string | null, limit = 220) => {
@@ -52,11 +54,13 @@ export default function ReviewBaselineMigration({ cycle, docMap, isAdminOrManage
     Record<string, 'reset_pending' | 'carry_forward'>
   >({})
   const [expandedMigrationTexts, setExpandedMigrationTexts] = useState<Record<string, boolean>>({})
+  const [migrationSaved, setMigrationSaved] = useState(false)
 
   useEffect(() => {
     setMigrationPreview(null)
     setChangedDecisions({})
     setExpandedMigrationTexts({})
+    setMigrationSaved(false)
   }, [id])
 
   const previewMigrationMutation = useMutation({
@@ -70,6 +74,7 @@ export default function ReviewBaselineMigration({ cycle, docMap, isAdminOrManage
       setMigrationPreview(data)
       setExpandedMigrationTexts({})
       setChangedDecisions({})
+      setMigrationSaved(false)
       toast.success('Latest-version gap analysis generated')
     },
     onError: (error: unknown) => {
@@ -96,8 +101,12 @@ export default function ReviewBaselineMigration({ cycle, docMap, isAdminOrManage
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['review-cycles'] })
       queryClient.invalidateQueries({ queryKey: ['review-cycle'] })
-      setMigrationPreview(null)
-      setChangedDecisions({})
+      // Release this editor's draft before navigating to the persisted successor.
+      flushSync(() => {
+        setMigrationSaved(true)
+        setMigrationPreview(null)
+        setChangedDecisions({})
+      })
       toast.success(`Successor review cycle created (${data.migrated_items} items migrated)`)
       navigate(`/review-cycles/${data.to_cycle_id}`)
     },
@@ -105,6 +114,7 @@ export default function ReviewBaselineMigration({ cycle, docMap, isAdminOrManage
       notifyApiError(toast, error, 'Failed to migrate review cycle to latest requirements')
     },
   })
+  useDraftNavigationGuard(!migrationSaved && (Object.keys(changedDecisions).length > 0 || executeMigrationMutation.isPending))
 
   const baselineRows = useMemo(
     () =>

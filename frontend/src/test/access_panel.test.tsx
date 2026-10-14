@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Link, createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { DraftNavigationProvider } from '../hooks/useDraftNavigationGuard'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -10,6 +10,11 @@ vi.mock('../api/client', () => ({ default: { get: vi.fn(), put: vi.fn(), post: v
 vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'admin', role: 'admin' } }) }))
 const users = [{ id: 'owner', full_name: 'Access owner', email: 'owner@example.test' }, { id: 'reader', full_name: 'Reader', email: 'reader@example.test' }]
 function mount(node: React.ReactNode, path = '/') { return render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter initialEntries={[path]}>{node}</MemoryRouter></QueryClientProvider>) }
+function mountAccessEditor() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const router = createMemoryRouter([{ path: '/', element: <DraftNavigationProvider><AccessPanel type="application" id="app" initialOpen /></DraftNavigationProvider> }, { path: '/access-teams', element: <p>Teams destination</p> }])
+  render(<QueryClientProvider client={client}><RouterProvider router={router} /></QueryClientProvider>)
+}
 beforeEach(() => {
   vi.resetAllMocks()
   vi.mocked(api.get).mockImplementation(async (url) => {
@@ -30,6 +35,62 @@ it('requires an audit reason to revoke access and retains edits after a conflict
   await screen.findByRole('alert')
   expect(screen.getByRole('textbox', { name: 'Reason for access change' })).toHaveValue('Engagement ended')
   expect(screen.queryByRole('combobox', { name: 'Recipient 1' })).not.toBeInTheDocument()
+})
+it.each(['visibility', 'permission', 'reason'] as const)('preserves an access %s draft on Cancel and releases navigation when undone', async (field) => {
+  mountAccessEditor()
+  const visibility = await screen.findByRole('combobox', { name: 'Visibility' })
+  const permission = screen.getByRole('checkbox', { name: 'View details' })
+  const reason = screen.getByRole('textbox', { name: 'Reason for access change' })
+  if (field === 'visibility') fireEvent.change(visibility, { target: { value: 'restricted' } })
+  if (field === 'permission') fireEvent.click(permission)
+  if (field === 'reason') fireEvent.change(reason, { target: { value: 'Revised sharing' } })
+  fireEvent.click(screen.getByRole('link', { name: 'Manage teams' }))
+  expect(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).toBeInTheDocument()
+  expect(screen.queryByText('Teams destination')).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+  if (field === 'visibility') {
+    expect(visibility).toHaveValue('restricted')
+    fireEvent.change(visibility, { target: { value: 'secret' } })
+  }
+  if (field === 'permission') {
+    expect(permission).toBeChecked()
+    fireEvent.click(permission)
+  }
+  if (field === 'reason') {
+    expect(reason).toHaveValue('Revised sharing')
+    fireEvent.change(reason, { target: { value: '' } })
+  }
+  fireEvent.click(screen.getByRole('link', { name: 'Manage teams' }))
+  expect(await screen.findByText('Teams destination')).toBeInTheDocument()
+})
+
+it('protects a pending access save and clears the warning before refreshing saved access', async () => {
+  let completeSave!: (value: { data: object }) => void
+  vi.mocked(api.put).mockImplementation(() => new Promise(resolve => { completeSave = resolve }))
+  mountAccessEditor()
+  fireEvent.change(await screen.findByRole('textbox', { name: 'Reason for access change' }), { target: { value: 'Confirmed sharing' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save access' }))
+  await waitFor(() => expect(api.put).toHaveBeenCalled())
+  fireEvent.click(screen.getByRole('link', { name: 'Manage teams' }))
+  expect(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+  const pending = new Event('beforeunload', { cancelable: true })
+  fireEvent(window, pending)
+  expect(pending.defaultPrevented).toBe(true)
+  // jsdom cannot reload a document; keep the real draft lifecycle assertions.
+  const reloadFrame = vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(0)
+  try {
+    await act(async () => completeSave({ data: {} }))
+    await waitFor(() => {
+      const saved = new Event('beforeunload', { cancelable: true })
+      fireEvent(window, saved)
+      expect(saved.defaultPrevented).toBe(false)
+    })
+    fireEvent.click(screen.getByRole('link', { name: 'Manage teams' }))
+    expect(await screen.findByText('Teams destination')).toBeInTheDocument()
+  } finally {
+    reloadFrame.mockRestore()
+  }
 })
 it('does not offer another team membership editor to an account administrator', async () => {
   mount(<TeamsPanel users={users} />)

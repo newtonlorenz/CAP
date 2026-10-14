@@ -45,8 +45,9 @@ export default function Applications() {
   useEffect(() => {
     if (previousJurisdiction.current === jurisdictionId) return
     previousJurisdiction.current = jurisdictionId
+    if (!params.has('page')) return
     setParams((current) => { const next = new URLSearchParams(current); next.delete('page'); return next }, { replace: true })
-  }, [jurisdictionId, setParams])
+  }, [jurisdictionId, params, setParams])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)

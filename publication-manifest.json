@@ -741,6 +741,7 @@
     "frontend/src/test/draft_navigation.test.tsx",
     "frontend/src/test/getting_started.test.tsx",
     "frontend/src/test/guide_faq_page.test.tsx",
+    "frontend/src/test/jurisdiction_navigation.test.tsx",
     "frontend/src/test/jurisdictions_page.test.tsx",
     "frontend/src/test/layout_navigation.test.tsx",
     "frontend/src/test/library_navigation.test.tsx",

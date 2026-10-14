@@ -2279,7 +2279,7 @@
     },
     {
       "path": "frontend/src/components/Layout.tsx",
-      "sha256": "352815dcfe6c9c0d62b4e55c354087480a80cb3711346f7f1aad4299d3b756ad"
+      "sha256": "8d4ffb6e871b13c34bf42d7ce88a4e72e2cb7d00db064cd44018a1e8281874c7"
     },
     {
       "path": "frontend/src/components/NavigationSearch.tsx",
@@ -2339,7 +2339,7 @@
     },
     {
       "path": "frontend/src/components/SubmissionChecklistEditor.tsx",
-      "sha256": "ecbbf5b95ce6b144a10f31b67180457fe1d696c78658a94dcc0feb7aaa40464f"
+      "sha256": "32f383f20d155ae3f84bcb6f0b3089657ee98c2c53117fd575f473a0047959e1"
     },
     {
       "path": "frontend/src/components/ThemeSwitcher.tsx",
@@ -2351,7 +2351,7 @@
     },
     {
       "path": "frontend/src/components/access/AccessPanel.tsx",
-      "sha256": "a183222b5f48b30d578bd9bb3f37f554a4c7941f3da4bef0d917afbf2c68bad0"
+      "sha256": "6443293d1971d352e8b8d50af6d5d71e19d534c7af3fd14d25b4264f83ccfcf0"
     },
     {
       "path": "frontend/src/components/access/TeamsPanel.tsx",
@@ -2479,7 +2479,7 @@
     },
     {
       "path": "frontend/src/components/review/ReviewBaselineMigration.tsx",
-      "sha256": "fd980c661a976d1723f75babe9e112aab7221abcd9a36820193dc026b360b2ff"
+      "sha256": "c6a19f0bd8b5b547f3307a13f31c3d08c80336ef17174f2a6d32745da80d6333"
     },
     {
       "path": "frontend/src/components/review/ReviewEvidenceEditor.tsx",
@@ -2591,7 +2591,7 @@
     },
     {
       "path": "frontend/src/components/workflows/ProjectMaintenance.tsx",
-      "sha256": "b8e4427318644ac10257122fc6d208993e26d8d946abd14762ca859272f8f03c"
+      "sha256": "abe5c7b494378477b56c40f2dc0de34caf0faee6d58fb3b3aafd85da973924c1"
     },
     {
       "path": "frontend/src/config/siteContent.ts",
@@ -2687,11 +2687,11 @@
     },
     {
       "path": "frontend/src/pages/Applications.tsx",
-      "sha256": "64122c68f91deab6be7f8ac0ffd7b7f2a18b1c7b324d6331fb0dac560c07f54f"
+      "sha256": "b73a088085a50ffa6d2552ab5d368f102a8a63fa8024c0f1648b92f72f3f996d"
     },
     {
       "path": "frontend/src/pages/CertificationProjects.tsx",
-      "sha256": "69bd17948062e17a5363d59e61c8d9a3922b3a27ad805f4352c845f49ca1f1f1"
+      "sha256": "37ad50982f6076977b601e1e0fe8df8c98c1688078d90e09126bdf5b71e44f53"
     },
     {
       "path": "frontend/src/pages/ChangeManagement.tsx",
@@ -2755,11 +2755,11 @@
     },
     {
       "path": "frontend/src/pages/RequirementsSetImport.tsx",
-      "sha256": "f7e2be1cda4538f3ab536a5d0ddae2820640ce85b030eb10f3ff7fe9bfc033f1"
+      "sha256": "6c3da18adf667ffeb74896fb0906ead10390b878961de55f416e1d58f952b037"
     },
     {
       "path": "frontend/src/pages/RequirementsSetView.tsx",
-      "sha256": "9be3f7b204f6313832630a8bad31db36b7a6bfb91e36c939b2a5fdd5c55d681d"
+      "sha256": "3c29680e3b26adef41e189ac824ff3383e42a4a61e24d4ece7659cafbb185476"
     },
     {
       "path": "frontend/src/pages/ReviewCycleDetail.tsx",
@@ -2855,7 +2855,7 @@
     },
     {
       "path": "frontend/src/pages/requirements-import/BulkTriagePanel.tsx",
-      "sha256": "e416794f577a2b6ca3da9a476b2073322f2376ead168f971966c00bde8c86f45"
+      "sha256": "eeb67788897673f235d528931d0f2818bf1467288eb3da69599923b82d8323bc"
     },
     {
       "path": "frontend/src/pages/requirements-import/ImportStepper.tsx",
@@ -2863,7 +2863,7 @@
     },
     {
       "path": "frontend/src/pages/requirements-import/RecoveryPanel.tsx",
-      "sha256": "105a94f1f300a566316a7b091bd51696fea23c37045a80ba043061129433aa50"
+      "sha256": "26baba3e5268ecd95ae328441e715e403d5e2f8f294191a12358672266988577"
     },
     {
       "path": "frontend/src/pages/requirements-import/ReviewQueueKpiPanel.tsx",
@@ -2875,7 +2875,7 @@
     },
     {
       "path": "frontend/src/test/access_panel.test.tsx",
-      "sha256": "d088b4ac73ef3a6b6ef0a47e5df28a54dd1a97facd274fb42600b33be48c9655"
+      "sha256": "a32902deb5393f87ad41a5c411926991666af89e29002e2c55f359560862e556"
     },
     {
       "path": "frontend/src/test/account_settings.test.tsx",
@@ -2915,7 +2915,7 @@
     },
     {
       "path": "frontend/src/test/certification_projects_page.test.tsx",
-      "sha256": "c4b1908bdf0f091669bfe22c029895c21d4896207296be7feade6581e5a01672"
+      "sha256": "d06cb208c1cc8fd1e74996c7a55c5142d7f49f62040c947618650e85167c0a3a"
     },
     {
       "path": "frontend/src/test/change_management_page.test.tsx",
@@ -2935,7 +2935,7 @@
     },
     {
       "path": "frontend/src/test/contextual_workflows.test.tsx",
-      "sha256": "d2d7b9ae428873c48c5545cae9b0510deecc27111e6c4880d27855311546f830"
+      "sha256": "f99a54aff0876c6ab9fae30fe1510cf16af972df13a10133e0f731ece9448000"
     },
     {
       "path": "frontend/src/test/dashboard_components.test.tsx",
@@ -2960,6 +2960,10 @@
     {
       "path": "frontend/src/test/guide_faq_page.test.tsx",
       "sha256": "b530fa235fed6c95a05a60f6cce9465759a9dec1c477de29d47916b42201d529"
+    },
+    {
+      "path": "frontend/src/test/jurisdiction_navigation.test.tsx",
+      "sha256": "f0ed057cfcb6e37f30b298f30bfebdbe79a6f0a0889a789f91c87feacfa95948"
     },
     {
       "path": "frontend/src/test/jurisdictions_page.test.tsx",
@@ -3055,11 +3059,11 @@
     },
     {
       "path": "frontend/src/test/requirements_set_import_bulk_triage.test.tsx",
-      "sha256": "d9240db62c4df3933af599cc0462539aebdf23692791154946128f07da970f1e"
+      "sha256": "d4d29be73863ca9dc42f5c1ef829e7b7685b7f4adf076574b23955cf4681c21f"
     },
     {
       "path": "frontend/src/test/requirements_set_import_editing.test.tsx",
-      "sha256": "e98f909bfef331c29cb36915741c5052a3083c0b22b985c18e661f1b05392d1a"
+      "sha256": "d2a5cee992f5f54f3302100a7e71ddc2851b205b612ecce0bbd97789c56942b3"
     },
     {
       "path": "frontend/src/test/requirements_set_import_navigation.test.tsx",
@@ -3091,7 +3095,7 @@
     },
     {
       "path": "frontend/src/test/review_cycle_detail_evidence_paste.test.tsx",
-      "sha256": "5fc0cb70e5b7bd129d3182242736db3577d0ff82438b391fd066a416c4218bd6"
+      "sha256": "e0e9df3b0cb0b92aed3641084c6de4ffe1cb2901d11acd54d0ee9ace24f4e2fa"
     },
     {
       "path": "frontend/src/test/review_cycle_detail_filters.test.tsx",
@@ -3275,7 +3279,7 @@
     },
     {
       "path": "publication-manifest.json",
-      "sha256": "e518ec1225621c9599b532346cf5a48a68513710719e9bfdde8b0987bbce81ae"
+      "sha256": "37767f2ca8f9a4bbc6743fb7dff61458460076703edb3540301c0e56131e749c"
     },
     {
       "path": "scripts/check-release-lifecycle.py",

@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { createMemoryRouter, Outlet, RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import type { Document, ExtractedRequirement, ExtractionRun, PaginatedResponse } from '../types'
 import { JurisdictionProvider } from '../contexts/JurisdictionContext'
 import RequirementsSetImport from '../pages/RequirementsSetImport'
+import { DraftNavigationProvider } from '../hooks/useDraftNavigationGuard'
 
 vi.mock('../contexts/AuthContext', () => ({
   AuthProvider: ({ children }: { children: unknown }) => children,
@@ -63,20 +64,15 @@ const createTestQueryClient = () =>
 
 function renderPage(documentId: string) {
   const queryClient = createTestQueryClient()
-  render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[`/requirements/sets/${documentId}/import`]}>
-        <JurisdictionProvider>
-          <Routes>
-            <Route
-              path="/requirements/sets/:documentId/import"
-              element={<RequirementsSetImport />}
-            />
-          </Routes>
-        </JurisdictionProvider>
-      </MemoryRouter>
-    </QueryClientProvider>
-  )
+  const router = createMemoryRouter([{
+    element: <QueryClientProvider client={queryClient}><JurisdictionProvider><DraftNavigationProvider><Outlet /></DraftNavigationProvider></JurisdictionProvider></QueryClientProvider>,
+    children: [
+      { path: '/requirements/sets/:documentId/import', element: <RequirementsSetImport /> },
+      { path: '/requirements/sets', element: <h1>Requirement sets destination</h1> },
+    ],
+  }], { initialEntries: [`/requirements/sets/${documentId}/import`] })
+  render(<RouterProvider router={router} />)
+  return router
 }
 
 describe('RequirementsSetImport bulk triage', () => {
@@ -141,7 +137,7 @@ describe('RequirementsSetImport bulk triage', () => {
     expect(await screen.findByRole('button', { name: /Extraction QA/ })).toBeDisabled()
   })
 
-  it('previews and applies bulk triage actions, then supports session undo', async () => {
+  it.each([false, true])('protects bulk edits and pending applies while preserving preview and undo: pending %s', async (pending) => {
     const documentId = 'doc-bulk'
     const runId = 'run-bulk'
     const createdAt = new Date().toISOString()
@@ -240,6 +236,7 @@ describe('RequirementsSetImport bulk triage', () => {
       return Promise.resolve(makeAxiosResponse({ items: [], total: 0 }))
     })
 
+    let finishApply!: () => void
     vi.mocked(api.post).mockImplementation((url: unknown, data?: unknown) => {
       if (typeof url !== 'string') return Promise.resolve(makeAxiosResponse({}))
       if (url === `/documents/${documentId}/extractions/feedback-batch`) {
@@ -262,8 +259,7 @@ describe('RequirementsSetImport bulk triage', () => {
             })
           )
         }
-        return Promise.resolve(
-          makeAxiosResponse({
+        const response = makeAxiosResponse({
             preview_only: false,
             matched_count: 1,
             affected_count: 1,
@@ -277,14 +273,14 @@ describe('RequirementsSetImport bulk triage', () => {
               by_confidence_band: [{ key: '0.50-0.74', total: 1 }],
             },
           })
-        )
+        return pending ? new Promise((resolve) => { finishApply = () => resolve(response) }) : Promise.resolve(response)
       }
       return Promise.resolve(makeAxiosResponse({}))
     })
 
     vi.mocked(api.put).mockResolvedValue(makeAxiosResponse({}))
 
-    renderPage(documentId)
+    const router = renderPage(documentId)
 
     fireEvent.click(await screen.findByText(/Quality summary and bulk actions/))
     expect(await screen.findByText('Bulk Triage')).toBeInTheDocument()
@@ -293,6 +289,19 @@ describe('RequirementsSetImport bulk triage', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Preview/i })).toBeEnabled()
     })
+
+    if (!pending) {
+      fireEvent.change(screen.getByLabelText('Action'), { target: { value: 'edit' } })
+      fireEvent.change(screen.getByLabelText('New requirement type'), { target: { value: 'recommended' } })
+      fireEvent.change(screen.getByLabelText('New status'), { target: { value: 'accepted' } })
+      await act(async () => { await router.navigate('/requirements/sets') })
+      fireEvent.click(within(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).getByRole('button', { name: 'Cancel' }))
+      expect(screen.getByLabelText('New requirement type')).toHaveValue('recommended')
+      expect(screen.getByLabelText('New status')).toHaveValue('accepted')
+      fireEvent.change(screen.getByLabelText('New requirement type'), { target: { value: '' } })
+      fireEvent.change(screen.getByLabelText('New status'), { target: { value: '' } })
+      fireEvent.change(screen.getByLabelText('Action'), { target: { value: 'accept' } })
+    }
 
     fireEvent.click(screen.getByRole('button', { name: /Preview/i }))
 
@@ -320,6 +329,17 @@ describe('RequirementsSetImport bulk triage', () => {
       )
     })
 
+    if (pending) {
+      // Hiding the child while the request is pending must retain the parent guard.
+      fireEvent.click(screen.getByRole('button', { name: /^Metadata/ }))
+      await act(async () => { await router.navigate('/requirements/sets') })
+      expect(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).toBeVisible()
+      await act(async () => { finishApply() })
+      expect(await screen.findByRole('heading', { name: 'Requirement sets destination' })).toBeVisible()
+      router.dispose()
+      return
+    }
+
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Undo last bulk action/i })).toBeEnabled()
     })
@@ -336,5 +356,8 @@ describe('RequirementsSetImport bulk triage', () => {
         })
       )
     })
+    await act(async () => { await router.navigate('/requirements/sets') })
+    expect(await screen.findByRole('heading', { name: 'Requirement sets destination' })).toBeVisible()
+    router.dispose()
   })
 })
