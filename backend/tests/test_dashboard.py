@@ -416,6 +416,93 @@ async def test_dashboard_attention_preserves_role_tenant_and_cycle_visibility(
     assert [row["cycle_name"] for row in result["my_work"]["assigned_review_items"]["items"]] == ["visible"]
 
 
+@pytest.mark.parametrize("evidence_state", ["current", "expired", "archived", "superseded", "hidden"])
+async def test_dashboard_attention_keeps_invalid_shared_evidence_unresolved(
+    client, db_session, test_user, auth_headers, default_jurisdiction, evidence_state,
+):
+    from datetime import date, timedelta
+    from app.models.access import ResourceAccess
+    from app.models.documentation import (
+        DocumentationAssessmentEvidence, DocumentationRegister, EvidenceGroup, EvidenceGroupVersion,
+    )
+    from app.models.preparation import PreparationEvidence
+
+    requirement = Requirement(
+        jurisdiction_id=default_jurisdiction.id, reference_id="SHARED-1",
+        text="Maintain the control evidence", requirement_type="mandatory", active=True,
+    )
+    cycle = ReviewCycle(
+        jurisdiction_id=default_jurisdiction.id, name="Shared evidence review",
+        scope="all", status="active", created_by=test_user.id,
+    )
+    evidence = PreparationEvidence(
+        title="Protected source title", kind="note", body="Protected source content",
+        created_by=test_user.id, archived=evidence_state == "archived",
+        valid_until=date.today() - timedelta(days=1) if evidence_state == "expired" else None,
+    )
+    db_session.add_all([requirement, cycle, evidence])
+    await db_session.flush()
+    item = ReviewItem(
+        review_cycle_id=cycle.id, requirement_id=requirement.id,
+        assigned_reviewer_id=test_user.id, review_status="confirmed",
+        assessment_status="evidenced", review_evidence="Assessment evidence is recorded",
+    )
+    db_session.add(item)
+    await db_session.flush()
+    db_session.add(DocumentationAssessmentEvidence(
+        review_item_id=item.id, evidence_id=evidence.id, created_by=test_user.id,
+        rationale="Supports this assessment",
+    ))
+    if evidence_state == "superseded":
+        register = DocumentationRegister(
+            jurisdiction_id=default_jurisdiction.id, name="Versioned evidence",
+            created_by=test_user.id,
+        )
+        replacement = PreparationEvidence(
+            title="Replacement version", kind="note", body="Current content", created_by=test_user.id,
+        )
+        db_session.add_all([register, replacement])
+        await db_session.flush()
+        group = EvidenceGroup(
+            register_id=register.id, title="Policy versions",
+            current_evidence_id=replacement.id, created_by=test_user.id,
+        )
+        db_session.add(group)
+        await db_session.flush()
+        db_session.add_all([
+            EvidenceGroupVersion(group_id=group.id, evidence_id=evidence.id, version=1),
+            EvidenceGroupVersion(group_id=group.id, evidence_id=replacement.id, version=2),
+        ])
+    if evidence_state == "hidden":
+        other = User(
+            email="private-source-owner@example.test", password_hash="unused",
+            full_name="Private source owner", role="manager",
+        )
+        db_session.add(other)
+        await db_session.flush()
+        db_session.add(ResourceAccess(
+            resource_type="preparation_evidence", resource_id=evidence.id,
+            visibility="secret", owner_id=other.id,
+        ))
+    await db_session.commit()
+
+    response = await client.get("/api/v1/dashboard?work_scope=unresolved", headers=auth_headers)
+    assert response.status_code == 200, response.text
+    work = response.json()["my_work"]["assigned_review_items"]
+    if evidence_state == "current":
+        assert work["total"] == 0
+        assert work["items"] == []
+    else:
+        assert work["total"] == 1
+        assert work["items"][0]["review_item_id"] == str(item.id)
+        assert work["items"][0]["action_reasons"] == [
+            "Replace or review shared evidence that is no longer current and valid"
+        ]
+    assert evidence.title not in response.text
+    assert evidence.body not in response.text
+    assert str(evidence.id) not in response.text
+
+
 async def test_dashboard_activity_filters_auth_before_limit_and_links_visible_comments(
     client, db_session, test_user, auth_headers, default_jurisdiction
 ):

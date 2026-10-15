@@ -20,7 +20,7 @@ from app.models.change_management import ChangeEntry, ComponentRegister
 from app.models.document import Document
 from app.models.evidence import EvidenceFile, EvidenceLink, EvidenceNote
 from app.models.extraction import ExtractionRun
-from app.models.preparation import PreparationCase
+from app.models.preparation import PreparationCase, PreparationEvidence
 from app.models.program import CertificationProject
 from app.models.requirement import Requirement, RequirementStatus
 from app.models.review import ReviewCycle, ReviewItem, ReviewItemComment, Snapshot
@@ -55,6 +55,7 @@ from app.schemas.dashboard import (
 )
 from app.services.access_audit import audit_access_clause
 from app.services.dashboard_work import application_work
+from app.services.documentation_review import shared_evidence_for_items
 from app.services.requirement_scope import current_requirement_condition
 from app.services.review_assurance import AssessmentRow, assessment_gap_reasons
 from app.services.review_progress import (
@@ -476,6 +477,24 @@ async def get_dashboard(
     )
     # Evaluate the shared readiness rule over all visible assignments, then page.
     # A confirmed decision can still need evidence or a non-applicability reason.
+    assignments = my_review_items_rows.all()
+    shared_evidence = (
+        await shared_evidence_for_items(
+            db, [row[1].id for row in assignments], current_user.organization_id
+        )
+        if assignments else {}
+    )
+    evidence_ids = {
+        entry["evidence_id"] for entries in shared_evidence.values() for entry in entries
+    }
+    visible_evidence_ids = (
+        set((await db.scalars(
+            select(PreparationEvidence.id).where(
+                PreparationEvidence.id.in_(evidence_ids), org_clause(PreparationEvidence, current_user)
+            )
+        )).all())
+        if evidence_ids else set()
+    )
     my_review_items: list[AssignedReviewItem] = []
     for (
         cycle,
@@ -487,7 +506,7 @@ async def get_dashboard(
         project_name,
         change_entry_id,
         change_title,
-    ) in my_review_items_rows.all():
+    ) in assignments:
         reasons = assessment_gap_reasons(
             AssessmentRow(
                 item=item,
@@ -499,6 +518,13 @@ async def get_dashboard(
                     else legacy_status or "not_started"
                 ),
                 status_comment=legacy_comment or "",
+                shared_evidence=[
+                    {"problems": (
+                        entry["problems"] if entry["evidence_id"] in visible_evidence_ids
+                        else ["unavailable_evidence"]
+                    )}
+                    for entry in shared_evidence.get(item.id, [])
+                ],
             )
         )
         if work_scope == "unresolved" and not reasons:

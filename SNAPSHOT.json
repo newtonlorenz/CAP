@@ -339,7 +339,7 @@
     },
     {
       "path": "backend/app/api/dashboard.py",
-      "sha256": "fb1a35706cd4d26a48b5f9a8638e9345ebf0f1220f02d73002b382e93213d15d"
+      "sha256": "11d16bc6050a027107d5f5d9c131178a080dd7ebd09eb6dcffcc3282a4e0ddad"
     },
     {
       "path": "backend/app/api/deps.py",
@@ -879,7 +879,7 @@
     },
     {
       "path": "backend/app/services/reports.py",
-      "sha256": "1167e28268ca8d468a88123ed9010a1b70e4ed69e0dc5ec138c9d871d6bdf63d"
+      "sha256": "d9c6ba8de181f960cbe6acb894055cd3fd5a4020801ee7d6c367ecf151d2494c"
     },
     {
       "path": "backend/app/services/requirement_baselines.py",
@@ -1111,7 +1111,7 @@
     },
     {
       "path": "backend/tests/test_dashboard.py",
-      "sha256": "bf92442a93d9a240518791672a87bbdb1e3890f8c90d04bc38c79fbbc0d22973"
+      "sha256": "b904a99ae9d7b668925f9e2caea2e1a83f82cc5689706f2a5a9f3de98fb4b839"
     },
     {
       "path": "backend/tests/test_dashboard_application_work.py",
@@ -1331,7 +1331,7 @@
     },
     {
       "path": "backend/tests/test_reports.py",
-      "sha256": "d7568f7ae8e02fe0f05b42bcc3122bcf234474255861232d94c979afeb156eb3"
+      "sha256": "62d874fb7b88e88f094021ed328bf04373d155a28af0ef7e6af1bcb2397d8792"
     },
     {
       "path": "backend/tests/test_requirement_baseline_versioning.py",
