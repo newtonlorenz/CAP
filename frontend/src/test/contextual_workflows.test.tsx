@@ -332,6 +332,32 @@ describe('Contextual compliance work', () => {
     await screen.findByRole('link', { name: 'First evidence form' })
   })
 
+  it('protects a cadence-only maintenance draft and leaves cleanly after the plan is saved', async () => {
+    vi.mocked(api.get).mockResolvedValue(response({ items: [], total: 0 }))
+    vi.mocked(api.post).mockResolvedValue(response({ id: 'plan-1' }))
+    const router = createMemoryRouter([
+      { path: '/maintenance', element: <DraftNavigationProvider><ProjectMaintenance projectId="project-1" jurisdictionId="jur-1" canManage assessments={[]} /><Link to="/other">Other workspace</Link></DraftNavigationProvider> },
+      { path: '/other', element: <h1>Other workspace</h1> },
+    ], { initialEntries: ['/maintenance'] })
+    render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><RouterProvider router={router} /></QueryClientProvider>)
+    await screen.findByText('No maintenance plans are linked to this project.')
+    fireEvent.click(screen.getByText('Add maintenance plan'))
+    fireEvent.change(screen.getByLabelText('Cadence in days'), { target: { value: '30' } })
+    fireEvent.click(screen.getByRole('link', { name: 'Other workspace' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Changes are not saved yet' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(router.state.location.pathname).toBe('/maintenance')
+    expect(screen.getByLabelText('Cadence in days')).toHaveValue(30)
+    expect(api.post).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByLabelText('Plan name'), { target: { value: 'Monthly assessment' } })
+    fireEvent.change(screen.getByLabelText('First due date'), { target: { value: '2026-11-01' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add plan' }))
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/maintenance-plans', expect.objectContaining({ certification_project_id: 'project-1', cadence_days: 30 })))
+    await waitFor(() => expect(screen.getByLabelText('Cadence in days')).toHaveValue(365))
+    fireEvent.click(screen.getByRole('link', { name: 'Other workspace' }))
+    expect(await screen.findByRole('heading', { name: 'Other workspace' })).toBeInTheDocument()
+  })
+
   it('runs maintenance only for the selected project and links assessment history', async () => {
     vi.mocked(api.get).mockResolvedValue(response({ items: [], total: 0 }))
     vi.mocked(api.post).mockResolvedValue(response({ generated_cycles: 1, generated_items: 3 }))

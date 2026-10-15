@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { createMemoryRouter, MemoryRouter, RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 
@@ -54,6 +54,7 @@ vi.mock('../contexts/JurisdictionContext', () => ({ useJurisdiction: () => ({ ju
 import api from '../api/client'
 import CertificationProjects from '../pages/CertificationProjects'
 import CertificationEngagement from '../components/workflows/CertificationEngagement'
+import { DraftNavigationProvider } from '../hooks/useDraftNavigationGuard'
 import type { CertificationProject, SubmissionPackageGateCheck } from '../types'
 
 function makeAxiosResponse<T>(data: T): AxiosResponse<T> {
@@ -157,13 +158,23 @@ function renderPackageWorkspace({
   packages = [basePackage],
   gateCheck = (packageId: string) => Promise.resolve(makeAxiosResponse({ ...readyPackageGateCheck, package_id: packageId })),
   cycles = [closedSubmissionCycle],
+  project = baseProject,
+  milestones = [],
+  artifacts = [],
+  navigationEntry,
 }: {
   packages?: typeof basePackage[]
   gateCheck?: (packageId: string) => Promise<AxiosResponse<SubmissionPackageGateCheck>>
   cycles?: typeof closedSubmissionCycle[]
+  project?: typeof baseProject & Partial<CertificationProject>
+  milestones?: typeof baseMilestone[]
+  artifacts?: unknown[]
+  navigationEntry?: string
 } = {}) {
   vi.mocked(api.get).mockImplementation((url: unknown) => {
-    if (url === '/certification-projects?limit=1000') return Promise.resolve(makeAxiosResponse({ items: [baseProject], total: 1 }))
+    if (url === '/certification-projects?limit=1000') return Promise.resolve(makeAxiosResponse({ items: [project], total: 1 }))
+    if (url === '/certification-projects/proj-1/milestones') return Promise.resolve(makeAxiosResponse({ items: milestones, total: milestones.length }))
+    if (url === '/submission-packages/pkg-1/artifacts') return Promise.resolve(makeAxiosResponse({ items: artifacts, total: artifacts.length }))
     if (url === '/submission-packages?project_id=proj-1&limit=1000') return Promise.resolve(makeAxiosResponse({ items: packages, total: packages.length }))
     if (url === '/review-cycles?certification_project_id=proj-1&limit=1000') return Promise.resolve(makeAxiosResponse({ items: cycles, total: cycles.length }))
     if (url === '/jurisdictions?limit=1000') return Promise.resolve(makeAxiosResponse({ items: [baseJurisdiction], total: 1 }))
@@ -173,14 +184,92 @@ function renderPackageWorkspace({
   })
   vi.mocked(api.post).mockResolvedValue(makeAxiosResponse({}))
   const queryClient = createTestQueryClient()
-  render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={['/?project=proj-1&section=reports']}><CertificationProjects /></MemoryRouter></QueryClientProvider>)
-  return queryClient
+  const router = navigationEntry ? createMemoryRouter([{ path: '/', element: <DraftNavigationProvider><CertificationProjects /></DraftNavigationProvider> }], { initialEntries: [navigationEntry] }) : null
+  render(<QueryClientProvider client={queryClient}>{router ? <RouterProvider router={router} /> : <MemoryRouter initialEntries={['/?project=proj-1&section=reports']}><CertificationProjects /></MemoryRouter>}</QueryClientProvider>)
+  return { queryClient, router }
 }
 
 describe('Certification Projects Page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockRole = 'admin'
+  })
+
+  it.each([
+    { name: 'project status', section: 'overview', edit: () => fireEvent.change(screen.getByLabelText('Project status'), { target: { value: 'on_hold' } }) },
+    { name: 'milestone notes', section: 'milestones', edit: () => fireEvent.change(screen.getByLabelText('Notes for Scope definition'), { target: { value: 'Awaiting lab results' } }) },
+    { name: 'existing document', section: 'reports', edit: () => fireEvent.change(screen.getAllByLabelText('Document name')[1], { target: { value: 'Revised report' } }) },
+  ])('keeps $name drafts until leaving the selected project is confirmed', async ({ section, edit }) => {
+    const { router } = renderPackageWorkspace({
+      navigationEntry: `/?project=proj-1&section=${section}`,
+      milestones: [baseMilestone],
+      artifacts: [{ id: 'art-1', package_id: 'pkg-1', artifact_type: 'report', name: 'Scope report', file_path: null, link_url: null, required: false, included: true, notes: null }],
+    })
+    await waitFor(() => expect(screen.getByLabelText('Project stage')).toHaveValue('scoping'))
+    await screen.findByDisplayValue('Scope report')
+    edit()
+    await act(async () => { await router!.navigate('/') })
+    const dialog = await screen.findByRole('dialog', { name: 'Changes are not saved yet' })
+    expect(router!.state.location.search).toContain('project=proj-1')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByRole('heading', { name: 'Nordic launch' })).toBeInTheDocument()
+    expect(api.patch).not.toHaveBeenCalled()
+    expect(api.put).not.toHaveBeenCalled()
+    expect(api.post).not.toHaveBeenCalled()
+    await act(async () => { await router!.navigate('/') })
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).getByRole('button', { name: 'Leave with unsaved changes' }))
+    await waitFor(() => expect(router!.state.location.search).toBe(''))
+    expect(screen.getByRole('heading', { name: 'Certifications' })).toBeInTheDocument()
+  })
+
+  it('leaves an untouched legacy baseline and an undone project edit without a warning', async () => {
+    const { router } = renderPackageWorkspace({ navigationEntry: '/?project=proj-1', project: { ...baseProject, requirement_set_ids: ['doc-1'] } })
+    await waitFor(() => expect(screen.getByLabelText('Project stage')).toHaveValue('scoping'))
+    fireEvent.change(screen.getByLabelText('Project status'), { target: { value: 'on_hold' } })
+    fireEvent.change(screen.getByLabelText('Project status'), { target: { value: 'active' } })
+    await act(async () => { await router!.navigate('/') })
+    expect(router!.state.location.search).toBe('')
+    expect(screen.queryByRole('dialog', { name: 'Changes are not saved yet' })).not.toBeInTheDocument()
+  })
+
+  it('waits for a pending project save even when the local edit is undone', async () => {
+    let finishSave!: () => void
+    vi.mocked(api.patch).mockImplementation(() => new Promise((resolve) => { finishSave = () => resolve(makeAxiosResponse({})) }))
+    const { router } = renderPackageWorkspace({ navigationEntry: '/?project=proj-1' })
+    await waitFor(() => expect(screen.getByLabelText('Project stage')).toHaveValue('scoping'))
+    fireEvent.change(screen.getByLabelText('Project status'), { target: { value: 'on_hold' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save project status' }))
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith('/certification-projects/proj-1', { stage: 'scoping', status: 'on_hold' }))
+    fireEvent.change(screen.getByLabelText('Project status'), { target: { value: 'active' } })
+    await act(async () => { await router!.navigate('/') })
+    expect(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).toBeInTheDocument()
+    expect(router!.state.location.search).toContain('project=proj-1')
+    await act(async () => { finishSave() })
+    await waitFor(() => expect(router!.state.location.search).toBe(''))
+  })
+
+  it('retains an existing package checklist on Cancel and continues navigation once its save completes', async () => {
+    let finishSave!: () => void
+    vi.mocked(api.patch).mockImplementationOnce(() => new Promise((resolve) => { finishSave = () => resolve(makeAxiosResponse({})) }))
+    const { router } = renderPackageWorkspace({ navigationEntry: '/?project=proj-1&section=reports' })
+    const checklist = within((await screen.findByRole('button', { name: 'Save checklist' })).closest('div')!)
+    const checkbox = checklist.getByRole('checkbox', { name: 'Submission assessment is closed' })
+    expect(checkbox).not.toBeChecked()
+    fireEvent.click(checkbox)
+    await act(async () => { await router!.navigate('/') })
+    const dialog = await screen.findByRole('dialog', { name: 'Changes are not saved yet' })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(router!.state.location.search).toContain('project=proj-1')
+    expect(checkbox).toBeChecked()
+    expect(api.patch).not.toHaveBeenCalled()
+    fireEvent.click(checklist.getByRole('button', { name: 'Save checklist' }))
+    await waitFor(() => expect(api.patch).toHaveBeenCalledWith('/submission-packages/pkg-1', { checklist: expect.objectContaining({ sections: [expect.objectContaining({ items: expect.arrayContaining([expect.objectContaining({ id: 'review-cycle-closed', completed: true })]) })] }) }))
+    await act(async () => { await router!.navigate('/') })
+    expect(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).toBeInTheDocument()
+    expect(router!.state.location.search).toContain('project=proj-1')
+    await act(async () => { finishSave() })
+    await waitFor(() => expect(router!.state.location.search).toBe(''))
+    expect(screen.getByRole('heading', { name: 'Certifications' })).toBeInTheDocument()
   })
 
   it('retains engagement edits after a failed save and clears the draft after success', async () => {

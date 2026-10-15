@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { createMemoryRouter, Outlet, RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import type { Document, ExtractedRequirement, ExtractionRun, PaginatedResponse } from '../types'
 import { JurisdictionProvider } from '../contexts/JurisdictionContext'
 import RequirementsSetImport from '../pages/RequirementsSetImport'
+import RequirementsSetView from '../pages/RequirementsSetView'
+import { DraftNavigationProvider } from '../hooks/useDraftNavigationGuard'
 
 vi.mock('../contexts/AuthContext', () => ({
   AuthProvider: ({ children }: { children: unknown }) => children,
@@ -23,6 +25,10 @@ vi.mock('../contexts/AuthContext', () => ({
     login: vi.fn(),
     logout: vi.fn(),
   }),
+}))
+
+vi.mock('../contexts/ToastContext', () => ({
+  useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn(), dismiss: vi.fn(), toasts: [] }),
 }))
 
 vi.mock('../api/client', () => ({
@@ -166,7 +172,7 @@ const setupImportFixture = (): ImportFixture => {
   }
 }
 
-const renderImportPage = async (fixture: ImportFixture) => {
+const renderImportPage = async (fixture: ImportFixture, page: 'import' | 'view' = 'import') => {
   const { documentId, run, doc } = fixture
   const queryClient = createTestQueryClient()
 
@@ -255,20 +261,20 @@ const renderImportPage = async (fixture: ImportFixture) => {
     return Promise.resolve(makeAxiosResponse({}))
   })
 
-  render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[`/requirements/sets/${documentId}/import`]}>
-        <JurisdictionProvider>
-          <Routes>
-            <Route path="/requirements/sets/:documentId/import" element={<RequirementsSetImport />} />
-          </Routes>
-        </JurisdictionProvider>
-      </MemoryRouter>
-    </QueryClientProvider>
-  )
+  const path = `/requirements/sets/${documentId}${page === 'import' ? '/import' : ''}`
+  const router = createMemoryRouter([{
+    element: <QueryClientProvider client={queryClient}><JurisdictionProvider><DraftNavigationProvider><Outlet /></DraftNavigationProvider></JurisdictionProvider></QueryClientProvider>,
+    children: [
+      { path: '/requirements/sets/:documentId/import', element: <RequirementsSetImport /> },
+      { path: '/requirements/sets/:documentId', element: <RequirementsSetView /> },
+      { path: '/requirements/sets', element: <h1>Requirement sets destination</h1> },
+    ],
+  }], { initialEntries: [path] })
+  render(<RouterProvider router={router} />)
 
   await screen.findByText('Fixture Set')
-  await screen.findByText('Showing 3 of 3 requirements')
+  if (page === 'import' && doc.status !== 'pending_approval') await screen.findByText('Showing 3 of 3 requirements')
+  return router
 }
 
 describe('RequirementsSetImport editing behaviors', () => {
@@ -277,7 +283,60 @@ describe('RequirementsSetImport editing behaviors', () => {
     window.localStorage.clear()
   })
 
-  it('shows a rejected structured row as a source-linked correction', async () => {
+  // The shared blocker is covered separately; these cases prove the real pages
+  // register their independently owned drafts before country-switch navigation.
+  it.each(['import', 'view'] as const)('protects %s metadata until the user chooses to leave', async (page) => {
+    const router = await renderImportPage(setupImportFixture(), page)
+    if (page === 'import') fireEvent.click(screen.getByRole('button', { name: /^Metadata/ }))
+    else fireEvent.click(screen.getByText('Requirement set details'))
+    fireEvent.change(screen.getByLabelText('Requirement Set Name'), { target: { value: 'Unsaved set name' } })
+    await act(async () => { await router.navigate('/requirements/sets') })
+    const warning = await screen.findByRole('dialog', { name: 'Changes are not saved yet' })
+    expect(router.state.location.pathname).not.toBe('/requirements/sets')
+    fireEvent.click(within(warning).getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByLabelText('Requirement Set Name')).toHaveValue('Unsaved set name')
+    await act(async () => { await router.navigate('/requirements/sets') })
+    fireEvent.click(screen.getByRole('button', { name: 'Leave with unsaved changes' }))
+    expect(await screen.findByRole('heading', { name: 'Requirement sets destination' })).toBeVisible()
+    router.dispose()
+  })
+
+  it.each(['import', 'view'] as const)('protects %s extracted edits and releases a cancelled editor', async (page) => {
+    const router = await renderImportPage(setupImportFixture(), page)
+    fireEvent.click(screen.getAllByRole('button', { name: page === 'import' ? 'Edit' : /Edit extracted requirement/i })[0])
+    const editor = await screen.findByRole('dialog', { name: 'Edit extracted requirement' })
+    fireEvent.change(within(editor).getByDisplayValue('Requirement text A'), { target: { value: 'Unsaved extraction text' } })
+    await act(async () => { await router.navigate('/requirements/sets') })
+    const warning = await screen.findByRole('dialog', { name: 'Changes are not saved yet' })
+    fireEvent.click(within(warning).getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByDisplayValue('Unsaved extraction text')).toBeInTheDocument()
+    fireEvent.click(within(editor).getByRole('button', { name: 'Cancel' }))
+    await act(async () => { await router.navigate('/requirements/sets') })
+    expect(await screen.findByRole('heading', { name: 'Requirement sets destination' })).toBeVisible()
+    router.dispose()
+  })
+
+  it.each(['import', 'view'] as const)('waits for a %s approval with no comment before continuing', async (page) => {
+    const fixture = setupImportFixture()
+    fixture.doc.status = 'pending_approval'
+    const router = await renderImportPage(fixture, page)
+    let finishApproval!: () => void
+    vi.mocked(api.post).mockImplementation(() => new Promise((resolve) => {
+      finishApproval = () => resolve(makeAxiosResponse({}))
+    }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Approve' }))
+    const decision = await screen.findByRole('dialog', { name: 'Approve requirement set' })
+    fireEvent.click(within(decision).getByRole('button', { name: 'Approve' }))
+    await waitFor(() => expect(api.post).toHaveBeenCalled())
+    await act(async () => { await router.navigate('/requirements/sets') })
+    expect(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).toBeVisible()
+    expect(router.state.location.pathname).not.toBe('/requirements/sets')
+    await act(async () => { finishApproval() })
+    expect(await screen.findByRole('heading', { name: 'Requirement sets destination' })).toBeVisible()
+    router.dispose()
+  })
+
+  it('protects source corrections, retaining failed edits until explicitly cancelled', async () => {
     const fixture = setupImportFixture()
     fixture.run.pipeline_version = 'opendataloader_v1'
     fixture.extractions[1] = {
@@ -288,22 +347,44 @@ describe('RequirementsSetImport editing behaviors', () => {
       needs_review: true,
       review_reason: 'Local draft extraction; duplicate_reference:1.2',
     }
-    await renderImportPage(fixture)
+    const router = await renderImportPage(fixture)
     expect(await screen.findByRole('region', { name: 'Structured import recovery' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Source PDF, page 2' })).toHaveAttribute(
       'href', `/api/v1/documents/${fixture.documentId}/source#page=2`
     )
     fireEvent.click(screen.getByRole('button', { name: 'Resolve candidate' }))
+    await act(async () => { await router.navigate('/requirements/sets') })
+    expect(await screen.findByRole('heading', { name: 'Requirement sets destination' })).toBeVisible()
+    await act(async () => { await router.navigate(`/requirements/sets/${fixture.documentId}/import`) })
+    fireEvent.click(await screen.findByRole('button', { name: 'Resolve candidate' }))
     fireEvent.change(screen.getByRole('textbox', { name: 'Correct source reference' }), { target: { value: '1.4' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'Immediate parent reference' }), { target: { value: '1' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Corrected text' }), { target: { value: 'Corrected source wording' } })
+    fireEvent.change(screen.getByRole('combobox', { name: 'Recovered requirement type' }), { target: { value: 'recommended' } })
+    await act(async () => { await router.navigate('/requirements/sets') })
+    const warning = await screen.findByRole('dialog', { name: 'Changes are not saved yet' })
+    fireEvent.click(within(warning).getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByRole('textbox', { name: 'Correct source reference' })).toHaveValue('1.4')
+    expect(screen.getByRole('textbox', { name: 'Immediate parent reference' })).toHaveValue('1')
+    expect(screen.getByRole('textbox', { name: 'Corrected text' })).toHaveValue('Corrected source wording')
+    expect(screen.getByRole('combobox', { name: 'Recovered requirement type' })).toHaveValue('recommended')
+    vi.mocked(api.post).mockRejectedValueOnce(new Error('Synthetic recovery failure'))
     fireEvent.click(screen.getByRole('button', { name: 'Save correction' }))
     await waitFor(() => expect(api.post).toHaveBeenCalledWith(
       `/requirements/sets/${fixture.documentId}/import-recovery/${fixture.extractions[1].id}`,
       expect.objectContaining({ action: 'correct', reference_id: '1.4', parent_reference: '1' })
     ))
+    expect(await screen.findByText('Could not resolve the source candidate.')).toBeVisible()
+    await act(async () => { await router.navigate('/requirements/sets') })
+    fireEvent.click(within(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).getByRole('button', { name: 'Cancel' }))
+    expect(screen.getByRole('textbox', { name: 'Corrected text' })).toHaveValue('Corrected source wording')
+    fireEvent.click(within(screen.getByRole('region', { name: 'Structured import recovery' })).getByRole('button', { name: 'Cancel' }))
+    await act(async () => { await router.navigate('/requirements/sets') })
+    expect(await screen.findByRole('heading', { name: 'Requirement sets destination' })).toBeVisible()
+    router.dispose()
   })
 
-  it('routes a missing immediate parent to explicit recovery', async () => {
+  it('protects a pending recovery write even without edited fields', async () => {
     const fixture = setupImportFixture()
     fixture.run.pipeline_version = 'opendataloader_v1'
     fixture.extractions[1] = {
@@ -311,9 +392,21 @@ describe('RequirementsSetImport editing behaviors', () => {
       needs_review: true,
       review_reason: 'Missing immediate parent 1; repair the hierarchy before approval',
     }
-    await renderImportPage(fixture)
+    const router = await renderImportPage(fixture)
     const panel = await screen.findByRole('region', { name: 'Structured import recovery' })
     expect(within(panel).getByText(/Missing immediate parent 1; repair/)).toBeInTheDocument()
+    fireEvent.click(within(panel).getByRole('button', { name: 'Resolve candidate' }))
+    let finishRecovery!: () => void
+    vi.mocked(api.post).mockImplementation(() => new Promise((resolve) => {
+      finishRecovery = () => resolve(makeAxiosResponse({}))
+    }))
+    fireEvent.click(within(panel).getByRole('button', { name: 'Exclude candidate' }))
+    await waitFor(() => expect(api.post).toHaveBeenCalled())
+    await act(async () => { await router.navigate('/requirements/sets') })
+    expect(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).toBeVisible()
+    await act(async () => { finishRecovery() })
+    expect(await screen.findByRole('heading', { name: 'Requirement sets destination' })).toBeVisible()
+    router.dispose()
   })
 
   it('keeps focus in extraction edit modal while typing', async () => {

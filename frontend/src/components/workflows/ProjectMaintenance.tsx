@@ -17,10 +17,10 @@ export default function ProjectMaintenance({ projectId, jurisdictionId, canManag
   const [summary, setSummary] = useState('')
   const plans = useQuery({ queryKey: ['maintenance-plans', 'project', projectId], queryFn: () => workflowsApi.maintenancePlans(projectId) })
   const refresh = () => { void client.invalidateQueries({ queryKey: ['maintenance-plans'] }); void client.invalidateQueries({ queryKey: ['review-cycles'] }); void client.invalidateQueries({ queryKey: ['program-workspace-summary'] }) }
-  const create = useMutation({ mutationFn: () => workflowsApi.createMaintenancePlan({ name: name.trim(), jurisdiction_id: jurisdictionId, certification_project_id: projectId, cadence_days: Number(cadence), next_run_at: new Date(`${firstRun}T09:00:00`).toISOString(), reminder_days: 7, escalation_days: 3 }), onSuccess: () => { refresh(); setName(''); setFirstRun('') } })
+  const create = useMutation({ mutationFn: () => workflowsApi.createMaintenancePlan({ name: name.trim(), jurisdiction_id: jurisdictionId, certification_project_id: projectId, cadence_days: Number(cadence), next_run_at: new Date(`${firstRun}T09:00:00`).toISOString(), reminder_days: 7, escalation_days: 3 }), onSuccess: () => { refresh(); setName(''); setCadence('365'); setFirstRun('') } })
   const update = useMutation({ mutationFn: ({ id, status }: { id: string; status: string }) => workflowsApi.updateMaintenancePlan(id, { status }), onSuccess: refresh })
   const run = useMutation({ mutationFn: () => workflowsApi.runDue(projectId), onSuccess: result => { refresh(); setSummary(`${result.generated_cycles} maintenance assessments created for due plans in this project.`) } })
-  useDraftNavigationGuard(Boolean(name || firstRun || create.isPending || update.isPending || run.isPending))
+  useDraftNavigationGuard(Boolean(name || cadence !== '365' || firstRun || create.isPending || update.isPending || run.isPending))
   return <div className="project-maintenance space-y-5">
     <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-semibold">Maintenance</h2><p className="mt-1 max-w-prose text-sm text-muted">Set a recurring assessment schedule for this project's approved requirements. Run due plans when you are ready to create the next assessments.</p></div>{canManage && <Button onClick={() => run.mutate()} loading={run.isPending} disabled={plans.isError || plans.isLoading}>Run due plans</Button>}</div>
     {summary && <p role="status" className="text-sm text-success">{summary}</p>}

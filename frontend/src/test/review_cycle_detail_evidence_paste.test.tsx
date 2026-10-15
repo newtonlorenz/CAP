@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { Link, MemoryRouter, Route, Routes, createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import type { ReactNode } from 'react'
@@ -55,10 +55,6 @@ vi.mock('../components/ReviewCycleReportOptions', () => ({
   default: () => null,
 }))
 
-vi.mock('../components/ui/DecisionModal', () => ({
-  default: () => null,
-}))
-
 vi.mock('../utils/reviewEvidence', async () => {
   const actual = await vi.importActual<typeof import('../utils/reviewEvidence')>(
     '../utils/reviewEvidence'
@@ -86,6 +82,9 @@ vi.mock('../api/client', () => ({
 
 import api from '../api/client'
 import ReviewCycleDetail from '../pages/ReviewCycleDetail'
+import ReviewBaselineMigration from '../components/review/ReviewBaselineMigration'
+import { DraftNavigationProvider } from '../hooks/useDraftNavigationGuard'
+import type { ReviewCycleWithItems } from '../types'
 import { extractClipboardImageFiles, normalizeClipboardImageFile } from '../utils/reviewEvidence'
 
 function makeAxiosResponse<T>(data: T): AxiosResponse<T> {
@@ -512,6 +511,7 @@ describe('ReviewCycleDetail', () => {
   })
 
   it('shows locked vs latest requirement versions and renders the migration gap analysis', async () => {
+    let completeMigration!: (value: AxiosResponse<object>) => void
     const longLockedText =
       'Locked requirement paragraph. '.repeat(24) + 'Locked requirement final sentence.'
     const longLatestText =
@@ -551,12 +551,16 @@ describe('ReviewCycleDetail', () => {
         )
       }
 
+      if (url === '/review-cycles/review-1/baseline-migrations/execute') {
+        return new Promise<AxiosResponse<object>>(resolve => { completeMigration = resolve })
+      }
       return Promise.resolve(makeAxiosResponse({}))
     })
 
-    renderPage(
-      makeCycle({
-        baselineVersions: [
+    const cycle: ReviewCycleWithItems = {
+        ...makeCycle(),
+        items: [],
+        baseline_versions: [
           {
             document_id: 'doc-1',
             requirement_set_version_id: 'version-1',
@@ -567,8 +571,14 @@ describe('ReviewCycleDetail', () => {
             latest_version_number: 2,
           },
         ],
-      })
-    )
+      }
+    const router = createMemoryRouter([
+      { path: '/review-cycles/review-1', element: <DraftNavigationProvider><Link to="/review-cycles">Leave cycle</Link><ReviewBaselineMigration cycle={cycle} docMap={new Map()} isAdminOrManager hidden={false} hasUnsavedChanges={false} /></DraftNavigationProvider> },
+      { path: '/review-cycles', element: <p>Review cycles destination</p> },
+      { path: '/review-cycles/successor', element: <p>Successor cycle</p> },
+    ], { initialEntries: ['/review-cycles/review-1'] })
+    render(<QueryClientProvider client={createTestQueryClient()}><RouterProvider router={router} /></QueryClientProvider>)
+    fireEvent.click(screen.getByText('Requirement baseline and version history'))
 
     expect(await screen.findByText('Locked requirement-set versions')).toBeInTheDocument()
     expect(screen.getByText('Locked v1')).toBeInTheDocument()
@@ -629,6 +639,26 @@ describe('ReviewCycleDetail', () => {
       expect(carryForwardRadios[1]).toBeChecked()
     })
     expect(screen.getByText(/1 changed carry forward for re-review; 1 changed reset/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('link', { name: 'Leave cycle' }))
+    expect(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).toBeInTheDocument()
+    expect(screen.queryByText('Review cycles destination')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(resetPendingRadios[0]).toBeChecked()
+    expect(carryForwardRadios[1]).toBeChecked()
+    fireEvent.click(screen.getByRole('button', { name: 'Migrate to latest requirements' }))
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith('/review-cycles/review-1/baseline-migrations/execute', {
+      target_version_ids: ['version-2'],
+      changed_decisions: [
+        { new_requirement_id: 'req-2', action: 'reset_pending' },
+        { new_requirement_id: 'req-4', action: 'carry_forward' },
+      ],
+    }))
+    fireEvent.click(screen.getByRole('link', { name: 'Leave cycle' }))
+    expect(await screen.findByRole('dialog', { name: 'Changes are not saved yet' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    await act(async () => completeMigration(makeAxiosResponse({ to_cycle_id: 'successor', migrated_items: 2 })))
+    expect(await screen.findByText('Successor cycle')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Changes are not saved yet' })).not.toBeInTheDocument()
   })
 
   it('shows a neutral baseline state when latest-version metadata is missing', async () => {

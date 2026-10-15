@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { SubmissionChecklist } from '../types'
+import { useDraftNavigationGuard } from '../hooks/useDraftNavigationGuard'
 import Button from './ui/Button'
 
 export default function SubmissionChecklistEditor({ checklist, readOnly, saving, onSave }: {
@@ -10,6 +11,7 @@ export default function SubmissionChecklistEditor({ checklist, readOnly, saving,
 }) {
   const [draft, setDraft] = useState(checklist)
   const [dirty, setDirty] = useState(false)
+  useDraftNavigationGuard((!readOnly && dirty) || saving)
   return <div className="space-y-3 rounded-lg border border-line p-4">
     <h3 className="font-semibold">Package checklist</h3>
     <p className="text-sm text-muted">Confirm each item after checking the supporting work. The server also checks the linked review, snapshot and required artifacts.</p>

@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useDraftNavigationGuard } from '../../hooks/useDraftNavigationGuard'
 import type {
   ExtractionFeedbackBatchRequest,
   ExtractionFeedbackBatchResponse,
@@ -57,6 +58,17 @@ export default function BulkTriagePanel({
   const [editStatus, setEditStatus] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
 
+  const [savedEdit, setSavedEdit] = useState({ requirementType: '', status: '' })
+  const submittedEdit = useRef<typeof savedEdit | null>(null)
+  useEffect(() => {
+    if (!lastApplyResult || !submittedEdit.current) return
+    if (lastApplyResult.failures.length === 0) setSavedEdit(submittedEdit.current)
+    submittedEdit.current = null
+  }, [lastApplyResult])
+  useDraftNavigationGuard(isApplying || (actionType === 'edit' && Boolean(editRequirementType || editStatus) && (
+    editRequirementType !== savedEdit.requirementType || editStatus !== savedEdit.status
+  )))
+
   const activeResult = lastApplyResult || previewResult
 
   const canSendEditAction = useMemo(() => {
@@ -107,6 +119,8 @@ export default function BulkTriagePanel({
   const handleApply = () => {
     const payload = buildPayload(false)
     if (!payload) return
+    submittedEdit.current = actionType === 'edit'
+      ? { requirementType: editRequirementType, status: editStatus } : null
     onApply(payload)
   }
 

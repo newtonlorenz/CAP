@@ -51,7 +51,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "0719d4b4813c3ca04de013baf1d9aaaa6153ec3a9d0ba8811633b4b4faccc963"
+      "sha256": "9048581e95b9cc108bc7ef3410ff4f40f597e66e1fb58476b8484e2effb3bff3"
     },
     {
       "path": "SECURITY.md",
@@ -1135,7 +1135,7 @@
     },
     {
       "path": "backend/tests/test_documentation_processes.py",
-      "sha256": "8d737c0b3b4595ec3e404158da5329c72b3725fe957e31e8a300d73ba008a89c"
+      "sha256": "d281fa420fdc01494ba01234b819740b46317b0ac81d7c8642b90ac2301de7c7"
     },
     {
       "path": "backend/tests/test_documentation_register.py",
@@ -2195,7 +2195,7 @@
     },
     {
       "path": "frontend/Dockerfile",
-      "sha256": "e639b9cce1302a8879e87ff5ae86811763a495b4b18becddbf758b1935f2987f"
+      "sha256": "a352f26ac2ac7200cd06fe8abf93b213a8ef69e195f3e5c29052c8b48949ebf1"
     },
     {
       "path": "frontend/e2e-feedback/feedback.spec.ts",
@@ -2219,11 +2219,11 @@
     },
     {
       "path": "frontend/e2e/documentation-processes.spec.ts",
-      "sha256": "b92215f1f1505625a57bc5bbce829c41fa3551eac6c5627f96c2a58c8f2abe2d"
+      "sha256": "aed2d0b606bb7133e7dff97c647427d410637d8205cd05073be232ac276424c3"
     },
     {
       "path": "frontend/e2e/documentation.spec.ts",
-      "sha256": "82ab33a02fcf08504a03503889b48ed6c1a4ab60a67cfee5aa088bb4b1e0f08e"
+      "sha256": "107f6a9e77a5d367f6c70798212bea5061614dd06d5259e131b61a0b85c8e4d1"
     },
     {
       "path": "frontend/e2e/evidence.spec.ts",
@@ -2351,7 +2351,7 @@
     },
     {
       "path": "frontend/public/site-content.json",
-      "sha256": "32f7b2ae480aa0aa5c75170a9f2491d1b4f2f509e658200dc9b342a8baff5474"
+      "sha256": "7b4c2f74df435dae69e57d376c7570462413d5b667129b4e412edc05bf26f55e"
     },
     {
       "path": "frontend/public/theme-init.js",
@@ -2415,7 +2415,7 @@
     },
     {
       "path": "frontend/src/components/Layout.tsx",
-      "sha256": "6ef4b7654bb103c3ded9d05a9d5e3d17efa1124167182ec7a32c503b890f449e"
+      "sha256": "236791568bafce376cfa0ed30cbabafbf40152504c3117920aeba434b51916ac"
     },
     {
       "path": "frontend/src/components/NavigationSearch.tsx",
@@ -2475,7 +2475,7 @@
     },
     {
       "path": "frontend/src/components/SubmissionChecklistEditor.tsx",
-      "sha256": "ecbbf5b95ce6b144a10f31b67180457fe1d696c78658a94dcc0feb7aaa40464f"
+      "sha256": "32f383f20d155ae3f84bcb6f0b3089657ee98c2c53117fd575f473a0047959e1"
     },
     {
       "path": "frontend/src/components/ThemeSwitcher.tsx",
@@ -2487,7 +2487,7 @@
     },
     {
       "path": "frontend/src/components/access/AccessPanel.tsx",
-      "sha256": "a183222b5f48b30d578bd9bb3f37f554a4c7941f3da4bef0d917afbf2c68bad0"
+      "sha256": "6443293d1971d352e8b8d50af6d5d71e19d534c7af3fd14d25b4264f83ccfcf0"
     },
     {
       "path": "frontend/src/components/access/TeamsPanel.tsx",
@@ -2547,7 +2547,7 @@
     },
     {
       "path": "frontend/src/components/documentation/DocumentationRegister.tsx",
-      "sha256": "421899dc4cfaab33b2f60b20195417726c90818190f813bda12a9d73355a2224"
+      "sha256": "e6f9ded0605ebde779d4cf7dc3d2e3fd8627626ee5001da7774f3ca76c5c17f2"
     },
     {
       "path": "frontend/src/components/documentation/DocumentationSuggestions.tsx",
@@ -2583,7 +2583,7 @@
     },
     {
       "path": "frontend/src/components/documentation/RegisterEntryRow.tsx",
-      "sha256": "07d80f8254ece044f8b381ede1806744c1f0ff414ba5f11a4740c1cf56d896e7"
+      "sha256": "300eae630a7f391f8fc12a67c2078d60d159da4675dc53677f27bf4e76d43a0e"
     },
     {
       "path": "frontend/src/components/documentation/RegisterHandover.tsx",
@@ -2703,7 +2703,7 @@
     },
     {
       "path": "frontend/src/components/review/ReviewBaselineMigration.tsx",
-      "sha256": "fd980c661a976d1723f75babe9e112aab7221abcd9a36820193dc026b360b2ff"
+      "sha256": "c6a19f0bd8b5b547f3307a13f31c3d08c80336ef17174f2a6d32745da80d6333"
     },
     {
       "path": "frontend/src/components/review/ReviewEvidenceEditor.tsx",
@@ -2819,11 +2819,11 @@
     },
     {
       "path": "frontend/src/components/workflows/ProjectMaintenance.tsx",
-      "sha256": "b8e4427318644ac10257122fc6d208993e26d8d946abd14762ca859272f8f03c"
+      "sha256": "abe5c7b494378477b56c40f2dc0de34caf0faee6d58fb3b3aafd85da973924c1"
     },
     {
       "path": "frontend/src/config/siteContent.ts",
-      "sha256": "ce8e37c7bcb48ff14bf649e87bea658f5dbe3ea0e4ff4ac96dea84b7214384a1"
+      "sha256": "83af530a948602d046989ae7401b89aaff95c199394501ecfff7fdd7f7b21194"
     },
     {
       "path": "frontend/src/content/releaseNotes.ts",
@@ -2899,7 +2899,7 @@
     },
     {
       "path": "frontend/src/index.css",
-      "sha256": "049d3ef0bc9b25e6142ff7a9f7e3c1a3a05755bfcfa930b1cb9be2124ff1a896"
+      "sha256": "c753b3bfca497abf39087dcd8fcd2cc0aea57eb5afb1ddb61ae0b5b5df7428a7"
     },
     {
       "path": "frontend/src/main.tsx",
@@ -2919,11 +2919,11 @@
     },
     {
       "path": "frontend/src/pages/Applications.tsx",
-      "sha256": "5e15755153971cadd44cf13b74168006769f38b9b1dbacd48510e9c15d265f47"
+      "sha256": "4cc8ccd2a9d7c5b9b0c85ec6fa87d6589d790cced43511158735937970cc1e07"
     },
     {
       "path": "frontend/src/pages/CertificationProjects.tsx",
-      "sha256": "1d9d2560531e3786af98d271f8fa59a74d31cf09c31078126f5f941ba9b78854"
+      "sha256": "04092ed7342d3c8eb75dc0cb800a79090f745d3da7922cc90f858013b935a9c0"
     },
     {
       "path": "frontend/src/pages/ChangeManagement.tsx",
@@ -2987,11 +2987,11 @@
     },
     {
       "path": "frontend/src/pages/RequirementsSetImport.tsx",
-      "sha256": "f7e2be1cda4538f3ab536a5d0ddae2820640ce85b030eb10f3ff7fe9bfc033f1"
+      "sha256": "6c3da18adf667ffeb74896fb0906ead10390b878961de55f416e1d58f952b037"
     },
     {
       "path": "frontend/src/pages/RequirementsSetView.tsx",
-      "sha256": "9be3f7b204f6313832630a8bad31db36b7a6bfb91e36c939b2a5fdd5c55d681d"
+      "sha256": "3c29680e3b26adef41e189ac824ff3383e42a4a61e24d4ece7659cafbb185476"
     },
     {
       "path": "frontend/src/pages/ReviewCycleDetail.tsx",
@@ -3087,7 +3087,7 @@
     },
     {
       "path": "frontend/src/pages/requirements-import/BulkTriagePanel.tsx",
-      "sha256": "e416794f577a2b6ca3da9a476b2073322f2376ead168f971966c00bde8c86f45"
+      "sha256": "eeb67788897673f235d528931d0f2818bf1467288eb3da69599923b82d8323bc"
     },
     {
       "path": "frontend/src/pages/requirements-import/ImportStepper.tsx",
@@ -3095,7 +3095,7 @@
     },
     {
       "path": "frontend/src/pages/requirements-import/RecoveryPanel.tsx",
-      "sha256": "105a94f1f300a566316a7b091bd51696fea23c37045a80ba043061129433aa50"
+      "sha256": "26baba3e5268ecd95ae328441e715e403d5e2f8f294191a12358672266988577"
     },
     {
       "path": "frontend/src/pages/requirements-import/ReviewQueueKpiPanel.tsx",
@@ -3107,7 +3107,7 @@
     },
     {
       "path": "frontend/src/test/access_panel.test.tsx",
-      "sha256": "d088b4ac73ef3a6b6ef0a47e5df28a54dd1a97facd274fb42600b33be48c9655"
+      "sha256": "a32902deb5393f87ad41a5c411926991666af89e29002e2c55f359560862e556"
     },
     {
       "path": "frontend/src/test/account_settings.test.tsx",
@@ -3147,7 +3147,7 @@
     },
     {
       "path": "frontend/src/test/certification_projects_page.test.tsx",
-      "sha256": "c4b1908bdf0f091669bfe22c029895c21d4896207296be7feade6581e5a01672"
+      "sha256": "d06cb208c1cc8fd1e74996c7a55c5142d7f49f62040c947618650e85167c0a3a"
     },
     {
       "path": "frontend/src/test/change_management_page.test.tsx",
@@ -3167,7 +3167,7 @@
     },
     {
       "path": "frontend/src/test/contextual_workflows.test.tsx",
-      "sha256": "d2d7b9ae428873c48c5545cae9b0510deecc27111e6c4880d27855311546f830"
+      "sha256": "f99a54aff0876c6ab9fae30fe1510cf16af972df13a10133e0f731ece9448000"
     },
     {
       "path": "frontend/src/test/dashboard_components.test.tsx",
@@ -3196,6 +3196,10 @@
     {
       "path": "frontend/src/test/guide_faq_page.test.tsx",
       "sha256": "b530fa235fed6c95a05a60f6cce9465759a9dec1c477de29d47916b42201d529"
+    },
+    {
+      "path": "frontend/src/test/jurisdiction_navigation.test.tsx",
+      "sha256": "f0ed057cfcb6e37f30b298f30bfebdbe79a6f0a0889a789f91c87feacfa95948"
     },
     {
       "path": "frontend/src/test/jurisdictions_page.test.tsx",
@@ -3291,11 +3295,11 @@
     },
     {
       "path": "frontend/src/test/requirements_set_import_bulk_triage.test.tsx",
-      "sha256": "d9240db62c4df3933af599cc0462539aebdf23692791154946128f07da970f1e"
+      "sha256": "d4d29be73863ca9dc42f5c1ef829e7b7685b7f4adf076574b23955cf4681c21f"
     },
     {
       "path": "frontend/src/test/requirements_set_import_editing.test.tsx",
-      "sha256": "e98f909bfef331c29cb36915741c5052a3083c0b22b985c18e661f1b05392d1a"
+      "sha256": "d2a5cee992f5f54f3302100a7e71ddc2851b205b612ecce0bbd97789c56942b3"
     },
     {
       "path": "frontend/src/test/requirements_set_import_navigation.test.tsx",
@@ -3327,7 +3331,7 @@
     },
     {
       "path": "frontend/src/test/review_cycle_detail_evidence_paste.test.tsx",
-      "sha256": "5fc0cb70e5b7bd129d3182242736db3577d0ff82438b391fd066a416c4218bd6"
+      "sha256": "e0e9df3b0cb0b92aed3641084c6de4ffe1cb2901d11acd54d0ee9ace24f4e2fa"
     },
     {
       "path": "frontend/src/test/review_cycle_detail_filters.test.tsx",
@@ -3511,11 +3515,11 @@
     },
     {
       "path": "frontend/vite.config.ts",
-      "sha256": "cdc0ac97d8b1b76c7b9f645d51376153857e99b903d4e714be6c711c087443c8"
+      "sha256": "2f4300f5da3119634a26b16b504e88c0d906aa129a1cc1d40d96c435855fc1c8"
     },
     {
       "path": "publication-manifest.json",
-      "sha256": "ce14a59a1bb081e4307d286e9e87dbd8d4abef445cc45b3c181278cba8cc8531"
+      "sha256": "9b83a55141f6b2282e7f379f78e3f7b0eb5051fd32dae191ce68346831435e2b"
     },
     {
       "path": "scripts/check-release-lifecycle.py",
