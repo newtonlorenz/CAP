@@ -2415,7 +2415,7 @@
     },
     {
       "path": "frontend/src/components/Layout.tsx",
-      "sha256": "236791568bafce376cfa0ed30cbabafbf40152504c3117920aeba434b51916ac"
+      "sha256": "4f146dc6995fd9a1afe474b89c42b2cc58ddf90bd58ee8e8005520ed2ca2a787"
     },
     {
       "path": "frontend/src/components/NavigationSearch.tsx",

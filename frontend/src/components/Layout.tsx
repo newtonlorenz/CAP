@@ -431,7 +431,7 @@ export default function Layout() {
           {footer.enterprise && <span>Enterprise: <strong>{footer.enterprise}</strong></span>}
           <span>{footer.confidentiality}</span>
           <span>Version {import.meta.env.VITE_APP_VERSION}{import.meta.env.VITE_APP_REVISION && import.meta.env.VITE_APP_REVISION !== 'unknown' ? ` (${import.meta.env.VITE_APP_REVISION.slice(0, 7)})` : ''}</span>
-        </footer>
+        </footer>}
       </div>
     </div>
   </ToastProvider>
