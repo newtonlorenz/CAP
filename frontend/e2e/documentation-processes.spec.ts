@@ -10,11 +10,23 @@ async function write(page: Page, method: 'post' | 'put', path: string, data: unk
   return response.json()
 }
 
-async function fixture(page: Page, kind: 'review' | 'application') {
+async function fixture(page: Page, kind: 'review' | 'application', { isolatedSource = false } = {}) {
   const suffix = `${kind}-${Date.now()}`
   const documents = (await (await page.request.get('/api/v1/documents?limit=500')).json()).items
-  const document = documents.find((item: { name: string }) => item.name === 'E2E Document')
+  let document = documents.find((item: { name: string }) => item.name === 'E2E Document')
   expect(document).toBeTruthy()
+  if (isolatedSource) {
+    document = await write(page, 'post', '/api/v1/requirements/sets', {
+      name: `SYNTHETIC isolated source ${suffix}`, jurisdiction_id: document.jurisdiction_id,
+      document_type: 'standard', testing_frequency: 'one_off',
+    })
+    await write(page, 'post', '/api/v1/requirements', {
+      document_id: document.id, reference_id: 'REQ-001', title: 'Synthetic source identity',
+      text: 'Synthetic evidence source for the isolated version-change scenario.', requirement_type: 'mandatory',
+    })
+    await write(page, 'post', `/api/v1/documents/${document.id}/submit`, {})
+    document = await write(page, 'post', `/api/v1/documents/${document.id}/approve`, {})
+  }
   const requirements = (await (await page.request.get(`/api/v1/requirements?document_id=${document.id}&limit=500`)).json()).items
   const requirement = requirements.find((item: { reference_id: string }) => item.reference_id === 'REQ-001')
   expect(requirement).toBeTruthy()
@@ -288,7 +300,7 @@ test('optional row owners persist while two rows keep different certification re
 test('a saved register deep link cannot open the same licence field after its approved source changes', async ({ page }) => {
   test.setTimeout(100_000)
   await loginAsAdmin(page)
-  const data = await fixture(page, 'application')
+  const data = await fixture(page, 'application', { isolatedSource: true })
   const returnPath = `/library?section=documentation&register=${data.register.id}`
   await write(page, 'put', `/api/v1/documentation/registers/${data.register.id}/process`, {
     revision: (await (await page.request.get(`/api/v1/documentation/registers/${data.register.id}`)).json()).revision,

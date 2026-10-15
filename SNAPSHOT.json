@@ -2219,7 +2219,7 @@
     },
     {
       "path": "frontend/e2e/documentation-processes.spec.ts",
-      "sha256": "c300b1501fec38479e7d68d22f3b2c2beda28a643f3b6ec8d9cd5bd9cb24f037"
+      "sha256": "2ba5033cf96509ddd2f08cf8b4c1871ae8cdd3ce94d8fa1b2b0580436395e0d2"
     },
     {
       "path": "frontend/e2e/documentation.spec.ts",
