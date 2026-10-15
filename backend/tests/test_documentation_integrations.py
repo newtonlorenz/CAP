@@ -139,6 +139,88 @@ async def test_multisheet_workbook_import_preserves_metadata_and_is_idempotent_a
     assert all(row["coverage_status"] == "unreviewed" and not row["requirements"] for row in untouched.json()["items"])
 
 
+@pytest.mark.parametrize("invalid_kind", ["revision_length", "revision_blank", "reference_length", "reference_blank",
+    "hidden_create_target", "missing_update_revision", "stale_update_revision", "archived"])
+async def test_auditor_import_validates_choices_lifecycle_and_source_limits_atomically(
+    client, documentation_actors, default_jurisdiction, invalid_kind
+):
+    owner = documentation_actors["owner"]
+    project = await client.post("/api/v1/certification-projects", headers=owner["headers"], json={
+        "name": "Auditor import boundary", "jurisdiction_id": str(default_jurisdiction.id)})
+    assert project.status_code == 201, project.text
+    template = await client.post("/api/v1/preparation/templates", headers=owner["headers"], json={
+        "name": "Auditor import form", "kind": "audit", "fields": [
+            {"key": "existing", "label": "Existing question", "type": "evidence"}]})
+    assert template.status_code == 201, template.text
+    case = await client.post("/api/v1/preparation/cases", headers=owner["headers"], json={
+        "name": "Auditor import case", "template_id": template.json()["id"],
+        "jurisdiction_id": str(default_jurisdiction.id), "project_id": project.json()["id"]})
+    assert case.status_code == 201, case.text
+    case_data = case.json()
+    register = await create_register(client, owner, default_jurisdiction)
+    target = await create_expectation(client, owner, register, project_id=project.json()["id"])
+    workbook = Workbook()
+    workbook.active.append(["Required documentation", "SCP reference", "Comment/explanation"])
+    workbook.active.append(["Requested policy", "SCP-1", "Auditor scope"])
+    reference = "R" * 256 if invalid_kind == "reference_length" else "   " if invalid_kind == "reference_blank" else "SCP-2"
+    workbook.active.append(["Requested record", reference, "Second auditor scope"])
+    output = io.BytesIO()
+    workbook.save(output)
+    preview = await client.post(f"{BASE}/registers/{register['id']}/imports/preview", headers=owner["headers"],
+        files={"file": ("auditor-boundary.xlsx", output.getvalue())})
+    assert preview.status_code == 200, preview.text
+    data = preview.json()
+    endpoint = f"{BASE}/registers/{register['id']}/imports/{data['id']}/auditor-requests"
+    body = {"revision": data["revision"], "case_id": case_data["id"], "list_revision": "v1",
+        "choices": [{"row_key": row["key"], "action": "create"} for row in data["rows"]]}
+    if invalid_kind in {"revision_length", "revision_blank"}:
+        body["list_revision"] = "v" * 101 if invalid_kind == "revision_length" else "   "
+    if invalid_kind in {"hidden_create_target", "missing_update_revision", "stale_update_revision"}:
+        body["choices"][1].update(expectation_id=target["id"])
+        if invalid_kind == "hidden_create_target":
+            body["choices"][1]["expectation_revision"] = target["revision"]
+        else:
+            body["choices"][1]["action"] = "update"
+            if invalid_kind == "stale_update_revision":
+                body["choices"][1]["expectation_revision"] = target["revision"] + 1
+    if invalid_kind == "archived":
+        archived = await client.patch(f"/api/v1/preparation/cases/{case_data['id']}", headers=owner["headers"],
+            json={"expected_revision": case_data["revision"], "status": "archived"})
+        assert archived.status_code == 200, archived.text
+        case_data = archived.json()
+    invalid = await client.post(endpoint, headers=owner["headers"], json=body)
+    assert invalid.status_code == (409 if invalid_kind in {"archived", "stale_update_revision"} else 422), invalid.text
+    unchanged = await client.get(f"/api/v1/preparation/cases/{case_data['id']}", headers=owner["headers"])
+    assert unchanged.status_code == 200, unchanged.text
+    assert unchanged.json()["fields"] == case_data["fields"]
+    assert unchanged.json()["revision"] == case_data["revision"]
+    requests = await client.get(f"{BASE}/registers/{register['id']}/auditor-requests", headers=owner["headers"])
+    assert requests.status_code == 200, requests.text
+    assert requests.json()["total"] == 0
+    current = await client.get(f"{BASE}/registers/{register['id']}", headers=owner["headers"])
+    assert current.json()["revision"] == data["revision"]
+    if invalid_kind == "archived":
+        reactivated = await client.patch(f"/api/v1/preparation/cases/{case_data['id']}", headers=owner["headers"],
+            json={"expected_revision": case_data["revision"], "status": "active"})
+        assert reactivated.status_code == 200, reactivated.text
+    valid = {"revision": data["revision"], "case_id": case_data["id"], "list_revision": "v" * 100,
+        "choices": [{"row_key": data["rows"][0]["key"], "action": "update",
+            "expectation_id": target["id"], "expectation_revision": target["revision"]}]}
+    accepted = await client.post(endpoint, headers=owner["headers"], json=valid)
+    assert accepted.status_code == 200, accepted.text
+    assert accepted.json()["created"] == 1
+    requests = await client.get(f"{BASE}/registers/{register['id']}/auditor-requests", headers=owner["headers"])
+    assert requests.json()["total"] == 1
+    assert requests.json()["items"][0]["list_revision"] == "v" * 100
+    assert requests.json()["items"][0]["expectations"][0]["id"] == target["id"]
+    repeated = await client.post(endpoint, headers=owner["headers"], json={**valid,
+        "revision": accepted.json()["revision"], "list_revision": "  " + "v" * 100 + "  "})
+    assert repeated.status_code == 200, repeated.text
+    assert repeated.json()["created"] == 0
+    assert repeated.json()["repeated"] == 1
+    assert repeated.json()["case_revision"] == accepted.json()["case_revision"]
+
+
 async def test_frozen_snapshot_keeps_prior_content_and_requires_current_export_access(
     client, documentation_actors, default_jurisdiction
 ):

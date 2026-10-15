@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import api from '../api/client'
 import RegisterOwnerPicker from '../components/documentation/RegisterOwnerPicker'
+import AuditorRequests from '../components/documentation/AuditorRequests'
 import RegisterProcessPicker from '../components/documentation/RegisterProcessPicker'
 import ProcessTargetPicker from '../components/documentation/ProcessTargetPicker'
 import SpreadsheetImport from '../components/documentation/SpreadsheetImport'
@@ -63,6 +64,37 @@ beforeEach(() => {
   vi.mocked(api.post).mockResolvedValue({ data: preview })
 })
 afterEach(cleanup)
+
+it('renders every audit reconciliation category and links unreviewed rows and unsuitable request evidence to their owners', async () => {
+  const entry = { ...row, title: 'Synthetic policy awaiting review' }
+  const request = { id: 'request', revision: 1, case_id: 'audit-form', case_name: 'Synthetic audit form',
+    field_key: 'policy_request', project_id: 'project', request_id: 'AUD-1', request_wording: 'Provide the policy',
+    list_revision: 'v1', due_date: null, period: null, direction: 'operator_input', expectations: [],
+    evidence: [{ id: evidence.id, title: evidence.title, problems: ['expired'] }], unmatched: false }
+  vi.mocked(api.get).mockImplementation(async url => {
+    if (url === '/documentation/registers/register/reconciliation') return { data: {
+      requests_without_matches: [], missing_evidence: [], partial_coverage: [], unreviewed_coverage: [entry],
+      requests_with_unsuitable_evidence: [request], unsuitable_evidence: [], expectations_absent_from_requests: [],
+      notice: 'Audit omissions are scope gaps, not compliance decisions.',
+    } }
+    if (url === '/documentation/registers/register/auditor-requests') return { data: { items: [], total: 0 } }
+    if (url === '/documentation/registers/register/audit-fields') return { data: { cases: [] } }
+    throw new Error(`Unexpected synthetic API read: ${url}`)
+  })
+  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}>
+    <MemoryRouter><AuditorRequests register={register} projectId="project" canEdit={false} /></MemoryRouter>
+  </QueryClientProvider>)
+  await screen.findByText('Audit omissions are scope gaps, not compliance decisions.')
+  for (const heading of ['Requests without matches (0)', 'Expectations missing evidence (0)', 'Partial coverage (0)',
+    'Unreviewed coverage (1)', 'Requests with stale, expired or unavailable evidence (1)',
+    'Stale, expired or unavailable evidence (0)', 'Obligations omitted from this audit list (0)']) {
+    expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument()
+  }
+  expect(screen.getByRole('link', { name: entry.title })).toHaveAttribute('href',
+    '/certification-projects?project=project&section=documentation&register=register&docSection=all&expectation=row')
+  expect(screen.getByRole('link', { name: 'AUD-1: Provide the policy' })).toHaveAttribute('href',
+    '/preparation?case=audit-form&field=policy_request')
+})
 
 it.each(['process', 'mapping', 'import', 'owner'] as const)('keeps a %s draft after local dismissal until discard is explicit', async kind => {
   mount(kind)
@@ -139,7 +171,7 @@ it.each(['keep', 'current'] as const)('requires explicit comparison after an evi
   }
 })
 
-it('rejects repeated import-target pages and preserves the update choice for a fresh retry', async () => {
+it.each(['update', 'create', 'skip'] as const)('rejects repeated import-target pages and submits only the target appropriate to the final %s choice', async action => {
   let retry = false
   let reads = 0
   const first = { id: 'existing-first', title: 'Existing first row', revision: 4 }
@@ -150,7 +182,7 @@ it('rejects repeated import-target pages and preserves the update choice for a f
     return { data: { items: [item], total: 2 } }
   })
   vi.mocked(api.post).mockImplementation(async url => ({ data: url.endsWith('/preview') ? preview : {
-    created: 0, updated: 1, skipped: 0, repeated: 0,
+    created: action === 'create' ? 1 : 0, updated: action === 'update' ? 1 : 0, skipped: action === 'skip' ? 1 : 0, repeated: 0,
   } }))
   mount('import')
   fireEvent.change(screen.getByLabelText('Documentation spreadsheet'), {
@@ -169,11 +201,16 @@ it('rejects repeated import-target pages and preserves the update choice for a f
   await within(targets).findByRole('option', { name: 'Existing second row' })
   expect(screen.getByRole('combobox', { name: 'Import action for row 2 in Policies' })).toHaveValue('update')
   fireEvent.change(targets, { target: { value: second.id } })
+  if (action !== 'update') {
+    fireEvent.change(screen.getByRole('combobox', { name: 'Import action for row 2 in Policies' }), { target: { value: action } })
+    expect(screen.queryByRole('combobox', { name: 'Update target for row 2 in Policies' })).not.toBeInTheDocument()
+  }
   fireEvent.click(screen.getByRole('checkbox', { name: 'I reviewed the worksheet mappings, duplicate choices, and unresolved source references.' }))
   fireEvent.click(screen.getByRole('button', { name: 'Confirm import' }))
-  await screen.findByText('Import complete. 0 created, 1 updated, 0 skipped, 0 already imported.')
-  expect(vi.mocked(api.post).mock.calls[1][1]).toEqual({ revision: 1, choices: [{ row_key: 'Policies:2',
-    action: 'update', expectation_id: second.id, expectation_revision: second.revision }] })
+  await screen.findByText(`Import complete. ${action === 'create' ? 1 : 0} created, ${action === 'update' ? 1 : 0} updated, ${action === 'skip' ? 1 : 0} skipped, 0 already imported.`)
+  expect(vi.mocked(api.post).mock.calls[1][1]).toEqual({ revision: 1, choices: [action === 'update'
+    ? { row_key: 'Policies:2', action: 'update', expectation_id: second.id, expectation_revision: second.revision }
+    : { row_key: 'Policies:2', action }] })
 })
 
 

@@ -418,14 +418,17 @@ def inherited_clause(model, user, action, *, resolve=None):
             (source.application_id, Application), (source.review_cycle_id, ReviewCycle),
             (source.review_item_id, ReviewItem), (source.review_file_id, ReviewItemEvidenceFile),
         ):
-            predicates = [target.id == column, resolve(target, user, action)]
+            predicates = [resolve(target, user, action)]
             if user.role == "assigned_reviewer" and target is ReviewItem:
                 predicates.append(target.assigned_reviewer_id == user.id)
             if user.role == "assigned_reviewer" and target is ReviewItemEvidenceFile:
                 predicates.append(exists(select(ReviewItem.id).where(ReviewItem.id == target.review_item_id, ReviewItem.assigned_reviewer_id == user.id).correlate_except(ReviewItem)))
             if hasattr(target, "organization_id"):
                 predicates.append(tenant_clause(target, user))
-            hidden.append(and_(column.is_not(None), ~exists(select(target.id).where(*predicates).correlate_except(target))))
+            # Source IDs are non-null primary keys, so NOT IN retains the same
+            # missing/denied-source rule without recursively nesting owner ACLs.
+            allowed_sources = select(target.id).where(*predicates).correlate(None).cte()
+            hidden.append(and_(column.is_not(None), column.not_in(select(allowed_sources.c.id))))
         return and_(
             exists(select(DocumentationRegister.id).where(
                 DocumentationRegister.id == model.register_id, tenant_clause(DocumentationRegister, user),
@@ -436,9 +439,13 @@ def inherited_clause(model, user, action, *, resolve=None):
         parent_allowed = exists(select(SubmissionPackage.id).where(
             SubmissionPackage.id == model.submission_package_id, resolve(SubmissionPackage, user, action)).correlate_except(SubmissionPackage))
         source_action = "export" if action == "export" else "view"
-        snapshot_allowed = exists(select(DocumentationSnapshot.id).where(
-            DocumentationSnapshot.id == model.documentation_snapshot_id,
-            resolve(DocumentationSnapshot, user, source_action)).correlate_except(DocumentationSnapshot))
+        # Hoist the complete frozen-source audience out of the artifact's parent
+        # predicate. Nested EXISTS otherwise exceed older SQLite parser stacks.
+        # This is a SQL expression, evaluated with current grants on every query.
+        allowed_snapshots = select(DocumentationSnapshot.id).where(
+            resolve(DocumentationSnapshot, user, source_action)
+        ).correlate(None).cte()
+        snapshot_allowed = model.documentation_snapshot_id.in_(select(allowed_snapshots.c.id))
         return and_(parent_allowed, or_(model.documentation_snapshot_id.is_(None), snapshot_allowed))
     mapping.update({
         DocumentationImport: (DocumentationRegister, DocumentationImport.register_id, False),

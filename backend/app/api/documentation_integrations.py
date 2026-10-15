@@ -7,6 +7,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.background import BackgroundTask
@@ -272,6 +273,8 @@ async def import_auditor_requests(
         .with_for_update()
         .execution_options(populate_existing=True)
     )
+    if case.status == "archived":
+        raise HTTPException(409, "Form is archived")
     if (
         case.project_id is None
         or case.jurisdiction_id != register.jurisdiction_id
@@ -285,6 +288,7 @@ async def import_auditor_requests(
         raise HTTPException(422, "Choose each valid source row once")
     fields = json.loads(case.fields_json)
     count = repeated = 0
+    prepared = []
     for choice in body.choices:
         if choice.action == "skip":
             continue
@@ -306,25 +310,20 @@ async def import_auditor_requests(
         if previous:
             repeated += 1
             continue
-        if not any(field["key"] == field_key for field in fields):
-            fields.append(
-                PreparationField(
-                    key=field_key,
-                    label=row["title"],
-                    section=row["sheet"],
-                    help_text=row["description"] or None,
-                    type="evidence",
-                    required=True,
-                ).model_dump(mode="json")
+        if choice.action == "update":
+            target = await get_expectation(db, choice.expectation_id, user, "edit", revision=choice.expectation_revision)
+            if target.register_id != register.id or target.project_id not in (None, case.project_id):
+                raise HTTPException(422, "Choose a documentation row in this register and project scope")
+        try:
+            field = PreparationField(
+                key=field_key,
+                label=row["title"],
+                section=row["sheet"],
+                help_text=row["description"] or None,
+                type="evidence",
+                required=True,
             )
-        if len(fields) > 500:
-            raise HTTPException(422, "A form supports at most 500 questions")
-        case.fields_json = serialise(fields)
-        await create_auditor_request(
-            db,
-            register,
-            user,
-            AuditorRequestCreate(
+            request = AuditorRequestCreate(
                 case_id=case.id,
                 field_key=field_key,
                 project_id=case.project_id,
@@ -335,11 +334,24 @@ async def import_auditor_requests(
                 direction=body.direction,
                 period=body.period or None,
                 expectation_ids=[choice.expectation_id] if choice.expectation_id else [],
-            ),
-        )
+            )
+        except ValidationError as error:
+            raise HTTPException(422,
+                f"Source row {row['sheet']}:{row['row_number']} cannot be imported as an auditor request; "
+                "check its request reference and text limits") from error
+        if not any(existing["key"] == field_key for existing in fields):
+            fields.append(field.model_dump(mode="json"))
+        if len(fields) > 500:
+            raise HTTPException(422, "A form supports at most 500 questions")
+        prepared.append(request)
+    if prepared:
+        case.fields_json = serialise(fields)
+    for request in prepared:
+        await create_auditor_request(db, register, user, request)
         count += 1
     if count:
-        case.revision += 1
+        from app.services.preparation import advance_case
+        await advance_case(db, case, case.revision)
         await log_action(
             db,
             user,

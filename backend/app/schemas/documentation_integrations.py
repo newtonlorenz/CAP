@@ -1,8 +1,8 @@
 """Explicit import choices and bounded optional processing requests."""
 
 import uuid
-from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Annotated, Literal
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 
 class StrictModel(BaseModel):
@@ -48,13 +48,24 @@ class SuggestionDecision(StrictModel):
     rationale: str | None = Field(default=None, max_length=10000)
 
 
+class AuditorImportChoice(ImportChoice):
+    @model_validator(mode="after")
+    def explicit_mapping(self):
+        if self.action == "update":
+            if self.expectation_id is None or self.expectation_revision is None:
+                raise ValueError("Mapping requires an explicit documentation row and its revision")
+        elif self.expectation_id is not None or self.expectation_revision is not None:
+            raise ValueError("Creation and skipping must not include a documentation mapping")
+        return self
+
+
 class AuditorImport(StrictModel):
     revision: int = Field(ge=1)
     case_id: uuid.UUID
-    list_revision: str = Field(min_length=1, max_length=255)
+    list_revision: Annotated[str, StringConstraints(strip_whitespace=True)] = Field(min_length=1, max_length=100)
     direction: Literal["operator_input", "auditor_output"] = "operator_input"
     period: str = Field(default="", max_length=255)
-    choices: list[ImportChoice] = Field(min_length=1, max_length=2000)
+    choices: list[AuditorImportChoice] = Field(min_length=1, max_length=2000)
 
 
 class SheetMapping(StrictModel):

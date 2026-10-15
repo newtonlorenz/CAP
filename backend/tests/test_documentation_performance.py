@@ -185,3 +185,74 @@ async def test_process_picker_reads_metadata_without_verifying_each_shared_file(
     assert verify_calls == [], "Choosing a requirement must not hash document contents"
     assert counts[1] <= counts[0] + 20, counts
     assert counts[1] <= 80, counts
+
+
+async def test_reconciliation_batches_rows_sharing_a_project_and_evidence_collection(
+    client, db_session, review_process, default_jurisdiction, monkeypatch,
+):
+    actor = review_process["owner"]
+    register = await create_register(client, actor, default_jurisdiction)
+    await bind_process(client, actor, register, review_cycle_id=review_process["cycle"]["id"])
+    uploaded = await checked(await client.post(
+        "/api/v1/preparation/evidence/upload", headers=actor["headers"],
+        data={"title": "Canonical audit policy", "visibility": "organisation"},
+        files={"file": ("audit-policy.txt", b"Synthetic shared audit policy", "text/plain")},
+    ), 201)
+    requirement, target = await seed_target(
+        db_session, review_process, default_jurisdiction, 0, [uuid.UUID(uploaded["id"])],
+        prefix="RECONCILIATION",
+    )
+    verify_calls = []
+    real_verify = preparation.verify_evidence_file
+
+    def record_verify(item):
+        verify_calls.append(item.id)
+        return real_verify(item)
+
+    monkeypatch.setattr(preparation, "verify_evidence_file", record_verify)
+    counts = []
+    verification_counts = []
+    previous = 0
+    for size in (10, 100):
+        for index in range(previous, size):
+            row = DocumentationExpectation(
+                register_id=uuid.UUID(register["id"]), project_id=uuid.UUID(review_process["project"]["id"]),
+                title=f"Synthetic audit record {index}", description="", applicability="applicable",
+                created_by=actor["user"].id,
+            )
+            db_session.add(row)
+            await db_session.flush()
+            db_session.add_all([
+                DocumentationProcessTarget(
+                    expectation_id=row.id, review_item_id=target.id,
+                    requirement_id=requirement.id, requirement_set_version_id=review_process["version"].id,
+                    created_by=actor["user"].id,
+                ),
+                ExpectationRequirement(
+                    expectation_id=row.id, requirement_id=requirement.id,
+                    requirement_set_version_id=review_process["version"].id,
+                ),
+            ])
+        await db_session.commit()
+        verify_calls.clear()
+        with counted_sql(db_session) as statements:
+            response = await client.get(
+                f"{BASE}/registers/{register['id']}/reconciliation", headers=actor["headers"],
+                params={"project_id": review_process["project"]["id"]},
+            )
+        body = await checked(response)
+        assert {item["title"] for item in body["unreviewed_coverage"]} == {
+            f"Synthetic audit record {index}" for index in range(size)
+        }
+        assert len(body["expectations_absent_from_requests"]) == size
+        assert body["missing_evidence"] == []
+        assert all(
+            item["process_targets"][0]["collection"]["items"][0]["evidence_id"] == uploaded["id"]
+            for item in body["unreviewed_coverage"]
+        )
+        assert set(verify_calls) == {uuid.UUID(uploaded["id"])}
+        verification_counts.append(len(verify_calls))
+        counts.append(len(statements))
+        previous = size
+    assert counts[1] <= counts[0] + 20, counts
+    assert verification_counts == [1, 1], "Shared evidence is verified once per reconciliation"

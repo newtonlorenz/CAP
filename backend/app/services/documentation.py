@@ -884,21 +884,37 @@ async def reconciliation(db, register, user, project_id, list_revision=None):
     expectation_rows = (await db.scalars(select(DocumentationExpectation).where(
         DocumentationExpectation.register_id == register.id, DocumentationExpectation.applicability == "applicable",
         or_(DocumentationExpectation.project_id.is_(None), DocumentationExpectation.project_id == project_id), expectation_clause(user)))).all()
-    expectations = []
+    selected = []
     matched = {value["id"] for request in requests for value in request["expectations"]}
+    links_by_expectation = defaultdict(list)
+    for link in (await db.scalars(select(ExpectationRequirement).where(
+        ExpectationRequirement.expectation_id.in_([item.id for item in expectation_rows])))).all():
+        links_by_expectation[link.expectation_id].append({
+            "requirement_id": link.requirement_id,
+            "requirement_set_version_id": link.requirement_set_version_id,
+        })
+    validated_scopes = {}
+    from app.services.documentation_processes import effective_process_register
     for item in expectation_rows:
         # Requirement-linked global expectations must lie entirely in the project baseline.
-        links = await requirement_link_values(db, item.id)
+        links = links_by_expectation[item.id]
         if item.project_id is None and not links and item.id not in matched:
             continue
-        try:
-            from app.services.documentation_processes import effective_process_register
-            await validate_requirement_links(db, effective_process_register(register, item), user, links, project_id)
-        except HTTPException as error:
-            if error.status_code in {404, 422}:
-                continue
-            raise
-        expectations.append(await build_expectation_response(db, item, user))
+        scoped = effective_process_register(register, item)
+        key = (scoped.review_cycle_id, scoped.application_id, tuple(sorted(
+            (link["requirement_id"], link["requirement_set_version_id"]) for link in links)))
+        if key not in validated_scopes:
+            try:
+                await validate_requirement_links(db, scoped, user, links, project_id)
+            except HTTPException as error:
+                if error.status_code not in {404, 422}:
+                    raise
+                validated_scopes[key] = False
+            else:
+                validated_scopes[key] = True
+        if validated_scopes[key]:
+            selected.append(item)
+    expectations = await build_expectation_responses(db, selected, user, register)
     matched = {value["id"] for request in requests for value in request["expectations"]}
     return {
         "requests_without_matches": [request for request in requests if request["unmatched"]],
