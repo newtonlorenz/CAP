@@ -10,7 +10,7 @@ import hashlib
 import io
 import uuid
 import zipfile
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -242,7 +242,10 @@ async def test_two_register_rows_reflect_one_review_collection_without_copying_o
     replaced = await shared_replace(client, owner, process, [evidence[1]["id"]])
     repeated = await shared_replace(client, owner, process, [evidence[1]["id"]])
     assert [entry["evidence_id"] for entry in repeated["items"]] == [evidence[1]["id"]]
-    assert repeated["evidence_changed_at"] == replaced["evidence_changed_at"]
+    timestamps = [datetime.fromisoformat(response["evidence_changed_at"]) for response in (replaced, repeated)]
+    before, after = [(value if value.tzinfo else value.replace(tzinfo=timezone.utc)).astimezone(timezone.utc)
+        for value in timestamps]
+    assert after == before
     # A row opened before the process edit cannot silently overwrite that edit.
     stale = await client.put(f"/api/v1{from_register['shared_evidence_uri']}", headers=owner["headers"], json={
         "expected_evidence_changed_at": changed["evidence_changed_at"], "links": []})
