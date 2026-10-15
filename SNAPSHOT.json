@@ -1,5 +1,5 @@
 {
-  "draft": false,
+  "draft": true,
   "files": [
     {
       "path": ".env.example",
@@ -51,7 +51,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "0719d4b4813c3ca04de013baf1d9aaaa6153ec3a9d0ba8811633b4b4faccc963"
+      "sha256": "9048581e95b9cc108bc7ef3410ff4f40f597e66e1fb58476b8484e2effb3bff3"
     },
     {
       "path": "SECURITY.md",
@@ -140,6 +140,10 @@
     {
       "path": "backend/alembic/versions/a9c3d1e4f7b2_remove_requirement_category.py",
       "sha256": "59e4fb4e08ee87910fb9cd66f838fb09fffbc1256044032732a05c783e667e6d"
+    },
+    {
+      "path": "backend/alembic/versions/aa20261015_documentation_row_reviews.py",
+      "sha256": "199618317dc9833390f2fcbbb8fd98164aaa63eefdf8d50b7633b5ae9f3725ca"
     },
     {
       "path": "backend/alembic/versions/aa7d9c3e1b2f_add_change_management_component_register.py",
@@ -282,6 +286,26 @@
       "sha256": "e204fd6a18a570a6c7015e521c8ce4f2268eee670de449917e19cccfcebe200b"
     },
     {
+      "path": "backend/alembic/versions/v20261014_documentation.py",
+      "sha256": "13104083a6022f21825508040ff1eb2d34c06c9c03ced253189d1b91ccaae1ed"
+    },
+    {
+      "path": "backend/alembic/versions/w20261014_documentation_integrations.py",
+      "sha256": "b82bc8d03773aaee994e6671fbf700e0418faee9dd6e734eb8647e1d25a71ee2"
+    },
+    {
+      "path": "backend/alembic/versions/x20261014_documentation_package_sources.py",
+      "sha256": "7b56d963fb36d2dc7fab74b2d5441050c5dd1120835effae166e49875e351b58"
+    },
+    {
+      "path": "backend/alembic/versions/y20261014_documentation_sections.py",
+      "sha256": "a56c196ef00eefe7a928fd878b411d7b2fcfa16e273e6be8efe4aaab43f87807"
+    },
+    {
+      "path": "backend/alembic/versions/z20261014_documentation_processes.py",
+      "sha256": "3b47fac311a50335d9ef39d69e950830e7516a26fc65fc725af0c0d4dd766af6"
+    },
+    {
       "path": "backend/app/__init__.py",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
@@ -315,11 +339,23 @@
     },
     {
       "path": "backend/app/api/dashboard.py",
-      "sha256": "fb1a35706cd4d26a48b5f9a8638e9345ebf0f1220f02d73002b382e93213d15d"
+      "sha256": "11d16bc6050a027107d5f5d9c131178a080dd7ebd09eb6dcffcc3282a4e0ddad"
     },
     {
       "path": "backend/app/api/deps.py",
       "sha256": "76af0570ebc8ed80530187a1124802605d3e0d3c623a2b74b56e6efeba463056"
+    },
+    {
+      "path": "backend/app/api/documentation.py",
+      "sha256": "13000c131b40c29a0d3c790d5b69ef9d2f7ffe6d1ab861e71a39afdc674fe2c3"
+    },
+    {
+      "path": "backend/app/api/documentation_integrations.py",
+      "sha256": "7164a9b299690fa52e7e7a9a2253fa22cb5bb9b45b8bd82e1955d9ccdb942d2b"
+    },
+    {
+      "path": "backend/app/api/documentation_packages.py",
+      "sha256": "5523c0743d1c22ac26f0fdf1fc0432f0e5180b3b13d6d3c2297bff0939388ee3"
     },
     {
       "path": "backend/app/api/documents.py",
@@ -363,11 +399,11 @@
     },
     {
       "path": "backend/app/api/program.py",
-      "sha256": "e44046e8ea827fb0737557c58415f5722a8e5149ebfcdd00febb7cc3bc73796f"
+      "sha256": "d11f4d79c4f50a8157de2304b4e86fc8ea18113552817451c0edc3bf71377998"
     },
     {
       "path": "backend/app/api/reports.py",
-      "sha256": "3c17282f81e8c845837945ea2dbd94046df38fe2bf27ace52417116131c2de2f"
+      "sha256": "d6ef0878abe1334a86d6e76cd9917e2c7468c1f3ee4293d479c8ec7885d365a6"
     },
     {
       "path": "backend/app/api/requirement_quality.py",
@@ -379,7 +415,7 @@
     },
     {
       "path": "backend/app/api/reviews.py",
-      "sha256": "205f49f4ae0ee72fdb8cfb6f694486daf1a2180e313184a69359ea2edce6da21"
+      "sha256": "4d05cafbe5bd74143dde75ec045c29908e5250db49954665d7e7981d52b655cb"
     },
     {
       "path": "backend/app/api/tenant.py",
@@ -403,7 +439,7 @@
     },
     {
       "path": "backend/app/main.py",
-      "sha256": "8fde36e7220615a7754465cc25d03705df2f8cc27d023a9b96b2414276abe88a"
+      "sha256": "da226180b6a4d830a61992ca0e2740a06a277eb673172aa77bec39252a08aff1"
     },
     {
       "path": "backend/app/middleware/__init__.py",
@@ -423,7 +459,7 @@
     },
     {
       "path": "backend/app/models/__init__.py",
-      "sha256": "994bf90d1083c6aff983f77c092498af802eb85757f36574960851cfe96fab22"
+      "sha256": "5120602194d271daad141c8fd92e0141a3701df5881f0131d08523c50b992eaa"
     },
     {
       "path": "backend/app/models/access.py",
@@ -444,6 +480,14 @@
     {
       "path": "backend/app/models/document.py",
       "sha256": "bb9056e2ec337870221caf6a000829d531926c467d0027be3a8b5f2fa88ea900"
+    },
+    {
+      "path": "backend/app/models/documentation.py",
+      "sha256": "af4ae679d828f3abd2e44de9670d945ce159ab40ee678ea6b891edea7eac9cb4"
+    },
+    {
+      "path": "backend/app/models/documentation_integrations.py",
+      "sha256": "ddf0091e1e3226c3a46c016c987ce8e626bc262f145eff01e301cbf2ffff4d2b"
     },
     {
       "path": "backend/app/models/evidence.py",
@@ -479,7 +523,7 @@
     },
     {
       "path": "backend/app/models/program.py",
-      "sha256": "587aecaf712288f171590e090288913b4e400b3c8b764f3bf89cc1821b4535f6"
+      "sha256": "47312b94fb69367cdf5583876fe9e1c0f9b2a0e1f2f04de4425b247567c03997"
     },
     {
       "path": "backend/app/models/requirement.py",
@@ -526,6 +570,14 @@
       "sha256": "17ba89bb91726713ffbf988a93156301fca1aca848a8616cabff1dd201e56a7c"
     },
     {
+      "path": "backend/app/schemas/documentation.py",
+      "sha256": "ba1dab1663a7471dd222eede5c029ca54bb187c59720a9173103d94347d12b41"
+    },
+    {
+      "path": "backend/app/schemas/documentation_integrations.py",
+      "sha256": "9d32f23fdd545f4d73c9c673d2c856023b10f1e3118b3275eb6bdebad3fb8a67"
+    },
+    {
       "path": "backend/app/schemas/evidence.py",
       "sha256": "252e1b9e790a4e59ae1f818373d013c6db26f29f78c56083ba4720d65d2789f0"
     },
@@ -567,7 +619,7 @@
     },
     {
       "path": "backend/app/schemas/program.py",
-      "sha256": "5c6ae220066f4d9d1f9a5a70d9f59e7b1022d416946ee69d28e92194c0ba5a9c"
+      "sha256": "12f3059ee751e2f64835e28307d615cea7aecfaced3058f05e8dbf509f5d550a"
     },
     {
       "path": "backend/app/schemas/requirement.py",
@@ -579,7 +631,7 @@
     },
     {
       "path": "backend/app/schemas/review.py",
-      "sha256": "51338a82dc60c980f6ff851f56bbf61e7435a490c47b085bc600e0129a974fba"
+      "sha256": "a315c0675dcd452683fbfcde0560c307de19eeb54d0edd0da176b7060c24fbe4"
     },
     {
       "path": "backend/app/schemas/user.py",
@@ -599,11 +651,11 @@
     },
     {
       "path": "backend/app/services/access.py",
-      "sha256": "f5391ac12bc4ee5b32c86f0f40248dba7a26fea8d497639589512fad9250efa6"
+      "sha256": "7ae1fc7ae7ec6489310be1805b9d8564baa8cdb369cb25cf50b6bd3f12a81396"
     },
     {
       "path": "backend/app/services/access_audit.py",
-      "sha256": "e8fb6589887641cab13ff35794fcc3b3279f1327bec9ac61ae636698d9d2bf52"
+      "sha256": "00e0c97c23e7612437ddcac2e64e26d93867c47eff2d0795d122124493de3cd3"
     },
     {
       "path": "backend/app/services/ai_parser.py",
@@ -664,6 +716,42 @@
     {
       "path": "backend/app/services/document_reader.py",
       "sha256": "4c6c7979b65a8e47040384b704d0e6caa8615a3b3df3a29df1be131753667667"
+    },
+    {
+      "path": "backend/app/services/documentation.py",
+      "sha256": "ecf471ad6a9ba276a537bbdf91ca3706fd5d793bdf132d593f52ff1614573319"
+    },
+    {
+      "path": "backend/app/services/documentation_export.py",
+      "sha256": "2602e47e44ab690e7330630fb489d1c9b0ba3a42b307bc6c3943fb480a310178"
+    },
+    {
+      "path": "backend/app/services/documentation_import.py",
+      "sha256": "a73ff0691edf51db076bda0efb6a0c9c85e458b5619460b3924a8ab880f1079c"
+    },
+    {
+      "path": "backend/app/services/documentation_packages.py",
+      "sha256": "28fffd09bbf96c82fef72e2cf9fbd5f023802bbdc88593dbf26881b2644f8118"
+    },
+    {
+      "path": "backend/app/services/documentation_process_applications.py",
+      "sha256": "ac076e417d470add92e9d9964dd6d177f8b1d61eb0374417e759d98a1e1baabd"
+    },
+    {
+      "path": "backend/app/services/documentation_processes.py",
+      "sha256": "c93976b8b53085f1afe7c8a111316131c99543f5fd7152fdfce96fea8a603d4b"
+    },
+    {
+      "path": "backend/app/services/documentation_review.py",
+      "sha256": "7a18baf6adce9c5e1cfb59e955350a270cd3bdc10884368ec7fff11146796ff3"
+    },
+    {
+      "path": "backend/app/services/documentation_snapshots.py",
+      "sha256": "66570381dab4f7e26b950a134827ff5b0a9fcf9fe50a4dd04275a62b6409d45a"
+    },
+    {
+      "path": "backend/app/services/documentation_suggestions.py",
+      "sha256": "b8b043dfcc74f75f34083082cb7cc3bd13b419f6c1e73b7b1746d3da82e4db54"
     },
     {
       "path": "backend/app/services/email.py",
@@ -791,7 +879,7 @@
     },
     {
       "path": "backend/app/services/reports.py",
-      "sha256": "1167e28268ca8d468a88123ed9010a1b70e4ed69e0dc5ec138c9d871d6bdf63d"
+      "sha256": "d9c6ba8de181f960cbe6acb894055cd3fd5a4020801ee7d6c367ecf151d2494c"
     },
     {
       "path": "backend/app/services/requirement_baselines.py",
@@ -811,7 +899,7 @@
     },
     {
       "path": "backend/app/services/review_assurance.py",
-      "sha256": "f834ec4285471a5d6df4d9216e20d49ac9e41b91ca34cbf073e410b14958aebe"
+      "sha256": "0c18e4fe7e4f862b1b76e725695acca36b9ba697833d66414e12d2cf4d7e4693"
     },
     {
       "path": "backend/app/services/review_gap_report.py",
@@ -823,7 +911,7 @@
     },
     {
       "path": "backend/app/services/review_package.py",
-      "sha256": "655bddb1cda888fabc0cc957090b195d2a46ace067b0a8dd4e4af07652ec9dc4"
+      "sha256": "341365f37c0bc3dac513a9d41c08dfbef8320c453d6ffcd9c87e21537256ad3c"
     },
     {
       "path": "backend/app/services/review_progress.py",
@@ -1023,7 +1111,7 @@
     },
     {
       "path": "backend/tests/test_dashboard.py",
-      "sha256": "bf92442a93d9a240518791672a87bbdb1e3890f8c90d04bc38c79fbbc0d22973"
+      "sha256": "b904a99ae9d7b668925f9e2caea2e1a83f82cc5689706f2a5a9f3de98fb4b839"
     },
     {
       "path": "backend/tests/test_dashboard_application_work.py",
@@ -1032,6 +1120,34 @@
     {
       "path": "backend/tests/test_deploy.py",
       "sha256": "f4cbb1b49559f7d97d4320aec35b5dbe4c5b0fb54c36e687964887d50b96dfd4"
+    },
+    {
+      "path": "backend/tests/test_documentation_integrations.py",
+      "sha256": "c1e10ab46ae12a33c0bc8aa756973079d4fbd6a41c6b76b72286e64d1b4b63c2"
+    },
+    {
+      "path": "backend/tests/test_documentation_packages.py",
+      "sha256": "5315b99b1914d3b857271672186db5612afdbcdbdeb2f27e2e5938bf35d725b0"
+    },
+    {
+      "path": "backend/tests/test_documentation_performance.py",
+      "sha256": "f96c27f3abb8d668897dc9c46522d9d23b30b78438fd040b40d375f11f8d4f84"
+    },
+    {
+      "path": "backend/tests/test_documentation_processes.py",
+      "sha256": "924403ca0eed67b040be72f44506fc8e5499a19bf1ed483317203609ca1dc035"
+    },
+    {
+      "path": "backend/tests/test_documentation_register.py",
+      "sha256": "314fe2091951d7c478ad927e714549cc951cc6fe592c33dbf7500f4b037ba0b0"
+    },
+    {
+      "path": "backend/tests/test_documentation_review.py",
+      "sha256": "2795c3f589cf7d1eb53a42bcabaa2da8815ec55229b50c7d198ffecca5feedc0"
+    },
+    {
+      "path": "backend/tests/test_documentation_snapshot_postgres.py",
+      "sha256": "16be7592660ec85a30f07ef3d654255c2a675b260b2a96ddc2d8690449f4a2a6"
     },
     {
       "path": "backend/tests/test_documents.py",
@@ -1215,7 +1331,7 @@
     },
     {
       "path": "backend/tests/test_reports.py",
-      "sha256": "d7568f7ae8e02fe0f05b42bcc3122bcf234474255861232d94c979afeb156eb3"
+      "sha256": "62d874fb7b88e88f094021ed328bf04373d155a28af0ef7e6af1bcb2397d8792"
     },
     {
       "path": "backend/tests/test_requirement_baseline_versioning.py",
@@ -1355,11 +1471,11 @@
     },
     {
       "path": "docs/public/architecture.md",
-      "sha256": "62cac616af9c23e7c050e6558dbf65c7a2d7611c1c48e9de706f83c351ef1b1b"
+      "sha256": "d574733d270418e4a5de5517d7778c38626f900ae52f50c9540b07940650f887"
     },
     {
       "path": "docs/public/certification-projects.md",
-      "sha256": "6157128f031530d482dc4288e034767ec535332d2ca01b0e79923c3a7f9f9a54"
+      "sha256": "329eec0b035043ed94e6474361014824020442c5bda91c9f2f266689afdc8252"
     },
     {
       "path": "docs/public/change-notes.md",
@@ -1378,6 +1494,10 @@
       "sha256": "cd3ba04fd60c578e68f051282cd97ad4894c4cadcf7a097b55ca568320bffc47"
     },
     {
+      "path": "docs/public/documentation-register.md",
+      "sha256": "f31d9da682a1798d399342cc27607427c72dba71b5047858dfdb9c3a9efcee6f"
+    },
+    {
       "path": "docs/public/installation.md",
       "sha256": "241b4381afda636b15157ee5fde70b714616101d514d443716165d00ccc7f0e4"
     },
@@ -1391,7 +1511,7 @@
     },
     {
       "path": "docs/public/preparation.md",
-      "sha256": "4991a9245d84eeb617b5ce70df36371ae406a5a31071043ff9b2c565e44124a4"
+      "sha256": "06672190ae4336f991951e708f58806f89b6e9d5cbbbfcc49597bea0f1e3c2cc"
     },
     {
       "path": "docs/public/product-tour.md",
@@ -2075,7 +2195,7 @@
     },
     {
       "path": "frontend/Dockerfile",
-      "sha256": "e639b9cce1302a8879e87ff5ae86811763a495b4b18becddbf758b1935f2987f"
+      "sha256": "a352f26ac2ac7200cd06fe8abf93b213a8ef69e195f3e5c29052c8b48949ebf1"
     },
     {
       "path": "frontend/e2e-feedback/feedback.spec.ts",
@@ -2096,6 +2216,14 @@
     {
       "path": "frontend/e2e/danish_change_workflow.spec.ts",
       "sha256": "09858f543ca0a820fd636eebea559cdae997dbd92b93c165223fdd1a059599c8"
+    },
+    {
+      "path": "frontend/e2e/documentation-processes.spec.ts",
+      "sha256": "2ba5033cf96509ddd2f08cf8b4c1871ae8cdd3ce94d8fa1b2b0580436395e0d2"
+    },
+    {
+      "path": "frontend/e2e/documentation.spec.ts",
+      "sha256": "107f6a9e77a5d367f6c70798212bea5061614dd06d5259e131b61a0b85c8e4d1"
     },
     {
       "path": "frontend/e2e/evidence.spec.ts",
@@ -2194,6 +2322,10 @@
       "sha256": "5bc2939f3dc5952e15034c0918b3378fce18383f9db03ac1e4547b16e1a3ef88"
     },
     {
+      "path": "frontend/playwright.documentation.config.ts",
+      "sha256": "22f0c8e25d77b4aaaa3a07eee906d7b43c31019b2b7bf856c9ff98bd3dc503a4"
+    },
+    {
       "path": "frontend/playwright.feedback.config.ts",
       "sha256": "f9303e5d3cc501624ed3e8bc328876a0d7a0d080c155a507b23d8a0f59df46dc"
     },
@@ -2219,7 +2351,7 @@
     },
     {
       "path": "frontend/public/site-content.json",
-      "sha256": "32f7b2ae480aa0aa5c75170a9f2491d1b4f2f509e658200dc9b342a8baff5474"
+      "sha256": "7b4c2f74df435dae69e57d376c7570462413d5b667129b4e412edc05bf26f55e"
     },
     {
       "path": "frontend/public/theme-init.js",
@@ -2244,6 +2376,10 @@
     {
       "path": "frontend/src/api/client.ts",
       "sha256": "847438195463af0e88a68b1d65f942f4f4282ab70dd522b51fe72ab8c98a5698"
+    },
+    {
+      "path": "frontend/src/api/documentation.ts",
+      "sha256": "fc1453761a900cfa19c6bbe42ca638fd63d50fdf2a61a65df072709291173125"
     },
     {
       "path": "frontend/src/api/errors.ts",
@@ -2279,7 +2415,7 @@
     },
     {
       "path": "frontend/src/components/Layout.tsx",
-      "sha256": "8d4ffb6e871b13c34bf42d7ce88a4e72e2cb7d00db064cd44018a1e8281874c7"
+      "sha256": "4f146dc6995fd9a1afe474b89c42b2cc58ddf90bd58ee8e8005520ed2ca2a787"
     },
     {
       "path": "frontend/src/components/NavigationSearch.tsx",
@@ -2406,16 +2542,104 @@
       "sha256": "5d62880c37ceccda49c33985fd048c4f42366be42c37c8f01a6f37956095e25d"
     },
     {
+      "path": "frontend/src/components/documentation/AuditorRequests.tsx",
+      "sha256": "90f98f80287dc67af92c4d6acbb304857eb317aacd40db9a8cf2d9a28949dde3"
+    },
+    {
+      "path": "frontend/src/components/documentation/DocumentationRegister.tsx",
+      "sha256": "e6f9ded0605ebde779d4cf7dc3d2e3fd8627626ee5001da7774f3ca76c5c17f2"
+    },
+    {
+      "path": "frontend/src/components/documentation/DocumentationSuggestions.tsx",
+      "sha256": "758509941adde56e5fb36a42dd13570115d45780681801a4198cc115c2e565be"
+    },
+    {
+      "path": "frontend/src/components/documentation/EvidenceMapping.tsx",
+      "sha256": "84bb1df63799da95e55fc53407fc6ac83a0861903f40a7a555a1aa47d9bda84e"
+    },
+    {
+      "path": "frontend/src/components/documentation/EvidenceVersions.tsx",
+      "sha256": "057409a4a327b14c5b8ed606fdbe6113bfe42b0e5e537e0725b7e5533a2c3c0d"
+    },
+    {
+      "path": "frontend/src/components/documentation/ExpectationEditor.tsx",
+      "sha256": "590001a1118130a3613938fa1a48bf44a3dfdf074f9b7e0d45b003836413588f"
+    },
+    {
+      "path": "frontend/src/components/documentation/NativeReferences.tsx",
+      "sha256": "ae66a9d2c6274e8056b5286334d4f061058a7f0b22577061c33024b509f7fff8"
+    },
+    {
+      "path": "frontend/src/components/documentation/ProcessDocumentsModal.tsx",
+      "sha256": "51f5fd39d1d417ba4be4358b89ecd74fa116ae6b91f70d27a1e9c79cd6ae4430"
+    },
+    {
+      "path": "frontend/src/components/documentation/ProcessTargetPicker.tsx",
+      "sha256": "dd0cd06681ec8cfe1d2d8d69973023acc61db0ef450462d68285f11d352da04f"
+    },
+    {
+      "path": "frontend/src/components/documentation/RegisterDocumentPreview.tsx",
+      "sha256": "6cdaa35503bc3f1ea77ebf73db5deaa27e60107679f1ebdcdadf1cf66de13674"
+    },
+    {
+      "path": "frontend/src/components/documentation/RegisterEntryRow.tsx",
+      "sha256": "300eae630a7f391f8fc12a67c2078d60d159da4675dc53677f27bf4e76d43a0e"
+    },
+    {
+      "path": "frontend/src/components/documentation/RegisterHandover.tsx",
+      "sha256": "66c18b2717192a736489be75b5442eda2dd4ad94aed69bb4850b5e5a3ffe1519"
+    },
+    {
+      "path": "frontend/src/components/documentation/RegisterOwnerPicker.tsx",
+      "sha256": "7a5dd1f075c237b7cb372de3e7da5fab1a3452f43a87b02c9811ae9c93faf46c"
+    },
+    {
+      "path": "frontend/src/components/documentation/RegisterProcessPicker.tsx",
+      "sha256": "eefde49f57d8f151d8edf7b95b5cc4e656df10a0d97766d0a5fa165b3fe0161c"
+    },
+    {
+      "path": "frontend/src/components/documentation/RegisterReturnLink.tsx",
+      "sha256": "793fe520214b357e13683c97cb03a790e1e093b4b4460367c9e0ca10495e6245"
+    },
+    {
+      "path": "frontend/src/components/documentation/RegisterRowEditor.tsx",
+      "sha256": "9d50acb099e7e150b46b68253b3814f96abbc85e6f62cd8972fc9afab0b6017d"
+    },
+    {
+      "path": "frontend/src/components/documentation/RequirementMapping.tsx",
+      "sha256": "1f1c64d0789b2771eacc5ad2cf8118b0ef5fa5cb71e66ced7dde027b6b668991"
+    },
+    {
+      "path": "frontend/src/components/documentation/RowReviewPicker.tsx",
+      "sha256": "815c2e2e9a72e54cad66e98eb17a3bc76ed696e7a1db4527fe7c2f323755831d"
+    },
+    {
+      "path": "frontend/src/components/documentation/SpreadsheetImport.tsx",
+      "sha256": "83c0078e24116f91db7389f2c22695536f28cc5d1d543ab68fff9e1114bb34fc"
+    },
+    {
+      "path": "frontend/src/components/documentation/cache.ts",
+      "sha256": "abfe7c3f61ef28b3ead874845800a99545c2672521a29011a91705112ded2852"
+    },
+    {
+      "path": "frontend/src/components/documentation/model.ts",
+      "sha256": "faa65e1b1ef4a4d5d5d1650094208919bcd2148875d0134408c0364d128bc684"
+    },
+    {
+      "path": "frontend/src/components/documentation/processNavigation.ts",
+      "sha256": "e69cbadf989db0f6cd53315d1201a58e4869b6e19e88c804b2d42c85a9ea3ef2"
+    },
+    {
       "path": "frontend/src/components/preparation/AnswerHistory.tsx",
       "sha256": "dc710367102382a5db88908dad319a87215ccb8617ccae7fbe2849324ed0ccba"
     },
     {
       "path": "frontend/src/components/preparation/CaseDetail.tsx",
-      "sha256": "4fc0cdc7e2f29403908460ba6bf5a664bffb640328bbaab6001536d40881361f"
+      "sha256": "13dba7f02c83be8b5871224c243d06c82384c712f22bad589bac085eb64ca6bd"
     },
     {
       "path": "frontend/src/components/preparation/CaseField.tsx",
-      "sha256": "52f3b07dfce13a5ad7e3e0853fb6230bb50d81807fa34c560ea1234d429578dd"
+      "sha256": "6d281778c8c703a129ce08ab08491f7b162cb6619cfd691f95467feb206e18c4"
     },
     {
       "path": "frontend/src/components/preparation/CasePortfolio.tsx",
@@ -2483,7 +2707,11 @@
     },
     {
       "path": "frontend/src/components/review/ReviewEvidenceEditor.tsx",
-      "sha256": "34cff69e527253552e512ca9f4f44d7e397d540c20a0ba5e0e5fcd9d1c539fdf"
+      "sha256": "3f698f3206d8c1ff7bde7a8549c050d9af49f13b13dc6580f952916fc1fe8cdc"
+    },
+    {
+      "path": "frontend/src/components/review/ReviewSharedEvidence.tsx",
+      "sha256": "ec66be3cc37a728f1cdcd16167fdd72b27631ec049389e873e824cbdb3bb9edb"
     },
     {
       "path": "frontend/src/components/ui/Badge.tsx",
@@ -2595,7 +2823,7 @@
     },
     {
       "path": "frontend/src/config/siteContent.ts",
-      "sha256": "ce8e37c7bcb48ff14bf649e87bea658f5dbe3ea0e4ff4ac96dea84b7214384a1"
+      "sha256": "83af530a948602d046989ae7401b89aaff95c199394501ecfff7fdd7f7b21194"
     },
     {
       "path": "frontend/src/content/releaseNotes.ts",
@@ -2623,7 +2851,7 @@
     },
     {
       "path": "frontend/src/hooks/preparation/useCaseWrites.ts",
-      "sha256": "70366b0837390007bff3d17c1b25115c11ba604227a5128ed7d7c645b885676b"
+      "sha256": "02f61b2115574c757b4c9d940dcadbe58ce6f215625b6d3f6b8fa1a28ad09edd"
     },
     {
       "path": "frontend/src/hooks/preparation/useResponseDraft.ts",
@@ -2658,6 +2886,10 @@
       "sha256": "1be0641c41c43e481b3e5eb5cb6978cb0c43cc99c44635819e0d6e1a3b449c50"
     },
     {
+      "path": "frontend/src/hooks/useLocalDraftGuard.tsx",
+      "sha256": "49da3f0478fc5928ddebc78e3b39dc99b55c4f9dac224fd388a497221644b843"
+    },
+    {
       "path": "frontend/src/hooks/useReviewLocation.ts",
       "sha256": "cfe94319c05a7fd92326c53174fe1598a6e389d620424085d2686bd6824534d7"
     },
@@ -2667,7 +2899,7 @@
     },
     {
       "path": "frontend/src/index.css",
-      "sha256": "049d3ef0bc9b25e6142ff7a9f7e3c1a3a05755bfcfa930b1cb9be2124ff1a896"
+      "sha256": "c753b3bfca497abf39087dcd8fcd2cc0aea57eb5afb1ddb61ae0b5b5df7428a7"
     },
     {
       "path": "frontend/src/main.tsx",
@@ -2687,11 +2919,11 @@
     },
     {
       "path": "frontend/src/pages/Applications.tsx",
-      "sha256": "b73a088085a50ffa6d2552ab5d368f102a8a63fa8024c0f1648b92f72f3f996d"
+      "sha256": "4cc8ccd2a9d7c5b9b0c85ec6fa87d6589d790cced43511158735937970cc1e07"
     },
     {
       "path": "frontend/src/pages/CertificationProjects.tsx",
-      "sha256": "37ad50982f6076977b601e1e0fe8df8c98c1688078d90e09126bdf5b71e44f53"
+      "sha256": "04092ed7342d3c8eb75dc0cb800a79090f745d3da7922cc90f858013b935a9c0"
     },
     {
       "path": "frontend/src/pages/ChangeManagement.tsx",
@@ -2715,7 +2947,7 @@
     },
     {
       "path": "frontend/src/pages/Library.tsx",
-      "sha256": "e17f2726ae92c27cc4def4b54c23d49e7d4b22faa580ca0ddd01b276f8680929"
+      "sha256": "8ee18fff4778a6c1a6917d61dd63d6d248db4234b8120e9fa074c82304c8356b"
     },
     {
       "path": "frontend/src/pages/Login.tsx",
@@ -2731,7 +2963,7 @@
     },
     {
       "path": "frontend/src/pages/Preparation.tsx",
-      "sha256": "8a924244b7fbf558877e3d93f63a2b5bca52b26e8d17e2335f0e65f100c6791b"
+      "sha256": "bb275560dc05c8e0f41e61488f4e787779de37e7dcc41258bb82996f6e023b75"
     },
     {
       "path": "frontend/src/pages/ProgramWorkspace.tsx",
@@ -2743,7 +2975,7 @@
     },
     {
       "path": "frontend/src/pages/RequirementDetail.tsx",
-      "sha256": "a6622e256ae63dcba4b4a292e49ed540afad045bcfacfd82ff185cb2fec0f8d0"
+      "sha256": "d8806be7e0bf190ef6babd1e1e8287059123f405566a2f75740564dc44c4f40c"
     },
     {
       "path": "frontend/src/pages/RequirementsList.tsx",
@@ -2763,7 +2995,7 @@
     },
     {
       "path": "frontend/src/pages/ReviewCycleDetail.tsx",
-      "sha256": "dee7585d2b627cffb32253d7d30819fcc1c772faee6d94337586dd13f2475bd1"
+      "sha256": "b3ac3c7cf7935059c4d79d7c9fd50848c48779370dd4363a25ff35b650407fd8"
     },
     {
       "path": "frontend/src/pages/ReviewCycles.tsx",
@@ -2950,6 +3182,10 @@
       "sha256": "5c29b213a7587cc7a500e34b596f835389b60bffd373fde3ce208e7554e6d73b"
     },
     {
+      "path": "frontend/src/test/documentation_dialogs.test.tsx",
+      "sha256": "7068c1384a830a52e52de807bd1429eba7747600d44a912e80f9d40e5bfe611a"
+    },
+    {
       "path": "frontend/src/test/draft_navigation.test.tsx",
       "sha256": "593b4ccdf7798398e198cf4f705caf92ab86730a868e9e2438ab0325bb4c4f1d"
     },
@@ -3099,7 +3335,7 @@
     },
     {
       "path": "frontend/src/test/review_cycle_detail_filters.test.tsx",
-      "sha256": "7d888dd520f316f78e057dff898d5e36cacd70b716695913d05fbd0b82f929e1"
+      "sha256": "50590fa7ae9fe0c60fa21b436e6a240f7d0a2ebd6efd0b0414d12d1e397d650d"
     },
     {
       "path": "frontend/src/test/review_cycle_detail_hierarchy.test.tsx",
@@ -3175,7 +3411,7 @@
     },
     {
       "path": "frontend/src/types/access.ts",
-      "sha256": "0b2d3de442b8cbd96889a3fba37706726a30db1b69ccaa190808275459b3a299"
+      "sha256": "b6bea7343821273f622ddd4d7d79125e6eba6036138303a87cae39ddc075fdcf"
     },
     {
       "path": "frontend/src/types/applications.ts",
@@ -3186,8 +3422,12 @@
       "sha256": "e7f640c33a020ab132d8281769244e23f21638dbbb6088da3122e96ba1d4b0f6"
     },
     {
+      "path": "frontend/src/types/documentation.ts",
+      "sha256": "7a7a7e679ca763aa3a3d0a477f759e8e94988ca4968fd4638655b4fa9da28775"
+    },
+    {
       "path": "frontend/src/types/index.ts",
-      "sha256": "83acd1cabf24b9139166ab219c042a89b40266b76781d403aae8673bc95b725f"
+      "sha256": "9344d64fc1da503f64d48527c45598ecbe22e96da031b2582ee23979970bc2bb"
     },
     {
       "path": "frontend/src/types/pilotReview.ts",
@@ -3275,11 +3515,11 @@
     },
     {
       "path": "frontend/vite.config.ts",
-      "sha256": "cdc0ac97d8b1b76c7b9f645d51376153857e99b903d4e714be6c711c087443c8"
+      "sha256": "2f4300f5da3119634a26b16b504e88c0d906aa129a1cc1d40d96c435855fc1c8"
     },
     {
       "path": "publication-manifest.json",
-      "sha256": "37767f2ca8f9a4bbc6743fb7dff61458460076703edb3540301c0e56131e749c"
+      "sha256": "9b83a55141f6b2282e7f379f78e3f7b0eb5051fd32dae191ce68346831435e2b"
     },
     {
       "path": "scripts/check-release-lifecycle.py",
@@ -3331,7 +3571,7 @@
     },
     {
       "path": "scripts/run-e2e.py",
-      "sha256": "7c040ddb3fbf8ed0eda0fd3b57dae2a9c9b2ea17740fe50ea259c031842d22de"
+      "sha256": "76ee503b276fe0d2009f9e3979b6c697cd5eb497a6dd440e1134cac496b48d18"
     },
     {
       "path": "scripts/tests/test_release_images.py",

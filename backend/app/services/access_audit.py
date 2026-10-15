@@ -8,6 +8,8 @@ from sqlalchemy.orm import aliased
 from app.models.access import ResourceAccess
 from app.models.application import Application, ApplicationComponent
 from app.models.audit import AuditLog
+from app.models.documentation import DocumentationRegister, DocumentationExpectation, AuditorRequestMapping
+from app.models.documentation_integrations import DocumentationImport, DocumentationSnapshot, DocumentationSuggestionRun
 from app.models.preparation import (
     PreparationCase,
     PreparationEvidence,
@@ -186,6 +188,12 @@ def audit_access_clause(user):
         return exists(select(ids.c.id).where(matches(ids.c.id)).correlate(AuditLog))
 
     models = {
+        "documentation_register": DocumentationRegister,
+        "documentation_import": DocumentationImport,
+        "documentation_snapshot": DocumentationSnapshot,
+        "documentation_suggestion_run": DocumentationSuggestionRun,
+        "documentation_expectation": DocumentationExpectation,
+        "documentation_auditor_request": AuditorRequestMapping,
         "evidence_item": EvidenceItem,
         "evidence_validation": EvidenceValidation,
         "application": Application,

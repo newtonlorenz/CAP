@@ -37,3 +37,5 @@ In **Requirements and evidence**, choose **Add form**. The editor opens in a dia
 and links the created form to this project. Failed creation retains your entries.
 Closing a changed draft asks before discarding it; cancelling that confirmation
 returns to the editor. Reusable template maintenance remains under Resources.
+
+The [documentation register](documentation-register.md) adds project-scoped documentation expectations, auditor request reconciliation and frozen internal handovers. It uses shared evidence with separate coverage decisions; requirement assessments and the pinned baseline retain their own review.

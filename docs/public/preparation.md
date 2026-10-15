@@ -65,3 +65,5 @@ CAP provides its own structured forms and portable outputs. It does not automati
 Use **Use imported requirements** in the template builder to select question text from requirement versions or a completed PDF extraction in the current space. Source status and original references remain visible; review unapproved extraction text before using it. This copies blank questions and their source provenance, without importing answers or compliance decisions. Choose up to 500 points for each form.
 
 **Download Excel template** provides recognised headings and illustrative examples. Replace those rows before uploading your own blank questions. Licence packs and their forms inherit the current space's jurisdiction.
+
+Use the [documentation register](documentation-register.md) to reconcile a project-linked audit form against documentation expectations and shared evidence. Each original request-list revision retains its own mapping.

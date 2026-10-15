@@ -233,6 +233,7 @@ class EvidenceAggregate:
     uploaded_by: list[str]
     uploaded_at: list[str]
     links: list[str]
+    summaries: list[str]
 
 
 @dataclass(frozen=True)
@@ -262,6 +263,7 @@ def _build_evidence_aggregate(
     cycle_id: uuid.UUID,
     item_id: uuid.UUID,
     files: list[ReviewItemEvidenceFile],
+    shared_evidence: Sequence[dict] = (),
 ) -> EvidenceAggregate:
     file_ids: list[str] = []
     filenames: list[str] = []
@@ -269,7 +271,13 @@ def _build_evidence_aggregate(
     uploaded_by: list[str] = []
     uploaded_at: list[str] = []
     links: list[str] = []
+    summaries: list[str] = []
+    seen: set[tuple[str, str]] = set()
     for evidence_file in files:
+        identity = ("review_file", _stringify(evidence_file.id))
+        if identity in seen:
+            continue
+        seen.add(identity)
         file_ids.append(_stringify(evidence_file.id))
         filenames.append(evidence_file.filename)
         descriptions.append(evidence_file.description or "")
@@ -277,6 +285,34 @@ def _build_evidence_aggregate(
         uploaded_at.append(_stringify(evidence_file.uploaded_at))
         link = _build_evidence_download_url(cycle_id, item_id, evidence_file.id)
         links.append(f"{evidence_file.filename}: {link}")
+        summaries.append(f"{evidence_file.filename} ({_format_date(evidence_file.uploaded_at)})")
+    for evidence in shared_evidence:
+        evidence_id = _stringify(evidence["evidence_id"])
+        identity = ("shared_evidence", evidence_id)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        title = evidence.get("title") or evidence.get("filename") or "Shared evidence"
+        if evidence.get("filename") and evidence["filename"] != title:
+            title = f"{title} ({evidence['filename']})"
+        details = []
+        if evidence.get("locator"):
+            details.append(f"Locator: {evidence['locator']}")
+        if evidence.get("rationale"):
+            details.append(f"Rationale: {evidence['rationale']}")
+        if evidence.get("body"):
+            details.append(evidence["body"])
+        link = evidence.get("link_url") or ""
+        if evidence.get("kind") == "file":
+            path = f"/api/v1/review-cycles/{cycle_id}/items/{item_id}/shared-evidence/{evidence_id}/download"
+            link = f"{settings.frontend_base_url.rstrip('/')}{path}"
+        file_ids.append(evidence_id)
+        filenames.append(title)
+        descriptions.append(" ; ".join(details))
+        uploaded_by.append("")
+        uploaded_at.append("")
+        links.append(f"{title}: {link}" if link else "")
+        summaries.append(" ; ".join([title, *details, *([link] if link else [])]))
     return EvidenceAggregate(
         file_ids=file_ids,
         filenames=filenames,
@@ -284,6 +320,7 @@ def _build_evidence_aggregate(
         uploaded_by=uploaded_by,
         uploaded_at=uploaded_at,
         links=links,
+        summaries=summaries,
     )
 
 
@@ -788,14 +825,14 @@ async def _fetch_statement_contexts(
     items = [
         (r.item, r.requirement, r.document, r.status, r.owner.id if r.owner else None) for r in rows
     ]
-    evidence_map = {r.item.id: r.files for r in rows}
     assessment_map = {r.item.id: r for r in rows}
     contexts: list[SoAContext] = []
     for item, requirement, document, status, assigned_to in items:
         evidence = _build_evidence_aggregate(
             cycle.id,
             item.id,
-            evidence_map.get(item.id, []),
+            assessment_map[item.id].files,
+            assessment_map[item.id].shared_evidence,
         )
         contexts.append(
             SoAContext(
@@ -1387,7 +1424,8 @@ async def _build_cycle_gap_analysis_rows(
         )
         for r in assessments
     ]
-    evidence_names_by_item_id = {r.item.id: [f.filename for f in r.files] for r in assessments}
+    evidence_names_by_item_id = {r.item.id: _build_evidence_aggregate(
+        cycle.id, r.item.id, r.files, r.shared_evidence).summaries for r in assessments}
     rationales = {r.item.id: r.status_comment for r in assessments}
     assessments_by_id = {r.item.id: r for r in assessments}
     rows: list[GapAnalysisRow] = []
@@ -2344,7 +2382,8 @@ async def generate_review_cycle_report_pdf(
         (r.item, r.requirement, r.document, r.status, r.assigned, r.responsible, r.reviewer)
         for r in assessments
     ]
-    evidence_map = {r.item.id: r.files for r in assessments}
+    evidence_map = {r.item.id: _build_evidence_aggregate(
+        cycle.id, r.item.id, r.files, r.shared_evidence) for r in assessments}
     sources = {r.item.id: r.source for r in assessments}
     doc_groups: dict[str, dict[str, object]] = {}
     total_actionable = 0
@@ -2724,14 +2763,7 @@ async def generate_review_cycle_report_pdf(
                 f'<a name="{anchor_name}"/>{html_module.escape(heading)}', item_heading_style
             )
 
-            evidence_files = evidence_map.get(item.id, [])
-            evidence_text = (
-                " ; ".join(
-                    f"{file.filename} ({_format_date(file.uploaded_at)})" for file in evidence_files
-                )
-                if evidence_files
-                else "-"
-            )
+            evidence_text = _join_values(evidence_map[item.id].summaries) or "-"
 
             source = sources.get(item.id, {})
             details_rows = [

@@ -145,6 +145,19 @@ documents you have permission to process.
 
 ## Deployment and integrations
 
+The signed-in footer shows the current user, a confidentiality notice and the software
+version. Configure installation text in `site-content.json` under the application's
+web root (or mount a deployment-owned file there). Set `footer.enterprise` to the
+installation's enterprise name; the public default is empty and hides that field.
+`footer.confidentiality` can override the default notice. Do not put private
+installation names in the public source. This display setting does not control
+organization access or permissions.
+
+Frontend builds use the version from `frontend/package.json`, with an optional
+`VITE_APP_VERSION` override. Docker builds accept `APP_VERSION` and `VCS_REF` build
+arguments; the footer displays the version and the first seven revision characters
+when supplied. Supply the reviewed source revision to identify the installed build.
+
 CAP's React frontend calls a FastAPI backend. PostgreSQL stores the authoritative
 records; Redis and Celery handle background extraction. Uploaded files and backups
 remain in operator-selected storage. The default no-AI workflow is local to the

@@ -665,26 +665,37 @@ describe('Review triage controls', () => {
     expect(screen.getByRole('heading', { name: 'REQ-200 Beta' })).toBeVisible()
     expect(screen.getByLabelText('Evidence for REQ-200')).toBeVisible()
   })
-  it('keeps an evidenced and confirmed item out of Needs attention while allowing evidence filtering', async () => {
+  it('uses accessible shared evidence for recorded-evidence triage while keeping unavailable sources in the missing-evidence queue', async () => {
     const cycle = { ...defaultCycle, items: defaultCycle.items.map((item, index) => ({
       ...item,
       review_status: index === 0 ? 'pending' : 'confirmed',
       requirement_current_status: index === 0 ? 'not_started' : 'evidenced',
-      review_evidence: index === 1 ? null : 'Recorded reference',
+      review_evidence: index === 0 ? 'Recorded reference' : null,
+      shared_evidence: index === 2 ? [{ evidence_id: 'shared-policy', title: 'Synthetic shared policy', kind: 'note',
+        locator: null, rationale: 'Supports this assessment', problems: ['expired_evidence'] }] : [],
+      shared_evidence_warning: index === 3 ? 'Some supporting evidence is unavailable' : null,
       reviewer_name: index === 1 ? 'Dev Admin' : null,
       reviewed_at: index === 1 ? '2026-03-23T10:00:00Z' : null,
       evidence_changed_since_review: index === 1,
     })), readiness: {
-      can_close: false, total: 4, applicable: 4, ready: 3, not_applicable: 0, informational: 0, blocker_count: 1,
-      blockers: [{ item_id: 'item-1', reference_id: 'REQ-100', reasons: ['Evidence is not complete'] }],
+      can_close: false, total: 4, applicable: 4, ready: 1, not_applicable: 0, informational: 0, blocker_count: 3,
+      blockers: [{ item_id: 'item-1', reference_id: 'REQ-100', reasons: ['Evidence is not complete'] },
+        { item_id: 'item-3', reference_id: 'REQ-300', reasons: ['Shared evidence has expired'] },
+        { item_id: 'item-4', reference_id: 'REQ-400', reasons: ['Supporting evidence is unavailable'] }],
     } }
     renderPage(cycle)
     await screen.findByText('Quarterly Review')
+    const sharedAssessment = screen.getByRole('region', { name: 'Assessment and evidence for REQ-300' })
+    expect(within(sharedAssessment).getByText('Synthetic shared policy')).toBeVisible()
+    expect(within(sharedAssessment).queryByText('No evidence recorded in CAP')).not.toBeInTheDocument()
+    const hiddenAssessment = screen.getByRole('region', { name: 'Assessment and evidence for REQ-400' })
+    expect(within(hiddenAssessment).getByText('Some supporting evidence is unavailable')).toBeVisible()
+    expect(within(hiddenAssessment).getByText('No evidence recorded in CAP')).toBeVisible()
     fireEvent.click(screen.getByRole('button', { name: 'Needs attention' }))
-    expectVisibleRequirementHeadings(['REQ-100 Alpha'], ['REQ-200 Beta', 'REQ-300 Gamma'])
+    expectVisibleRequirementHeadings(['REQ-100 Alpha', 'REQ-300 Gamma', 'REQ-400 Delta'], ['REQ-200 Beta'])
     fireEvent.click(screen.getByRole('button', { name: 'No evidence recorded' }))
-    expectVisibleRequirementHeadings(['REQ-200 Beta'], ['REQ-100 Alpha', 'REQ-300 Gamma'])
-    expect(screen.getByText('No evidence recorded in CAP')).toBeVisible()
+    expectVisibleRequirementHeadings(['REQ-200 Beta', 'REQ-400 Delta'], ['REQ-100 Alpha', 'REQ-300 Gamma'])
+    expect(screen.getAllByText('No evidence recorded in CAP')).toHaveLength(2)
     expect(screen.getByText('Evidence changed since the last review; the decision has not been updated.')).toBeVisible()
     expect(screen.getByText(/Last reviewed by Dev Admin:/)).toBeVisible()
   })

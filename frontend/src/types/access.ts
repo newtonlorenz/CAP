@@ -1,6 +1,6 @@
 export type Visibility = 'organisation' | 'restricted' | 'secret'
 export type Permission = 'summary' | 'view' | 'edit' | 'approve' | 'export' | 'manage_access'
-export type ResourceType = 'application' | 'certification_project' | 'preparation_case' | 'preparation_evidence'
+export type ResourceType = 'application' | 'certification_project' | 'preparation_case' | 'preparation_evidence' | 'documentation_register'
 export interface ResourceAccess { visibility: Visibility; permissions: Permission[]; revision: number }
 export interface AccessGrant { subject_type: 'user' | 'team'; subject_id: string; permissions: Permission[] }
 export interface AccessPolicy { resource_type: ResourceType; resource_id: string; visibility: Visibility; owner_id: string; revision: number; grants: AccessGrant[]; effective_permissions: Permission[]; parent_type?: ResourceType | null; parent_id?: string | null }

@@ -3,6 +3,10 @@
     "name": "CAP",
     "description": ""
   },
+  "footer": {
+    "enterprise": "",
+    "confidentiality": "Confidential — for authorized use only."
+  },
   "login": {
     "heading": "Compliance records",
     "description": "Sign in to view requirements, reviews, and evidence.",

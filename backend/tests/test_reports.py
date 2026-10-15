@@ -1,3 +1,4 @@
+# ruff: noqa: F811 - imported pytest fixture reused by this owning API suite
 import csv
 import io
 import re
@@ -23,6 +24,7 @@ from app.models import (
     User,
 )
 from app.services.auth import create_access_token, hash_password
+from tests.test_review_assurance import assessment, finish  # noqa: F401
 
 
 @pytest.fixture
@@ -1088,6 +1090,88 @@ async def test_review_cycle_report_pdf(client, auth_headers, review_cycle, revie
         text = "\n".join(page.extract_text() or "" for page in pdf.pages)
     assert "Readiness Review Report" in text
     assert "Review Cycle Summary" in text
+
+
+async def test_cycle_exports_include_canonical_shared_evidence_and_preserve_frozen_access(
+    client, db_session, assessment
+):
+    if load_workbook is None:
+        pytest.skip("openpyxl is not installed")
+    owner, cycle, items, headers, _ = assessment
+    root = f"/api/v1/review-cycles/{cycle.id}"
+    uploaded = await client.post("/api/v1/preparation/evidence/upload", headers=headers,
+        data={"title": "Canonical board policy", "visibility": "secret"},
+        files={"file": ("board.txt", b"Canonical board policy bytes", "text/plain")})
+    assert uploaded.status_code == 201, uploaded.text
+    file_id = uploaded.json()["id"]
+    linked = await client.post("/api/v1/preparation/evidence", headers=headers, json={
+        "kind": "link", "title": "Regulator source", "link_url": "https://example.test/source",
+        "visibility": "secret"})
+    assert linked.status_code == 201, linked.text
+    links = [{"evidence_id": file_id, "locator": "Section 7", "rationale": "Board oversight scope"},
+        {"evidence_id": linked.json()["id"], "locator": "Page 4", "rationale": "Authority guidance"}]
+    for item in items[:2]:
+        path = f"{root}/items/{item.id}/shared-evidence"
+        current = await client.get(path, headers=headers)
+        saved = await client.put(path, headers=headers, json={
+            "expected_evidence_changed_at": current.json()["evidence_changed_at"], "links": links})
+        assert saved.status_code == 200, saved.text
+    native = await client.post(f"{root}/items/{items[1].id}/files", headers=headers,
+        files={"file": ("local-review.txt", b"Independent native attachment", "text/plain")})
+    assert native.status_code == 201, native.text
+    expected = ("Canonical board policy", "Regulator source", "Section 7", "Board oversight scope",
+        "https://example.test/source")
+    fields = "requirement_reference_id,evidence_file_ids,evidence_filenames,evidence_file_descriptions,evidence_file_links"
+
+    async def export(path, **params):
+        response = await client.get(f"/api/v1/reports/{path}", headers=headers,
+            params={"review_cycle_id": str(cycle.id), **params})
+        assert response.status_code == 200, response.text
+        return response
+
+    def pdf_text(response):
+        with pdfplumber.open(io.BytesIO(response.content)) as pdf:
+            return re.sub(r"\s+", " ", " ".join(page.extract_text() or "" for page in pdf.pages))
+
+    soa = load_workbook(io.BytesIO((await export("statement-of-applicability", format="xlsx", fields=fields)).content))
+    rows = {row[0]: row for row in soa.active.iter_rows(min_row=2, values_only=True)}
+    for reference, count in (("3.1", 2), ("3.2", 3)):
+        row = rows[reference]
+        ids = row[1].split(" ; ") if row[1] else []
+        assert len(ids) == count
+        assert ids.count(file_id) == 1
+        assert all(value in " ".join(str(cell or "") for cell in row) for value in expected)
+    assert "local-review.txt" in rows["3.2"][2]
+    shared_download = f"/api/v1/review-cycles/{cycle.id}/items/{items[0].id}/shared-evidence/{file_id}/download"
+    assert shared_download in rows["3.1"][4]
+    assert (await client.get(shared_download, headers=headers)).content == b"Canonical board policy bytes"
+    for path, params in (("statement-of-applicability", {"format": "pdf", "fields": fields}),
+                         ("gap-analysis", {"format": "pdf"}), ("review-cycle-report", {})):
+        text = pdf_text(await export(path, **params))
+        assert all(value in text for value in expected), text
+        assert "local-review.txt" in text
+    gap = load_workbook(io.BytesIO((await export("gap-analysis", format="xlsx")).content))
+    gap_rows = {row["Reference ID"]: row for row in _worksheet_rows(gap["All Items"])}
+    for reference, count in (("3.1", "2"), ("3.2", "3")):
+        assert str(gap_rows[reference]["Evidence File Count"]) == count
+        assert gap_rows[reference]["No Evidence Recorded"] == "No"
+        assert all(value in gap_rows[reference]["Evidence File Names"] for value in expected)
+    csv_text = (await export("gap-analysis", format="csv")).text
+    assert all(value in csv_text for value in expected)
+    closed = await finish(client, assessment)
+    assert closed.status_code == 200, closed.text
+    frozen = load_workbook(io.BytesIO((await export("statement-of-applicability", format="xlsx", fields=fields)).content))
+    assert list(frozen.active.values) == list(soa.active.values)
+    frozen_pdf_text = pdf_text(await export("review-cycle-report"))
+    assert all(value in frozen_pdf_text for value in expected)
+    peer = User(email="shared-report-peer@example.test", full_name="Unprivileged report peer",
+        role="manager", password_hash="unused", organization_id=owner.organization_id)
+    db_session.add(peer)
+    await db_session.commit()
+    denied = await client.get("/api/v1/reports/statement-of-applicability", params={
+        "review_cycle_id": str(cycle.id)}, headers={"Authorization": "Bearer " + create_access_token({"sub": str(peer.id)})})
+    assert denied.status_code in {403, 404}, denied.text
+    assert "Canonical board policy" not in denied.text
 
 
 async def test_review_cycle_report_retains_informational_requirements(

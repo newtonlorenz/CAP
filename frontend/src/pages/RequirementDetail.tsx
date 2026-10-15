@@ -1,4 +1,5 @@
 import './workflow-pages.css'
+import DocumentationRegister from '../components/documentation/DocumentationRegister'
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -94,6 +95,7 @@ function RequirementContent({ id }: { id: string | undefined }) {
         />
       </section>
 
+      <section className="mb-6 border-t border-line pt-5"><DocumentationRegister jurisdictionId={requirement.jurisdiction_id} requirementId={requirement.id} canEdit={['admin', 'manager', 'contributor'].includes(user?.role || '')} /></section>
       <div className="requirement-detail-grid space-y-6">
         <div className="app-surface app-surface-default rounded-2xl p-6">
           <h2 className="mb-4 text-lg font-semibold">Source details</h2>

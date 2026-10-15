@@ -397,6 +397,8 @@ export interface ReviewItem {
   created_at: string
   comments: ReviewItemComment[]
   evidence_files: ReviewItemEvidenceFile[]
+  shared_evidence?: { evidence_id: string; title: string; kind: string; filename?: string; locator: string | null; rationale: string; problems: string[] }[]
+  shared_evidence_warning?: string | null
 }
 
 export interface ReviewItemComment {
@@ -412,6 +414,7 @@ export interface ReviewItemComment {
 
 export interface RequirementSummary {
   id: string
+  requirement_set_version_id?: string | null
   document_id: string | null
   reference_id: string
   title?: string | null

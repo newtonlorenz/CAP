@@ -52,6 +52,8 @@ async def _get_review_cycle_or_404(
         await require_access(
             db, CertificationProject, cycle.certification_project_id, current_user, "export"
         )
+    from app.services.documentation_review import require_shared_sources
+    await require_shared_sources(db, cycle, current_user, "export")
     return cycle
 
 

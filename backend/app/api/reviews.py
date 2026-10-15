@@ -9,6 +9,7 @@ import smtplib
 import uuid
 import shutil
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
@@ -162,6 +163,9 @@ async def _get_review_cycle_for_user(
                 status_code=409,
                 detail="This review is read-only. Start a new review to record further work.",
             )
+    from app.services.documentation_review import require_shared_sources
+    if action == "export":
+        await require_shared_sources(db, cycle, current_user, "export")
     return cycle
 
 
@@ -1045,6 +1049,8 @@ async def get_review_cycle(
         item_data["evidence_files"] = [
             ReviewItemEvidenceFileResponse.model_validate(f) for f in row.files
         ]
+        from app.services.documentation_review import redact_shared_evidence
+        item_data["shared_evidence"], item_data["shared_evidence_warning"] = await redact_shared_evidence(db, row.shared_evidence, current_user)
         response_items.append(ReviewItemWithRequirementResponse(**item_data))
     integration = await get_jira_integration(db, current_user.organization_id)
     return ReviewCycleWithItemsResponse(
@@ -1313,6 +1319,21 @@ async def delete_review_cycle(
     cycle = result.scalar_one()
     if cycle.closed_at or cycle.snapshot_id or cycle.status == "closed":
         raise HTTPException(409, "Completed reviews must be retained. Archive this review instead.")
+
+    from app.models.documentation import DocumentationExpectation, DocumentationProcessTarget, DocumentationRegister, DocumentationSnapshotSource
+    documentation_items = select(ReviewItem.id).where(ReviewItem.review_cycle_id == cycle.id)
+    documentation_files = select(ReviewItemEvidenceFile.id).where(ReviewItemEvidenceFile.review_item_id.in_(documentation_items))
+    referenced = (
+        await db.scalar(select(DocumentationRegister.id).where(DocumentationRegister.review_cycle_id == cycle.id).limit(1))
+        or await db.scalar(select(DocumentationExpectation.id).where(DocumentationExpectation.review_cycle_id == cycle.id).limit(1))
+        or await db.scalar(select(DocumentationProcessTarget.id).where(DocumentationProcessTarget.review_item_id.in_(documentation_items)).limit(1))
+        or await db.scalar(select(DocumentationSnapshotSource.id).where(or_(
+            DocumentationSnapshotSource.review_cycle_id == cycle.id,
+            DocumentationSnapshotSource.review_item_id.in_(documentation_items),
+            DocumentationSnapshotSource.review_file_id.in_(documentation_files))).limit(1))
+    )
+    if referenced:
+        raise HTTPException(409, "This review is referenced by documentation records. Retain or archive it; disconnect live matches before deleting an unrecorded review.")
 
     item_ids_result = await db.execute(
         select(ReviewItem.id).where(ReviewItem.review_cycle_id == cycle_id)
@@ -2520,3 +2541,68 @@ async def get_snapshot(
     current_user: User = Depends(get_current_user),
 ):
     return await _get_snapshot_for_user(db, current_user, snapshot_id)
+
+
+@router.get("/review-cycles/{cycle_id}/items/{item_id}/shared-evidence")
+async def get_shared_evidence(cycle_id: uuid.UUID, item_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    cycle = await _get_review_cycle_for_user(db, current_user, cycle_id)
+    item = await db.scalar(select(ReviewItem).where(ReviewItem.id == item_id, ReviewItem.review_cycle_id == cycle.id))
+    if item is None:
+        raise HTTPException(404, "Review item not found")
+    if current_user.role == "assigned_reviewer" and item.assigned_reviewer_id != current_user.id:
+        raise HTTPException(403, "You can only view items assigned to you")
+    from app.services.documentation_review import review_evidence_collection
+    collection = await review_evidence_collection(db, cycle, item, current_user)
+    return {"items": collection["shared_evidence"], "warning": collection["warning"], "evidence_changed_at": collection["evidence_changed_at"]}
+
+
+
+from app.schemas.documentation import AssessmentEvidenceLinks
+
+
+@router.put("/review-cycles/{cycle_id}/items/{item_id}/shared-evidence")
+async def set_shared_evidence(cycle_id: uuid.UUID, item_id: uuid.UUID, body: AssessmentEvidenceLinks,
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from app.services.documentation_review import replace_shared_evidence
+    cycle, item = await _get_review_item_for_cycle(db, current_user, cycle_id, item_id)
+    result = await replace_shared_evidence(db, cycle, item, current_user, body)
+    await db.commit()
+    return result
+
+
+@router.get("/review-cycles/{cycle_id}/items/{item_id}/shared-evidence/{evidence_id}/download")
+async def download_shared_evidence(cycle_id: uuid.UUID, item_id: uuid.UUID, evidence_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from app.models.documentation import DocumentationAssessmentEvidence
+    from app.models.preparation import PreparationEvidence
+    from app.services.preparation_files import verify_evidence_file
+    from app.services.review_assurance import frozen_payload, file_digest
+    cycle = await _get_review_cycle_for_user(db, current_user, cycle_id, action="export")
+    item = await db.scalar(select(ReviewItem).where(ReviewItem.id == item_id, ReviewItem.review_cycle_id == cycle.id))
+    if item is None:
+        raise HTTPException(404, "Review item not found")
+    if current_user.role == "assigned_reviewer" and item.assigned_reviewer_id != current_user.id:
+        raise HTTPException(403, "You can only download evidence for items assigned to you")
+    evidence = await require_access(db, PreparationEvidence, evidence_id, current_user, "export")
+    if cycle.closed_at:
+        payload = await frozen_payload(db, cycle)
+        row = next((value for value in payload["rows"] if value["item"]["id"] == str(item_id)), None)
+        if not row or not any(value["evidence_id"] == str(evidence_id) for value in row.get("shared_evidence", [])):
+            raise HTTPException(404, "Evidence not found")
+        entry = next((value for value in payload["files"] if value["kind"] == "shared_evidence" and value["id"] == str(evidence_id)), None)
+        if entry is None:
+            raise HTTPException(404, "Evidence file not found")
+        root = (Path(settings.upload_dir) / "review-snapshots" / str(cycle.snapshot_id)).resolve()
+        path = (root / entry["path"]).resolve()
+        if not path.is_relative_to(root) or not path.is_file():
+            raise HTTPException(409, "Frozen evidence file is unavailable")
+        with path.open("rb") as handle:
+            if file_digest(handle) != entry["sha256"]:
+                raise HTTPException(409, "Frozen evidence integrity check failed")
+    else:
+        if not await db.scalar(select(DocumentationAssessmentEvidence.evidence_id).where(
+            DocumentationAssessmentEvidence.review_item_id == item_id, DocumentationAssessmentEvidence.evidence_id == evidence_id)):
+            raise HTTPException(404, "Evidence not found")
+        path = await run_in_threadpool(verify_evidence_file, evidence)
+    return FileResponse(path, filename=evidence.filename or "evidence", media_type="application/octet-stream")

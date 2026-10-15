@@ -1,4 +1,5 @@
 import './workflow-pages.css'
+import DocumentationRegister from '../components/documentation/DocumentationRegister'
 import ProjectForms from '../components/workflows/ProjectForms'
 import ProjectMaintenance from '../components/workflows/ProjectMaintenance'
 import CertificationEngagement, { type EngagementUpdate } from '../components/workflows/CertificationEngagement'
@@ -160,7 +161,7 @@ export default function CertificationProjects() {
   const selectedProjectId = searchParams.get('project')
   const sectionAliases: Record<string, string> = { baseline: 'requirements', review: 'requirements', forms: 'requirements', milestones: 'testing', packages: 'reports', maintenance: 'history' }
   const requestedSection = searchParams.get('section') || 'overview'
-  const projectSection = sectionAliases[requestedSection] || (['overview', 'requirements', 'testing', 'reports', 'history'].includes(requestedSection) ? requestedSection : 'overview')
+  const projectSection = sectionAliases[requestedSection] || (['overview', 'requirements', 'documentation', 'auditor-requests', 'testing', 'reports', 'history'].includes(requestedSection) ? requestedSection : 'overview')
   const [milestonesExpanded, setMilestonesExpanded] = useState(requestedSection === 'milestones')
   useEffect(() => {
     if (requestedSection === 'milestones') setMilestonesExpanded(true)
@@ -1089,7 +1090,7 @@ export default function CertificationProjects() {
           </div>
           {selectedProject.access?.permissions.includes('manage_access') && <AccessPanel type="certification_project" id={selectedProject.id} />}
           <SectionNav label="Project sections" value={projectSection} onChange={(value) => updateLocation('section', value)} items={[
-            { id: 'overview', label: 'Overview' }, { id: 'requirements', label: 'Requirements and evidence' }, { id: 'testing', label: 'Testing and findings' }, { id: 'reports', label: 'Reports and submission' }, { id: 'history', label: 'History' },
+            { id: 'overview', label: 'Overview' }, { id: 'requirements', label: 'Requirements and evidence' }, { id: 'documentation', label: 'Documentation' }, { id: 'auditor-requests', label: 'Auditor requests and gaps' }, { id: 'testing', label: 'Testing and findings' }, { id: 'reports', label: 'Reports and submission' }, { id: 'history', label: 'History' },
           ]} />
           <section hidden={projectSection !== 'overview'} aria-label="Project overview" className="space-y-5">
             <ol className="certification-progression" aria-label="Certification stages">{stageOrder.map(stage => <li key={stage} aria-current={selectedProject.stage === stage ? 'step' : undefined}>{stageLabel[stage]}{selectedProject.stage === stage && <span>Current stage</span>}</li>)}</ol>
@@ -1296,6 +1297,8 @@ export default function CertificationProjects() {
           </section>
 
           <section hidden={projectSection !== 'requirements'} aria-label="Project forms and evidence" className="border-t border-line pt-4"><ProjectForms key={`forms-${selectedProject.id}`} projectId={selectedProject.id} jurisdictionId={selectedProject.jurisdiction_id} canManage={canManageProjects} /></section>
+          <section hidden={projectSection !== 'documentation'} className="border-t border-line pt-4">{projectSection === 'documentation' && <DocumentationRegister jurisdictionId={selectedProject.jurisdiction_id} projectId={selectedProject.id} canEdit={['admin', 'manager', 'contributor'].includes(user?.role || '')} />}</section>
+          <section hidden={projectSection !== 'auditor-requests'} className="border-t border-line pt-4">{projectSection === 'auditor-requests' && <DocumentationRegister jurisdictionId={selectedProject.jurisdiction_id} projectId={selectedProject.id} canEdit={['admin', 'manager', 'contributor'].includes(user?.role || '')} auditorView />}</section>
           <section hidden={projectSection !== 'history'} data-tour="certification-history" aria-label="Project history" className="space-y-4"><h2 className="text-lg font-semibold">Earlier assessments and maintenance</h2>{(submissionCyclesQuery.data?.items || []).filter(cycle => cycle.id !== submissionCycle?.id).map(cycle => <div key={cycle.id} className="flex flex-wrap justify-between gap-2 border-b border-line py-3"><Link className="text-accent underline" to={`/review-cycles/${cycle.id}`}>{cycle.name}</Link><span className="text-sm text-muted">{cycle.cycle_type || 'Operational'} · {cycle.status}</span></div>)}<h3 className="font-semibold">Previous submission packages</h3>{submissionPackages.slice(1).map(pkg => <div key={pkg.id} className="flex justify-between border-b border-line py-2 text-sm"><span>Version {pkg.version}</span><span className="text-muted">{pkg.status}</span></div>)}<ProjectMaintenance key={`maintenance-${selectedProject.id}`} projectId={selectedProject.id} jurisdictionId={selectedProject.jurisdiction_id} canManage={canManageProjects} assessments={submissionCyclesQuery.data?.items || []} /></section>
 
           <section hidden={projectSection !== 'testing'} data-tour="certification-testing" aria-label="Testing and findings" className="space-y-4">

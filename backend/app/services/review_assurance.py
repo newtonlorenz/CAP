@@ -38,6 +38,7 @@ class AssessmentRow:
     comments: list = field(default_factory=list)
     source: dict = field(default_factory=dict)
     status_comment: str = ""
+    shared_evidence: list = field(default_factory=list)
 
 
 def file_digest(handle):
@@ -131,6 +132,7 @@ async def assessment_rows(db, cycle, *, use_snapshot=True):
                 comments=[hydrate(ReviewItemComment, entry) for entry in row.get("comments", [])],
                 source=row.get("source", {}),
                 status_comment=row.get("status_comment", ""),
+                shared_evidence=row.get("shared_evidence", []),
             )
             for row in payload["rows"]
         ]
@@ -230,6 +232,8 @@ async def assessment_rows(db, cycle, *, use_snapshot=True):
         if extraction_ids
         else {}
     )
+    from app.services.documentation_review import shared_evidence_for_items
+    shared_evidence = await shared_evidence_for_items(db, ids, cycle.organization_id) if ids else {}
     output = []
     for item, req, doc, status, owner, comment in rows:
         version = versions.get(req.requirement_set_version_id)
@@ -252,6 +256,7 @@ async def assessment_rows(db, cycle, *, use_snapshot=True):
                     "excerpt": extracted.source_excerpt if extracted else None,
                 },
                 current_rationale(item, comment),
+                shared_evidence.get(item.id, []),
             )
         )
     return output
@@ -271,6 +276,8 @@ def assessment_gap_reasons(row):
     else:
         if row.status != "evidenced":
             reasons.append("Evidence is not complete")
+    if any(entry.get("problems") for entry in row.shared_evidence):
+        reasons.append("Replace or review shared evidence that is no longer current and valid")
     if row.item.review_status not in {"confirmed", "updated"}:
         reasons.append(
             "Resolve escalation"
@@ -329,6 +336,13 @@ def readiness(rows):
 
 
 async def freeze_review(db, cycle, user, rows):
+    from app.services.documentation import lock_evidence
+    from app.services.documentation_review import shared_evidence_for_items
+    await lock_evidence(db, {uuid.UUID(str(entry["evidence_id"])) for row in rows
+        for entry in row.shared_evidence}, user)
+    shared = await shared_evidence_for_items(db, [row.item.id for row in rows], cycle.organization_id, fresh=True)
+    for row in rows:
+        row.shared_evidence = shared[row.item.id]
     snapshot_id = uuid.uuid4()
     folder = Path(settings.upload_dir) / "review-snapshots" / str(snapshot_id)
     folder.mkdir(parents=True, exist_ok=False)
@@ -369,6 +383,13 @@ async def freeze_review(db, cycle, user, rows):
                 )
             for entry in row.files:
                 copy_file(entry.file_path, entry.filename, "evidence", str(entry.id))
+            from app.services.documentation import checked_evidence
+            from app.services.preparation_files import verify_evidence_file
+            for entry in row.shared_evidence:
+                evidence = await checked_evidence(db, entry["evidence_id"], user, current=True)
+                if evidence.kind == "file":
+                    path = verify_evidence_file(evidence)
+                    copy_file(path, evidence.filename, "shared_evidence", str(evidence.id))
         jurisdiction = await db.get(Jurisdiction, cycle.jurisdiction_id)
         payload = {
             "schema_version": 2,
@@ -390,6 +411,7 @@ async def freeze_review(db, cycle, user, rows):
                         for key in ["owner", "assigned", "responsible", "reviewer"]
                     },
                     "files": [serialise(x) for x in row.files],
+                    "shared_evidence": row.shared_evidence,
                     "comments": [serialise(x) for x in row.comments],
                     "source": row.source,
                 }

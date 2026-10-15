@@ -1,4 +1,6 @@
 import './workflow-pages.css'
+import RegisterReturnLink from '../components/documentation/RegisterReturnLink'
+import { registerSourceMatches, safeRegisterReturn } from '../components/documentation/processNavigation'
 import DraftSaveStatus from '../components/ui/DraftSaveStatus'
 import CopyButton from '../components/ui/CopyButton'
 import { useDraftNavigationGuard } from '../hooks/useDraftNavigationGuard'
@@ -179,8 +181,9 @@ export default function ReviewCycleDetail() {
   const noEvidenceOnly = locationParams.get('no_evidence') === '1'
   const hideInformational = locationParams.get('hide_info') === '1'
   const hierarchyDepth = useHierarchyDepth()
-  const focused = locationParams.get('mode') === 'focus'
-  const requestedItemId = locationParams.get('item')
+  const strictRegisterTarget = locationParams.get('register_target') === '1' && Boolean(safeRegisterReturn(locationParams.get('return_register')))
+  const focused = strictRegisterTarget || locationParams.get('mode') === 'focus'
+  const requestedItemId = locationParams.get('item') || (strictRegisterTarget ? '__unavailable_register_target__' : null)
   const clearFilters = () => updateLocation({ q: null, pending: null, attention: null, no_evidence: null, hide_info: null, review_status: null, requirement_status: null, owner: null, reviewer: null, item: null })
   const hasFilters = Boolean(search || pendingOnly || attentionOnly || noEvidenceOnly || hideInformational || reviewStatusFilter !== 'all' || requirementStatusFilter !== 'all' || responsibleUserFilter !== 'all' || assignedReviewerFilter !== 'all')
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
@@ -619,6 +622,7 @@ export default function ReviewCycleDetail() {
     && status !== 'not_applicable'
     && !stripHtml(evidence).trim()
     && !item.evidence_files?.length
+    && !item.shared_evidence?.length
   const needsAttentionFor = (item: ReviewItemWithRequirement) => {
     if (isNonActionableType(item.requirement.requirement_type)) return false
     // Readiness is computed by the same assessment rules used for completion and exports.
@@ -904,7 +908,9 @@ export default function ReviewCycleDetail() {
     items: cycle?.items || [], visibleItems: visibleRows.map(({ item }) => item),
     pendingItems: pendingRows.map(({ item }) => item), itemNeedsSave, updateLocation,
   })
-  const selectedRow = visibleRows.find(({ item }) => item.id === focus.selected?.id)
+  const selectedRow = visibleRows.find(({ item }) => item.id === (strictRegisterTarget ? requestedItemId : focus.selected?.id) && (!strictRegisterTarget || registerSourceMatches(locationParams, { requirement_id: item.requirement.id, requirement_set_version_id: item.requirement.requirement_set_version_id })))
+  const evidenceFocus = useRef('')
+  useEffect(() => { if (!strictRegisterTarget || locationParams.get('evidence') !== '1' || !selectedRow || evidenceFocus.current === selectedRow.item.id) return; const element = document.getElementById(`review-evidence-${selectedRow.item.id}`); if (element) { evidenceFocus.current = selectedRow.item.id; element.scrollIntoView({ block: 'start' }); element.focus({ preventScroll: true }) } }, [strictRegisterTarget, selectedRow, locationParams])
   const selectedIndex = focus.selectedIndex
   const nextPending = visibleRows.find(({ item }) => item.id === focus.nextPending?.id)
   const selectRequirement = focus.select
@@ -982,10 +988,13 @@ export default function ReviewCycleDetail() {
     return <div role="alert" className="rounded-lg border border-danger-line bg-danger-soft p-4 text-danger"><p>{getApiErrorMessage(cycleError, 'This assessment could not be loaded.')}</p><Button className="mt-3" onClick={() => retryCycle()}>Try again</Button><Link className="ml-4 underline" to="/review-cycles">Back to assessments</Link></div>
   }
 
+  if (strictRegisterTarget && !selectedRow) return <div className="space-y-3"><RegisterReturnLink /><p role="alert" className="rounded-md border border-line p-4 text-sm">The exact requirement linked from the register is unavailable in this assessment view. No alternative requirement has been selected.</p></div>
+
   const contextPath = cycle.change_entry_id ? `/change-management?change=${cycle.change_entry_id}&tab=changes` : cycle.certification_project_id ? `/certification-projects?project=${cycle.certification_project_id}&section=review` : '/review-cycles'
   const contextLabel = cycle.change_entry_id ? 'Back to change' : cycle.certification_project_id ? 'Back to certification project' : 'All requirement assessments'
   return (
     <div data-tour="assessment-detail" className={`workflow-page assessment-detail-page review-document ${focused ? 'review-document-focus' : ''}`}>
+      <RegisterReturnLink />
       <div className="w-full">
         <div className="review-page-shell bg-surface rounded-xl border border-line px-4 sm:px-5 py-4 space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">

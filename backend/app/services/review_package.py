@@ -21,6 +21,8 @@ async def build_review_package(db, cycle, user):
         generate_gap_analysis_xlsx,
     )
 
+    from app.services.documentation_review import require_shared_sources
+    await require_shared_sources(db, cycle, user, "export")
     payload = await frozen_payload(db, cycle)
     if payload is None:
         raise HTTPException(

@@ -2,6 +2,7 @@ type InformationItem = { title: string; description: string }
 
 export type SiteContent = {
   brand: { name: string; description: string }
+  footer: { enterprise: string; confidentiality: string }
   login: {
     heading: string
     description: string
@@ -15,6 +16,7 @@ export type SiteContent = {
 
 export const defaultSiteContent: SiteContent = {
   brand: { name: 'CAP', description: '' },
+  footer: { enterprise: '', confidentiality: 'Confidential — for authorized use only.' },
   login: {
     heading: 'Compliance records',
     description: 'Sign in to view requirements, reviews, and evidence.',
@@ -41,6 +43,7 @@ function text(value: unknown, fallback: string, maxLength = 240): string {
 export function parseSiteContent(value: unknown): SiteContent {
   const input = record(value)
   const brand = record(input.brand)
+  const footer = record(input.footer)
   const login = record(input.login)
   const information = Array.isArray(login.information)
     ? login.information.slice(0, 4).map((item) => {
@@ -53,6 +56,10 @@ export function parseSiteContent(value: unknown): SiteContent {
     : defaultSiteContent.login.information
 
   return {
+    footer: {
+      enterprise: text(footer.enterprise, '', 160),
+      confidentiality: text(footer.confidentiality, defaultSiteContent.footer.confidentiality),
+    },
     brand: {
       name: text(brand.name, defaultSiteContent.brand.name, 60),
       description: text(brand.description, '', 100),

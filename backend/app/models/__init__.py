@@ -62,6 +62,24 @@ __all__ = [
     "RequirementQualityRun", "RequirementQualityFinding",
     "ResourceAccess", "AccessGrant", "AccessTeam", "AccessTeamMember",
     "Application", "ApplicationComponent", "ApplicationFollowup", "ApplicationSnapshot",
+    "DocumentationRegister",
+    "DocumentationSection",
+    "DocumentationExpectation",
+    "DocumentationProcessTarget",
+    "ExpectationRequirement",
+    "EvidenceGroup",
+    "EvidenceGroupVersion",
+    "DocumentationCoverage",
+    "DocumentationReference",
+    "AuditorRequestMapping",
+    "AuditorRequestExpectation",
+    "AuditorRequestEvidence",
+    "DocumentationAssessmentEvidence",
+    "DocumentationSnapshotSource",
+    "DocumentationImport",
+    "DocumentationImportRow",
+    "DocumentationSuggestionRun",
+    "DocumentationSnapshot",
     "AuditLog",
     "InstallationSettings",
     "ComponentRegister",
@@ -118,3 +136,11 @@ __all__ = [
 ]
 
 from app.models.requirement_quality import RequirementQualityRun, RequirementQualityFinding
+
+from app.models.documentation import (
+    DocumentationRegister, DocumentationSection, DocumentationExpectation, DocumentationProcessTarget, ExpectationRequirement,
+    EvidenceGroup, EvidenceGroupVersion, DocumentationCoverage, DocumentationReference,
+    AuditorRequestMapping, AuditorRequestExpectation, AuditorRequestEvidence, DocumentationAssessmentEvidence, DocumentationSnapshotSource,
+)
+
+from app.models.documentation_integrations import DocumentationImport, DocumentationImportRow, DocumentationSuggestionRun, DocumentationSnapshot

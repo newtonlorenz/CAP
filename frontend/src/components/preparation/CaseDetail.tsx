@@ -29,6 +29,7 @@ export default function CaseDetail({
   onBack,
   backLabel = 'All forms',
   initialFieldKey,
+  initialEvidenceOpen = false,
   headingLevel = 2,
   pack,
   onOpenCase,
@@ -43,6 +44,7 @@ export default function CaseDetail({
   onBack: () => void
   backLabel?: string
   initialFieldKey?: string
+  initialEvidenceOpen?: boolean
   headingLevel?: 1 | 2
   pack?: LicenceApplication
   onOpenCase?: (id: string) => void
@@ -240,7 +242,7 @@ export default function CaseDetail({
         <div className="flex flex-wrap justify-between gap-3 text-sm text-muted"><p>{allQuestions ? 'All questions' : `Question ${questionIndex + 1} of ${item.fields.length}`} · Answers save automatically</p><button type="button" className="text-accent underline" disabled={writes.hasPendingUploads} onClick={() => setAllQuestions(!allQuestions)}>{allQuestions ? 'Focus current question' : 'View all questions'}</button></div>
         {sections.map((section, index) => <section key={index} id={`preparation-section-${index}`} hidden={!allQuestions && !section.fields.some(field => field.key === question)}>
           {allQuestions && <h3 className="mt-5 font-semibold">{section.name}</h3>}
-          {section.fields.map(field => <CaseField key={field.key} caseId={item.id} field={field} response={item.responses.find(response => response.field_key === field.key)} blockers={item.readiness.blockers.filter(blocker => blocker.field_key === field.key)} archived={archived} canEdit={canEdit} canAccept={item.access ? roleManage && item.access.permissions.includes('approve') : canManage} writes={writes} jurisdictionName={jurisdictionName} onSourceNavigate={canLeave} focused={!allQuestions} hidden={!allQuestions && field.key !== question} reviewerName={item.reviewer_name} onDirtyChange={(key, dirty) => { if (dirty) dirtyFields.current.add(key); else dirtyFields.current.delete(key) }} />)}
+          {section.fields.map(field => <CaseField key={field.key} initialEvidenceOpen={initialEvidenceOpen && field.key === initialFieldKey} caseId={item.id} field={field} response={item.responses.find(response => response.field_key === field.key)} blockers={item.readiness.blockers.filter(blocker => blocker.field_key === field.key)} archived={archived} canEdit={canEdit} canAccept={item.access ? roleManage && item.access.permissions.includes('approve') : canManage} writes={writes} jurisdictionName={jurisdictionName} onSourceNavigate={canLeave} focused={!allQuestions} hidden={!allQuestions && field.key !== question} reviewerName={item.reviewer_name} onDirtyChange={(key, dirty) => { if (dirty) dirtyFields.current.add(key); else dirtyFields.current.delete(key) }} />)}
         </section>)}
         <div className="pilot-contributor-footer"><Button size="sm" disabled={questionIndex >= item.fields.length - 1} onClick={() => chooseQuestion(item.fields[questionIndex + 1].key)}>Next question</Button>{inRouter ? <Link className="pilot-primary-link" to="/" onClick={event => { if (!canLeave()) event.preventDefault() }}>Back to my work</Link> : <a className="pilot-primary-link" href={import.meta.env.BASE_URL} onClick={event => { if (!canLeave()) event.preventDefault() }}>Back to my work</a>}</div>
       </section>

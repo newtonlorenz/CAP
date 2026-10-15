@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { getApiErrorMessage } from '../../api/errors'
 import { preparationApi } from '../../api/preparation'
 import type { PreparationCase } from '../../types/preparation'
+import { invalidateDocumentationCollections } from '../../components/documentation/cache'
 
 type PauseReason = 'error' | 'conflict' | null
 
@@ -91,6 +92,7 @@ export function useCaseWrites(caseId: string, revision: number, metadataDirty = 
         void queryClient.invalidateQueries({ queryKey: ['preparation', 'cases'] })
         void queryClient.invalidateQueries({ queryKey: ['applications', 'item'] })
         void queryClient.invalidateQueries({ queryKey: ['preparation', 'review-queue'] })
+        void invalidateDocumentationCollections(queryClient)
         return updated
       } catch (caught) {
         if (!active.current) return null
