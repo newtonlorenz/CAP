@@ -622,6 +622,7 @@ export default function ReviewCycleDetail() {
     && status !== 'not_applicable'
     && !stripHtml(evidence).trim()
     && !item.evidence_files?.length
+    && !item.shared_evidence?.length
   const needsAttentionFor = (item: ReviewItemWithRequirement) => {
     if (isNonActionableType(item.requirement.requirement_type)) return false
     // Readiness is computed by the same assessment rules used for completion and exports.

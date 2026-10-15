@@ -2995,7 +2995,7 @@
     },
     {
       "path": "frontend/src/pages/ReviewCycleDetail.tsx",
-      "sha256": "b479aef2e99ae89232b07d9bd0789eb774068e8c9c6d38792ea6bf0722755da6"
+      "sha256": "b3ac3c7cf7935059c4d79d7c9fd50848c48779370dd4363a25ff35b650407fd8"
     },
     {
       "path": "frontend/src/pages/ReviewCycles.tsx",
@@ -3335,7 +3335,7 @@
     },
     {
       "path": "frontend/src/test/review_cycle_detail_filters.test.tsx",
-      "sha256": "7d888dd520f316f78e057dff898d5e36cacd70b716695913d05fbd0b82f929e1"
+      "sha256": "50590fa7ae9fe0c60fa21b436e6a240f7d0a2ebd6efd0b0414d12d1e397d650d"
     },
     {
       "path": "frontend/src/test/review_cycle_detail_hierarchy.test.tsx",
