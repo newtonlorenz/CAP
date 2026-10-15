@@ -100,3 +100,24 @@ an authority. Source paths are never returned by the API.
 Case revisions reject stale writes. Editing or reusing an answer clears acceptance;
 readiness recalculates evidence validity rather than storing a permanent green
 status. Template edits do not rewrite existing cases or requirement baselines.
+
+## Documentation register
+
+`models/documentation.py` separates documentation expectations, approved requirement
+version links, per-expectation coverage and auditor request reconciliation. The
+shared preparation evidence library owns the underlying material; documentation
+associations do not replace requirement assessments or legacy evidence records.
+
+`documentation_import.py` reuses the bounded local spreadsheet reader and retains
+all-sheet provenance. Import previews and source-row identities are durable, and
+revised workbook updates require an explicit revision-bound target.
+`documentation_suggestions.py` uses the existing Jev and AI transports with bounded
+candidate/excerpt inputs, validated IDs, explicit external-processing confirmation
+and persisted batch progress. Frozen source inputs and fingerprints remain separate
+from human decisions. Source text is data rather than provider instructions.
+
+`documentation_export.py` freezes selected file bytes by tenant-scoped content
+digest and records immutable source metadata. Archive manifests checksum the actual
+exported bytes and deduplicate identical files. Download and certification-package
+source checks enforce both current sources and original frozen project/form scope.
+Snapshots use normal configured upload storage and backup boundaries.

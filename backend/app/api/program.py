@@ -364,12 +364,16 @@ async def _get_submission_package_for_user(
     package = result.scalar_one_or_none()
     if package is None:
         raise HTTPException(status_code=404, detail="Submission package not found")
+    from app.services.documentation_packages import require_documentation_package_sources
+    await require_documentation_package_sources(db, package.id, current_user, "view")
     return package
 
 
 async def _require_package_access(db, current_user, package_id, action):
     package = await _get_submission_package_for_user(db, current_user, package_id)
     await require_access(db, CertificationProject, package.project_id, current_user, action)
+    from app.services.documentation_packages import require_documentation_package_sources
+    await require_documentation_package_sources(db, package.id, current_user, "export" if action == "export" else "view")
     return package
 
 
@@ -2711,7 +2715,7 @@ async def list_submission_package_artifacts(
 
     result = await db.execute(
         select(SubmissionPackageArtifact)
-        .where(SubmissionPackageArtifact.submission_package_id == package_id)
+        .where(SubmissionPackageArtifact.submission_package_id == package_id, access_clause(SubmissionPackageArtifact, current_user, "view"))
         .order_by(SubmissionPackageArtifact.created_at.asc())
     )
     rows = result.scalars().all()
@@ -2737,6 +2741,8 @@ async def create_submission_package_artifact(
     if package.status != "draft":
         raise HTTPException(status_code=409, detail="Artifacts can only be changed in a draft package. Locked packages are retained unchanged.")
 
+    if body.artifact_type == "documentation_register_snapshot":
+        raise HTTPException(422, "Attach a documentation snapshot through its handover workflow")
     item = SubmissionPackageArtifact(
         submission_package_id=package_id,
         artifact_type=body.artifact_type,
@@ -2794,6 +2800,8 @@ async def update_submission_package_artifact(
     artifact = artifact_result.scalar_one_or_none()
     if artifact is None:
         raise HTTPException(status_code=404, detail="Submission package artifact not found")
+    from app.services.documentation_packages import validate_artifact_source
+    await validate_artifact_source(db, artifact, current_user, "view")
 
     old_value = {
         "artifact_type": artifact.artifact_type,
@@ -2805,6 +2813,8 @@ async def update_submission_package_artifact(
         "notes": artifact.notes,
     }
     updates = body.model_dump(exclude_unset=True)
+    if artifact.documentation_snapshot_id and any(key in updates for key in ("artifact_type", "file_path", "link_url")):
+        raise HTTPException(422, "The frozen documentation source cannot be changed; attach a new snapshot in a draft package")
     for field, value in updates.items():
         setattr(artifact, field, value)
 
@@ -2883,6 +2893,7 @@ async def create_submission_package_bundle_manifest(
             {
                 "id": str(artifact.id),
                 "artifact_type": artifact.artifact_type,
+                "documentation_snapshot_id": str(artifact.documentation_snapshot_id) if artifact.documentation_snapshot_id else None,
                 "name": artifact.name,
                 "file_path": artifact.file_path,
                 "link_url": artifact.link_url,

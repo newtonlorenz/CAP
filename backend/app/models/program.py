@@ -262,6 +262,10 @@ class SubmissionPackage(Base):
 class SubmissionPackageArtifact(Base):
     __tablename__ = "submission_package_artifacts"
 
+    documentation_snapshot_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("documentation_snapshots.id"), nullable=True, index=True
+    )
+
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     submission_package_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("submission_packages.id"), nullable=False, index=True

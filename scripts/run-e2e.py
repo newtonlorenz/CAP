@@ -47,6 +47,10 @@ def run_browser_checks(env, extra_args, *, root=ROOT):
 
 def main():
     env = dict(os.environ)
+    backend_port = int(env.get("CAP_E2E_BACKEND_PORT", "18000"))
+    frontend_port = int(env.get("CAP_E2E_FRONTEND_PORT", "15173"))
+    if not all(1024 <= port <= 65535 for port in (backend_port, frontend_port)) or backend_port == frontend_port:
+        raise RuntimeError("Browser test ports must be distinct unprivileged ports.")
     env.update(
         APP_ENV="test",
         CAP_ALLOW_TEST_SEED="1",
@@ -59,9 +63,9 @@ def main():
         CELERY_TASK_ALWAYS_EAGER="false",
         REDIS_URL=env.get("E2E_REDIS_URL", "redis://127.0.0.1:25490/0"),
         CAP_PYTHON=sys.executable,
-        VITE_API_PROXY_TARGET="http://127.0.0.1:18000",
-        FRONTEND_BASE_URL="http://127.0.0.1:15173",
-        CORS_ORIGINS='["http://127.0.0.1:15173"]',
+        VITE_API_PROXY_TARGET=f"http://127.0.0.1:{backend_port}",
+        FRONTEND_BASE_URL=f"http://127.0.0.1:{frontend_port}",
+        CORS_ORIGINS=f'["http://127.0.0.1:{frontend_port}"]',
         ALLOWED_HOSTS='["127.0.0.1","localhost"]',
     )
     validate_test_database(env)
@@ -77,10 +81,10 @@ def main():
         )
     if not env.get("E2E_ADMIN_PASSWORD") or not env.get("SECRET_KEY"):
         raise RuntimeError("Set E2E_ADMIN_PASSWORD and SECRET_KEY for this test run.")
-    for port in (18000, 15173):
+    for port in (backend_port, frontend_port):
         with socket.socket() as probe:
             probe.bind(("127.0.0.1", port))
-    work = ROOT / "tmp" / "e2e"
+    work = Path(env["CAP_E2E_WORK_DIR"]).resolve() if env.get("CAP_E2E_WORK_DIR") else ROOT / "tmp" / "e2e"
     work.mkdir(parents=True, exist_ok=True)
     env.update(
         UPLOAD_DIR=str(work / "uploads"),
@@ -105,7 +109,7 @@ def main():
                 "--host",
                 "127.0.0.1",
                 "--port",
-                "18000",
+                str(backend_port),
             ],
             cwd=ROOT / "backend",
             env=env,
@@ -118,7 +122,7 @@ def main():
                     raise RuntimeError(f'Test backend failed; see {work / "backend.log"}')
                 try:
                     with urllib.request.urlopen(
-                        "http://127.0.0.1:18000/api/v1/health", timeout=1
+                        f"http://127.0.0.1:{backend_port}/api/v1/health", timeout=1
                     ) as response:
                         if response.status == 200:
                             break

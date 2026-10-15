@@ -44,6 +44,7 @@ export default function CaseField({
   focused = false,
   hidden = false,
   reviewerName,
+  initialEvidenceOpen = false,
 }: {
   caseId: string
   field: PreparationField
@@ -59,6 +60,7 @@ export default function CaseField({
   focused?: boolean
   hidden?: boolean
   reviewerName?: string | null
+  initialEvidenceOpen?: boolean
 }) {
   const response = incoming || EMPTY_RESPONSE
   const inputId = useId()
@@ -73,8 +75,9 @@ export default function CaseField({
   const draft = useResponseDraft(field, response, !readOnly, writes, onDirtyChange)
   const { value, reason, evidenceIds, dirty } = draft
   const [supportOpen, setSupportOpen] = useState(Boolean(
-    response.not_applicable_reason || (!focused && (response.evidence_ids.length || field.type === 'evidence')),
+    initialEvidenceOpen || response.not_applicable_reason || (!focused && (response.evidence_ids.length || field.type === 'evidence')),
   ))
+  useEffect(() => { if (initialEvidenceOpen) setSupportOpen(true) }, [initialEvidenceOpen])
   const copyValue = readOnly ? fieldValueToString(response.value) : value
   const copyReason = readOnly ? response.not_applicable_reason || '' : reason
   const answerText = field.type === 'yes_no'

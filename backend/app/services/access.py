@@ -12,10 +12,12 @@ MAX_DEPTH = 4
 
 def resource_models():
     from app.models.application import Application
+    from app.models.documentation import DocumentationRegister
     from app.models.preparation import PreparationCase, PreparationEvidence
     from app.models.program import CertificationProject
 
     return {
+        "documentation_register": DocumentationRegister,
         "application": Application,
         "certification_project": CertificationProject,
         "preparation_case": PreparationCase,
@@ -396,6 +398,68 @@ def inherited_clause(model, user, action, *, resolve=None):
             False,
         ),
     }
+    from app.models.documentation import (
+        AuditorRequestMapping, DocumentationAssessmentEvidence, DocumentationCoverage,
+        DocumentationExpectation, DocumentationReference, DocumentationRegister,
+        EvidenceGroup, EvidenceGroupVersion, ExpectationRequirement,
+    )
+    from app.models.documentation import DocumentationSnapshotSource
+    from app.models.documentation_integrations import (
+        DocumentationImport, DocumentationImportRow, DocumentationSnapshot, DocumentationSuggestionRun,
+    )
+    if model is DocumentationSnapshot:
+        from app.models.preparation import PreparationEvidence
+        source = aliased(DocumentationSnapshotSource)
+        hidden = []
+        for column, target in (
+            (source.evidence_id, PreparationEvidence), (source.project_id, CertificationProject),
+            (source.case_id, PreparationCase), (source.expectation_id, DocumentationExpectation),
+            (source.request_id, AuditorRequestMapping),
+            (source.application_id, Application), (source.review_cycle_id, ReviewCycle),
+            (source.review_item_id, ReviewItem), (source.review_file_id, ReviewItemEvidenceFile),
+        ):
+            predicates = [target.id == column, resolve(target, user, action)]
+            if user.role == "assigned_reviewer" and target is ReviewItem:
+                predicates.append(target.assigned_reviewer_id == user.id)
+            if user.role == "assigned_reviewer" and target is ReviewItemEvidenceFile:
+                predicates.append(exists(select(ReviewItem.id).where(ReviewItem.id == target.review_item_id, ReviewItem.assigned_reviewer_id == user.id).correlate_except(ReviewItem)))
+            if hasattr(target, "organization_id"):
+                predicates.append(tenant_clause(target, user))
+            hidden.append(and_(column.is_not(None), ~exists(select(target.id).where(*predicates).correlate_except(target))))
+        return and_(
+            exists(select(DocumentationRegister.id).where(
+                DocumentationRegister.id == model.register_id, tenant_clause(DocumentationRegister, user),
+                resolve(DocumentationRegister, user, action)).correlate_except(DocumentationRegister)),
+            ~exists(select(source.id).where(source.snapshot_id == model.id, or_(*hidden)).correlate_except(source)),
+        )
+    if model is SubmissionPackageArtifact:
+        parent_allowed = exists(select(SubmissionPackage.id).where(
+            SubmissionPackage.id == model.submission_package_id, resolve(SubmissionPackage, user, action)).correlate_except(SubmissionPackage))
+        source_action = "export" if action == "export" else "view"
+        snapshot_allowed = exists(select(DocumentationSnapshot.id).where(
+            DocumentationSnapshot.id == model.documentation_snapshot_id,
+            resolve(DocumentationSnapshot, user, source_action)).correlate_except(DocumentationSnapshot))
+        return and_(parent_allowed, or_(model.documentation_snapshot_id.is_(None), snapshot_allowed))
+    mapping.update({
+        DocumentationImport: (DocumentationRegister, DocumentationImport.register_id, False),
+        DocumentationImportRow: (DocumentationRegister, DocumentationImportRow.register_id, False),
+        DocumentationSuggestionRun: (DocumentationRegister, DocumentationSuggestionRun.register_id, False),
+        DocumentationSnapshotSource: (DocumentationSnapshot, DocumentationSnapshotSource.snapshot_id, False),
+    })
+    if model is DocumentationExpectation:
+        from app.services.documentation import expectation_clause
+        return expectation_clause(user, action)
+    if model is AuditorRequestMapping:
+        from app.services.documentation import request_clause
+        return request_clause(user, action)
+    mapping.update({
+        DocumentationCoverage: (DocumentationExpectation, DocumentationCoverage.expectation_id, False),
+        DocumentationReference: (DocumentationExpectation, DocumentationReference.expectation_id, False),
+        ExpectationRequirement: (DocumentationExpectation, ExpectationRequirement.expectation_id, False),
+        EvidenceGroup: (DocumentationRegister, EvidenceGroup.register_id, False),
+        EvidenceGroupVersion: (EvidenceGroup, EvidenceGroupVersion.group_id, False),
+        DocumentationAssessmentEvidence: (ReviewItem, DocumentationAssessmentEvidence.review_item_id, False),
+    })
     if model is EvidenceItem:
         # Evidence is private to its creator, operational owner and reviewer.
         # Account roles never bypass this relationship check.
@@ -421,7 +485,20 @@ def inherited_clause(model, user, action, *, resolve=None):
                     .correlate_except(target)
                 )
             )
-        return and_(*clauses)
+        from app.models.preparation import PreparationEvidence
+        shared = aliased(DocumentationAssessmentEvidence)
+        shared_item = aliased(ReviewItem)
+        shared_cycle = aliased(ReviewCycle)
+        hidden_shared = exists(select(shared.evidence_id).select_from(shared)
+            .join(shared_item, shared_item.id == shared.review_item_id)
+            .join(shared_cycle, shared_cycle.id == shared_item.review_cycle_id)
+            .where(shared_cycle.snapshot_id == Snapshot.id,
+                ~exists(select(PreparationEvidence.id).where(
+                    PreparationEvidence.id == shared.evidence_id,
+                    tenant_clause(PreparationEvidence, user),
+                    resolve(PreparationEvidence, user, action)).correlate_except(PreparationEvidence)))
+            .correlate_except(shared, shared_item, shared_cycle))
+        return and_(*clauses, ~hidden_shared)
     if model not in mapping:
         return True
     parent, foreign_key, nullable = mapping[model]

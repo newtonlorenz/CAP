@@ -154,6 +154,8 @@ class ReviewItemResponse(BaseModel):
     created_at: datetime
     comments: List[ReviewItemCommentResponse] = Field(default_factory=list)
     evidence_files: List[ReviewItemEvidenceFileResponse] = Field(default_factory=list)
+    shared_evidence: list[dict] = Field(default_factory=list)
+    shared_evidence_warning: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -215,6 +217,7 @@ class ReviewCycleReminderRequest(BaseModel):
 
 class RequirementSummary(BaseModel):
     id: uuid.UUID
+    requirement_set_version_id: uuid.UUID | None = None
     document_id: Optional[uuid.UUID]
     reference_id: str
     title: Optional[str]

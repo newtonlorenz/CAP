@@ -418,6 +418,7 @@ class SubmissionPackageArtifactUpdate(BaseModel):
 
 
 class SubmissionPackageArtifactResponse(BaseModel):
+    documentation_snapshot_id: uuid.UUID | None = None
     id: uuid.UUID
     submission_package_id: uuid.UUID
     artifact_type: str

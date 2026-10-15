@@ -1,3 +1,5 @@
+import RegisterReturnLink from '../components/documentation/RegisterReturnLink'
+import { registerSourceMatches, safeRegisterReturn } from '../components/documentation/processNavigation'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api/client'
@@ -43,6 +45,8 @@ export default function Preparation({
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const caseId = params.get('case')
+  const fieldKey = params.get('field')
+  const registerReturn = safeRegisterReturn(params.get('return_register'))
   const returnProject = params.get('return_project')
   const tab = tabs.some((item) => item.id === params.get('tab'))
     ? params.get('tab')!
@@ -93,6 +97,7 @@ export default function Preparation({
     jurisdictionById[id]?.name || 'Jurisdiction unavailable'
   return (
     <div className="space-y-6 pb-10">
+      <RegisterReturnLink />
       <header>
         <h1 className="text-3xl font-semibold">{title}</h1>
         <p className="mt-2 max-w-prose text-sm leading-relaxed text-muted">
@@ -160,9 +165,11 @@ export default function Preparation({
               {backLabel}
             </button>
           </div>
-        ) : caseQuery.data ? (
+        ) : caseQuery.data && registerReturn && !registerSourceMatches(params, caseQuery.data.fields.find(field => field.key === fieldKey)?.source) ? (<p role="alert" className="text-sm text-muted">The exact requirement version linked from the register is unavailable in this form question. Return to the register to refresh its mapping.</p>) : caseQuery.data ? (
           <CaseDetail
             key={caseId}
+            initialFieldKey={fieldKey || undefined}
+            initialEvidenceOpen={Boolean(registerReturn && params.get('evidence') === '1')}
             item={caseQuery.data}
             canEdit={canEdit}
             canManage={canManage}

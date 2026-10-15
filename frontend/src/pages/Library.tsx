@@ -1,3 +1,4 @@
+import DocumentationRegister from '../components/documentation/DocumentationRegister'
 import SectionNav from '../components/ui/SectionNav'
 import './workflow-pages.css'
 import { useQuery } from '@tanstack/react-query'
@@ -15,6 +16,7 @@ const sections = [
   { id: 'requirements', label: 'Requirements' },
   { id: 'templates', label: 'Form templates' },
   { id: 'evidence', label: 'Evidence' },
+  { id: 'documentation', label: 'Documentation register' },
   { id: 'forms', label: 'Existing forms' },
 ]
 
@@ -30,7 +32,7 @@ export default function Library() {
   const sourceDocument = params.get('sourceDocument') || undefined
   const sourceJurisdiction = params.get('jurisdiction') || jurisdictionId || undefined
   const returnTo = params.get('returnTo')
-  const safeReturn = returnTo && /^\/(licence-applications|certification-projects|preparation)(?:[/?]|$)/.test(returnTo) ? returnTo : null
+  const safeReturn = returnTo && /^\/(licence-applications|certification-projects|preparation|library|requirements)(?:[/?]|$)/.test(returnTo) ? returnTo : null
   const canManage = user?.role === 'admin' || user?.role === 'manager'
   const canEdit = canManage || user?.role === 'contributor'
   const users = useQuery({
@@ -46,7 +48,7 @@ export default function Library() {
   return <div className="workflow-page library-page space-y-6 pb-10">
     <header className="space-y-2">
       <h1 className="text-3xl font-semibold">{sections.find((item) => item.id === section)?.label}</h1>
-      <p className="max-w-prose text-sm leading-relaxed text-muted">Requirements describe obligations. Saved blank forms define reusable questions. Completed forms contain answers and supporting evidence.</p>
+      <p className="max-w-prose text-sm leading-relaxed text-muted">{section === 'documentation' ? 'Keep required records, source references, comments, and documents together in named sections.' : 'Requirements describe obligations. Saved blank forms define reusable questions. Completed forms contain answers and supporting evidence.'}</p>
       {safeReturn && <Link to={safeReturn} className="inline-block text-sm font-semibold text-accent underline">Return to your workspace</Link>}
     </header>
 
@@ -58,6 +60,7 @@ export default function Library() {
       <TemplateBuilder key={`${sourceDocument || ''}-${sourceJurisdiction || ''}-${kindScope || ''}`} canManage={canManage} kindScope={kindScope} jurisdictionId={sourceDocument ? sourceJurisdiction : jurisdictionId || undefined} initialImportSource={sourceDocument ? 'requirements' : undefined} initialRequirementsDocumentId={sourceDocument} />
     </>}
     {section === 'evidence' && <><p className="max-w-prose text-sm text-muted">Reuse files, notes and links in forms across the workflows. Evidence recorded against a requirement assessment remains with that assessment and its approved history.</p><EvidenceLibrary canEdit={canEdit} /></>}
+    {section === 'documentation' && <DocumentationRegister jurisdictionId={jurisdictionId || ''} canEdit={canEdit} heading="Registers" showIntroduction={false} />}
     {section === 'forms' && <>
       <p className="max-w-prose text-sm text-muted">Work on standalone annexes, audit forms and questionnaires, or link a form to a certification project. Application packs organise their forms in Licence Applications.</p>
       {(users.isError || projects.isError) && <p role="alert" className="text-sm text-warning">Some owners or projects could not be loaded. <button type="button" className="underline" onClick={() => { void users.refetch(); void projects.refetch() }}>Retry</button></p>}

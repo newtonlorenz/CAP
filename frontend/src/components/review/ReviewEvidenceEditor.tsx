@@ -5,6 +5,7 @@ import { formatDate } from '../../utils/dateFormat'
 import { buildReviewItemEvidencePreviewUrl, isImageEvidenceFilename } from '../../utils/reviewEvidence'
 import type { ReviewDraft } from '../../hooks/review/useReviewItemDrafts'
 import { useReviewEvidenceFiles } from '../../hooks/review/useReviewEvidenceFiles'
+import ReviewSharedEvidence from './ReviewSharedEvidence'
 
 function EvidenceThumbnailImage(props: { previewUrl: string; alt: string }) {
   const { previewUrl, alt } = props
@@ -186,7 +187,7 @@ export default function ReviewEvidenceEditor({ item, cycleId, active, draft, cha
 }) {
   const uploadId = `evidence-upload-${item.id}`
   return (
-    <div data-testid={`review-item-extra-fields-${item.id}`} className="review-evidence">
+    <div id={`review-evidence-${item.id}`} tabIndex={-1} data-testid={`review-item-extra-fields-${item.id}`} className="review-evidence">
       <label className="review-field-label" htmlFor={`evidence-text-${item.id}`}>
         {draft.requirement_status === 'not_applicable' || item.requirement.requirement_type === 'not_applicable' ? 'Applicability rationale' : 'Evidence'}
       </label>
@@ -232,6 +233,7 @@ export default function ReviewEvidenceEditor({ item, cycleId, active, draft, cha
       </div>
       {files.uploadingCounts[item.id] ? <p role="status" className="text-xs text-muted">Uploading {files.uploadingCounts[item.id]}…</p> : null}
       <EvidenceFiles item={item} cycleId={cycleId} active={active} files={files} />
+      <ReviewSharedEvidence cycleId={cycleId} itemId={item.id} active={active} links={item.shared_evidence} warning={item.shared_evidence_warning} />
     </div>
   )
 }

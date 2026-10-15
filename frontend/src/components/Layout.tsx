@@ -1,5 +1,5 @@
-import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useJurisdiction } from '../contexts/JurisdictionContext'
 import { ToastProvider } from '../contexts/ToastContext'
@@ -254,8 +254,39 @@ const adminItems: NavItem[] = [
 export default function Layout() {
   const { user, sessionError, isLoading: isAuthLoading } = useAuth()
   const { jurisdictionId, jurisdictions, isLoading: isJurisdictionLoading, error: jurisdictionError, retry: retryJurisdictions, setJurisdictionId } = useJurisdiction()
-  const { brand } = useSiteContent()
+  const { brand, footer } = useSiteContent()
   const location = useLocation()
+  const navigate = useNavigate()
+  const jurisdictionRequest = useRef(0)
+  const pendingJurisdiction = useRef<{ id: string; fromKey: string; request: number } | null>(null)
+  useLayoutEffect(() => {
+    const pending = pendingJurisdiction.current
+    if (!pending || location.key === pending.fromKey) return
+    pendingJurisdiction.current = null
+    // Apply only the requested navigation after the draft blocker lets it commit.
+    // The local pending request prevents history entries from replaying a switch.
+    if (location.state?.jurisdictionChange === pending.request) setJurisdictionId(pending.id)
+  }, [location, setJurisdictionId])
+  const changeJurisdiction = (next: string) => {
+    if (next === jurisdictionId) return
+    const params = new URLSearchParams(location.search)
+    const resourceKeys: Record<string, string[]> = {
+      '/licence-applications': ['application', 'case', 'create'],
+      '/certification-projects': ['project'],
+      '/change-management': ['change'],
+      '/preparation': ['case'],
+      '/library': ['register'],
+    }
+    const collection = location.pathname.startsWith('/requirements/') ? '/requirements'
+      : location.pathname.startsWith('/review-cycles/') ? '/review-cycles' : location.pathname
+    const hasResource = collection !== location.pathname || resourceKeys[collection]?.some(key => params.has(key))
+    if (!hasResource) { setJurisdictionId(next); return }
+    // Resource pages align the market with their record. Leave that record first
+    // so its effect cannot overwrite the user's selection.
+    const request = ++jurisdictionRequest.current
+    pendingJurisdiction.current = { id: next, fromKey: location.key, request }
+    navigate({ pathname: collection, search: collection === '/library' && params.get('section') === 'documentation' ? '?section=documentation' : '', hash: '' }, { state: { jurisdictionChange: request } })
+  }
   const [resourcesOpen, setResourcesOpen] = useState(false)
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const definition = useMemo(() => getProductTour(location.pathname, location.search, location.hash), [location.pathname, location.search, location.hash])
@@ -339,7 +370,7 @@ export default function Layout() {
   const jurisdictionSelector = (variant: string) => <div className="cap-market-selector">
     <label className="sr-only" htmlFor={`jurisdiction-${variant}`}>Jurisdiction</label>
     <select id={`jurisdiction-${variant}`} aria-label="Jurisdiction selector" value={jurisdictionId || ''}
-      onChange={event => setJurisdictionId(event.target.value)} disabled={isJurisdictionLoading || jurisdictions.length <= 1}>
+      onChange={event => changeJurisdiction(event.target.value)} disabled={isJurisdictionLoading || jurisdictions.length <= 1}>
       {!jurisdictions.length && <option value="">{isJurisdictionLoading ? 'Loading…' : 'No active jurisdictions'}</option>}
       {jurisdictions.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
     </select>
@@ -369,7 +400,7 @@ export default function Layout() {
           </nav>
         </aside>
       </>}
-      <div ref={contentRef} className="min-w-0">
+      <div ref={contentRef} className="flex min-h-screen min-w-0 flex-col">
         <header className="app-topbar">
           <button type="button" data-testid="mobile-nav-toggle" onClick={() => setIsMobileNavOpen(value => !value)} className="cap-mobile-toggle" aria-label="Toggle navigation" aria-expanded={isMobileNavOpen} aria-controls="mobile-navigation"><HamburgerIcon /></button>
           <Link to="/" className="cap-header-brand" aria-label={`${brand.name} overview`}><Brand /></Link>
@@ -388,13 +419,19 @@ export default function Layout() {
           </nav>
           <div className="cap-header-actions"><NavigationSearch items={pageItems} /><div className="cap-profile"><ProfileDropdown /></div></div>
         </header>
-        <main id="main-content" tabIndex={-1} className="app-modern-content">
-          {tour.showInvitation && <ProductTourInvitation title={definition.title} summary={definition.summary} stepCount={definition.steps.length} interrupted={tour.record?.status === 'interrupted'} onStart={() => { void tour.start(tour.record?.status === 'interrupted') }} onDismiss={tour.dismiss} />}
+        <main id="main-content" tabIndex={-1} className="app-modern-content flex-1">
+          {tour.showInvitation && !(location.pathname === '/library' && new URLSearchParams(location.search).get('section') === 'documentation') && <ProductTourInvitation title={definition.title} summary={definition.summary} stepCount={definition.steps.length} interrupted={tour.record?.status === 'interrupted'} onStart={() => { void tour.start(tour.record?.status === 'interrupted') }} onDismiss={tour.dismiss} />}
           {tour.error && <p role="alert" className="mb-4 rounded-lg border border-warning-line bg-warning-soft p-3 text-sm text-warning">{tour.error}</p>}
           {sessionError && <p role="alert" className="mb-4 rounded-md border border-danger-line bg-danger-soft p-3 text-sm text-danger">{sessionError}</p>}
           {jurisdictionError && <p role="alert" className="mb-4 rounded-md border border-warning-line bg-warning-soft p-3 text-sm text-warning">{jurisdictionError} <button type="button" className="underline" onClick={retryJurisdictions}>Retry</button></p>}
           {noJurisdiction && location.pathname !== '/account' ? <section className="cap-empty-state"><h1>Set up a jurisdiction</h1><p>An active jurisdiction is needed to organise requirements, projects and reviews.</p>{user?.role === 'admin' ? <NavLink className="mt-4 inline-block text-sm font-semibold text-accent underline" to="/jurisdictions">Manage jurisdictions</NavLink> : <p>Ask an administrator to activate your jurisdiction.</p>}</section> : <Suspense fallback={<p role="status" className="py-12 text-center text-muted">Loading workspace…</p>}><Outlet /></Suspense>}
         </main>
+        {user && <footer className="cap-app-footer" aria-label="Session and software information">
+          <span>Signed in as <strong>{user.full_name || user.email}</strong></span>
+          {footer.enterprise && <span>Enterprise: <strong>{footer.enterprise}</strong></span>}
+          <span>{footer.confidentiality}</span>
+          <span>Version {import.meta.env.VITE_APP_VERSION}{import.meta.env.VITE_APP_REVISION && import.meta.env.VITE_APP_REVISION !== 'unknown' ? ` (${import.meta.env.VITE_APP_REVISION.slice(0, 7)})` : ''}</span>
+        </footer>
       </div>
     </div>
   </ToastProvider>

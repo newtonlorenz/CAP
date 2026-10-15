@@ -22,6 +22,9 @@ from app.api.market_packs import router as market_packs_router
 from app.api.program import router as program_router
 from app.api.applications import router as applications_router
 from app.api.access import router as access_router
+from app.api.documentation import router as documentation_router
+from app.api.documentation_packages import router as documentation_packages_router
+from app.api.documentation_integrations import router as documentation_integrations_router
 from app.api.preparation import router as preparation_router
 from app.api.preparation_evidence import router as preparation_evidence_router
 from app.api.preparation_export import router as preparation_export_router
@@ -92,6 +95,9 @@ app.include_router(market_packs_router)
 app.include_router(program_router)
 app.include_router(applications_router)
 app.include_router(access_router)
+app.include_router(documentation_router)
+app.include_router(documentation_packages_router)
+app.include_router(documentation_integrations_router)
 app.include_router(preparation_router)
 app.include_router(preparation_evidence_router)
 app.include_router(preparation_export_router)
