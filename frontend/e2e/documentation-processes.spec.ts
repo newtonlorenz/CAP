@@ -168,7 +168,9 @@ for (const kind of ['review', 'application'] as const) {
     await expect(row.getByRole('cell').last().getByRole('button', { name: 'Manage documents', exact: true })).toBeVisible()
     await page.reload()
     await expect(row.getByRole('cell').nth(3)).toContainText(data.evidence[1].title, { timeout: 20_000 })
-    for (let index = 0; index < 4; index++) await expect(row.getByRole('cell').nth(index).getByRole('button')).toHaveCount(0)
+    for (let index = 0; index < 3; index++) await expect(row.getByRole('cell').nth(index).getByRole('button')).toHaveCount(0)
+    await expect(row.getByRole('cell').nth(3).getByRole('button', { name: `Open ${data.evidence[1].title}`, exact: true })).toBeVisible()
+    await expect(row.getByRole('cell').last().getByRole('button', { name: `Open ${data.evidence[1].title}`, exact: true })).toHaveCount(0)
     const evidenceAfter = (await (await page.request.get('/api/v1/preparation/evidence?limit=500')).json()).items
     expect(evidenceAfter.map((item: { id: string }) => item.id).sort()).toEqual(evidenceBefore.map((item: { id: string }) => item.id).sort())
     const finalRow = await (await page.request.get(`/api/v1/documentation/expectations/${data.row.id}`)).json()

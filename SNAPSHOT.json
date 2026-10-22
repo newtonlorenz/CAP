@@ -2219,7 +2219,7 @@
     },
     {
       "path": "frontend/e2e/documentation-processes.spec.ts",
-      "sha256": "2ba5033cf96509ddd2f08cf8b4c1871ae8cdd3ce94d8fa1b2b0580436395e0d2"
+      "sha256": "0b7f8016688fe17a554437c3d205a74839959468815e71cc626532de78dfd42a"
     },
     {
       "path": "frontend/e2e/documentation.spec.ts",
@@ -2583,7 +2583,7 @@
     },
     {
       "path": "frontend/src/components/documentation/RegisterEntryRow.tsx",
-      "sha256": "300eae630a7f391f8fc12a67c2078d60d159da4675dc53677f27bf4e76d43a0e"
+      "sha256": "ed74c17ed7bda872ef3217e1d57e48eee0c56620a69f27a64f17267ceba2d77e"
     },
     {
       "path": "frontend/src/components/documentation/RegisterHandover.tsx",
