@@ -983,15 +983,15 @@
     },
     {
       "path": "backend/requirements-dev.lock",
-      "sha256": "1d9cfb75140df090ceeba3328f80a61d9fb0ab69de25050847eea9a30fd48075"
+      "sha256": "015c38674bc87214e12bbd336bb0d42ec726faa6c56742fa65b4811aa1a1dcbc"
     },
     {
       "path": "backend/requirements-structured.lock",
-      "sha256": "6a040e37eecfcc646c05a5921640dedd4858e369c90e9614ebc15bebb795631b"
+      "sha256": "408876cfcc6141933971439fca6d70ccbab79d82170b71a186485ace7ab2c5fb"
     },
     {
       "path": "backend/requirements.lock",
-      "sha256": "8a31cf8b352ba59a8efecf07af03eb340bbb3bd0c662b2a9fa1f753407f613f6"
+      "sha256": "f2c41d24763800e04f1d5ad4ad68e3e00d4161aefba7ef41935c3ae59cd78325"
     },
     {
       "path": "backend/start-web.sh",
@@ -1539,7 +1539,7 @@
     },
     {
       "path": "docs/public/third-party/inventory.json",
-      "sha256": "d6ecdaa0b96f4c4beaa2b69a464296e9d3ec53773a2129787a4232fe70931ae1"
+      "sha256": "ccb7ad247907973021cf6813a376626f0576966b3ec8c27b80ab6be38e0f2e4e"
     },
     {
       "path": "docs/public/third-party/npm/@page-feedback/react/LICENSE",
@@ -1838,7 +1838,7 @@
       "sha256": "c358cdf77f28bbab50d4a754e123118339c15230349e82bf66489cece3ac093a"
     },
     {
-      "path": "docs/public/third-party/python/certifi/certifi-2026.7.22.dist-info/licenses/LICENSE",
+      "path": "docs/public/third-party/python/certifi/certifi-2026.10.19.dist-info/licenses/LICENSE",
       "sha256": "e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7"
     },
     {
@@ -1982,7 +1982,7 @@
       "sha256": "0d48994da4d1321e395b5e64a724ed4dec63fb96b88ac5b88fc014771e690821"
     },
     {
-      "path": "docs/public/third-party/python/pillow/pillow-12.3.0.dist-info/licenses/LICENSE",
+      "path": "docs/public/third-party/python/pillow/pillow-13.0.0.dist-info/licenses/LICENSE",
       "sha256": "dda12a98c1979cf3d94df1cff45d27a4cb3f04a60c76f76902ac54cac03ec0ce"
     },
     {
@@ -2219,7 +2219,7 @@
     },
     {
       "path": "frontend/e2e/documentation-processes.spec.ts",
-      "sha256": "2ba5033cf96509ddd2f08cf8b4c1871ae8cdd3ce94d8fa1b2b0580436395e0d2"
+      "sha256": "6a797c539a5a346850fa0f6a68b54c2bfd16158b2dcd24b7b0ad4ab4a627a2b1"
     },
     {
       "path": "frontend/e2e/documentation.spec.ts",
@@ -2311,7 +2311,7 @@
     },
     {
       "path": "frontend/package-lock.json",
-      "sha256": "6f00a3e0d5e4177054cac8a2055f601166bf6b447ee827ee71d80d3485dd9b37"
+      "sha256": "d96c1320a7bbccd5ab559d25c21bc87336a50cbe05caf601d3644df5feec9c44"
     },
     {
       "path": "frontend/package.json",
@@ -2583,7 +2583,7 @@
     },
     {
       "path": "frontend/src/components/documentation/RegisterEntryRow.tsx",
-      "sha256": "300eae630a7f391f8fc12a67c2078d60d159da4675dc53677f27bf4e76d43a0e"
+      "sha256": "fa70cd0fcee466ad73a4f8ed0c37dca044fa278de754e2a22b3743c0f63ab043"
     },
     {
       "path": "frontend/src/components/documentation/RegisterHandover.tsx",
@@ -2711,7 +2711,7 @@
     },
     {
       "path": "frontend/src/components/review/ReviewSharedEvidence.tsx",
-      "sha256": "ec66be3cc37a728f1cdcd16167fdd72b27631ec049389e873e824cbdb3bb9edb"
+      "sha256": "63f5c0bedf1f2b48c349df077216fd53760dd6019713e2c5a020a2550a416c49"
     },
     {
       "path": "frontend/src/components/ui/Badge.tsx",
@@ -3171,7 +3171,7 @@
     },
     {
       "path": "frontend/src/test/dashboard_components.test.tsx",
-      "sha256": "27d78ed1162a1ccf5d21cb525359c13ae6744f12c1e36a99a6d629b5fab1dcca"
+      "sha256": "5083f4c8b7cee7e93afa2f4065e725d0febeab832ca881486540b6ab4e15328e"
     },
     {
       "path": "frontend/src/test/decision_modal.test.tsx",
@@ -3519,7 +3519,7 @@
     },
     {
       "path": "publication-manifest.json",
-      "sha256": "9b83a55141f6b2282e7f379f78e3f7b0eb5051fd32dae191ce68346831435e2b"
+      "sha256": "cd7d1d95ba014f574ea7750eeceff8ad3783589d1c81be2842da3facdabe3533"
     },
     {
       "path": "scripts/check-release-lifecycle.py",

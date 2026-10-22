@@ -86,10 +86,10 @@
     {
       "ecosystem": "python",
       "name": "certifi",
-      "version": "2026.7.22",
+      "version": "2026.10.19",
       "licence": "MPL-2.0",
       "notices": [
-        "docs/public/third-party/python/certifi/certifi-2026.7.22.dist-info/licenses/LICENSE"
+        "docs/public/third-party/python/certifi/certifi-2026.10.19.dist-info/licenses/LICENSE"
       ]
     },
     {
@@ -330,10 +330,10 @@
     {
       "ecosystem": "python",
       "name": "pillow",
-      "version": "12.3.0",
+      "version": "13.0.0",
       "licence": "MIT-CMU",
       "notices": [
-        "docs/public/third-party/python/pillow/pillow-12.3.0.dist-info/licenses/LICENSE"
+        "docs/public/third-party/python/pillow/pillow-13.0.0.dist-info/licenses/LICENSE"
       ]
     },
     {
@@ -840,10 +840,10 @@
     {
       "ecosystem": "npm",
       "name": "follow-redirects",
-      "version": "1.16.0",
+      "version": "1.16.1",
       "lock_path": "node_modules/follow-redirects",
       "licence": "MIT",
-      "integrity": "sha512-y5rN/uOsadFT/JfYwhxRS5R7Qce+g3zG97+JrtFZlC9klX/W5hD7iiLzScI4nZqUS7DNUdhPgw4xI8W2LuXlUw==",
+      "integrity": "sha512-FNvFGzoMLWmE6Yj9spb/zjd7yiNCHiAW9/Tg9CXrQ8wuu32HtlJOwWO11OJafl5FfY3DxTdQ0vj42zU1kvv5jg==",
       "notices": [
         "docs/public/third-party/npm/follow-redirects/LICENSE"
       ]

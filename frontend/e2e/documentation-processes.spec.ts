@@ -125,6 +125,19 @@ for (const kind of ['review', 'application'] as const) {
       await expect(documents.getByText('Documents saved to the existing form question. Review acceptance is separate.', { exact: true })).toBeVisible()
     }
     await expect(documents.getByText(data.evidence[0].title, { exact: true })).toBeVisible()
+    if (kind === 'review') {
+      const current = await (await page.request.get(`/api/v1/documentation/expectations/${data.row.id}`)).json()
+      const file = current.process_targets[0].collection.items.find((item: { evidence_id?: string }) => item.evidence_id === data.evidence[0].id)
+      expect(file.download_href).toContain(`/review-cycles/${data.process.id}/items/`)
+      await documents.getByRole('button', { name: 'Close dialog', exact: true }).click()
+      const processDownload = page.waitForResponse(response => new URL(response.url()).pathname === `/api/v1${file.download_href}`, { timeout: 5000 })
+      const download = page.waitForEvent('download', { timeout: 5000 })
+      const [response, saved] = await Promise.all([processDownload, download, row.getByRole('cell').nth(3).getByText(data.evidence[0].title, { exact: true }).click()])
+      expect(response.status()).toBe(200)
+      expect(saved.suggestedFilename()).toBe('canonical-synthetic.txt')
+      await expect(page.getByRole('dialog', { name: data.evidence[0].title, exact: true })).toHaveCount(0)
+      await row.getByRole('button', { name: 'Manage documents', exact: true }).click()
+    }
     await documents.getByRole('link', { name: 'Open evidence collection', exact: true }).click()
     await expect(page).toHaveURL(kind === 'review' ? /\/review-cycles\// : /\/licence-applications\?/)
     expect(new URL(page.url()).searchParams.get('return_register')).toContain(data.register.id)
@@ -168,7 +181,9 @@ for (const kind of ['review', 'application'] as const) {
     await expect(row.getByRole('cell').last().getByRole('button', { name: 'Manage documents', exact: true })).toBeVisible()
     await page.reload()
     await expect(row.getByRole('cell').nth(3)).toContainText(data.evidence[1].title, { timeout: 20_000 })
-    for (let index = 0; index < 4; index++) await expect(row.getByRole('cell').nth(index).getByRole('button')).toHaveCount(0)
+    for (let index = 0; index < 3; index++) await expect(row.getByRole('cell').nth(index).getByRole('button')).toHaveCount(0)
+    await expect(row.getByRole('cell').nth(3).getByRole('button', { name: `Open ${data.evidence[1].title}`, exact: true })).toBeVisible()
+    await expect(row.getByRole('cell').last().getByRole('button', { name: `Open ${data.evidence[1].title}`, exact: true })).toHaveCount(0)
     const evidenceAfter = (await (await page.request.get('/api/v1/preparation/evidence?limit=500')).json()).items
     expect(evidenceAfter.map((item: { id: string }) => item.id).sort()).toEqual(evidenceBefore.map((item: { id: string }) => item.id).sort())
     const finalRow = await (await page.request.get(`/api/v1/documentation/expectations/${data.row.id}`)).json()
