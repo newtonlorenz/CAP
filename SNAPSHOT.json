@@ -3171,7 +3171,7 @@
     },
     {
       "path": "frontend/src/test/dashboard_components.test.tsx",
-      "sha256": "27d78ed1162a1ccf5d21cb525359c13ae6744f12c1e36a99a6d629b5fab1dcca"
+      "sha256": "5083f4c8b7cee7e93afa2f4065e725d0febeab832ca881486540b6ab4e15328e"
     },
     {
       "path": "frontend/src/test/decision_modal.test.tsx",
