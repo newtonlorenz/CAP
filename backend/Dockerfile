@@ -1,7 +1,8 @@
 FROM python:3.12.15-slim@sha256:ddb0207ae1f0356c2b724d740769b0c5f5f51cc54a0525178f721825f78fe74c AS ocr_build
 # CAP only reads PNG pages rendered locally by PDFium. Exclude Tesseract's
 # optional URL/archive readers and keep compilers out of the runtime image.
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update && apt-get install -y --no-install-recommends \
     cmake g++ make pkg-config libleptonica-dev \
     && rm -rf /var/lib/apt/lists/*
 ADD --checksum=sha256:9218e62793116d42a9f6d14cd9348518b27f382096eea3d0f2d1a24616bb5884 \
@@ -20,7 +21,8 @@ FROM python:3.12.15-slim@sha256:ddb0207ae1f0356c2b724d740769b0c5f5f51cc54a052517
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.revision=$VCS_REF
 WORKDIR /app
-RUN apt-get update && apt-get upgrade -y \
+RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends postgresql-client \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 cap && useradd --uid 10001 --gid cap --no-create-home cap

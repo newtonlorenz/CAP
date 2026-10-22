@@ -67,7 +67,7 @@
     },
     {
       "path": "backend/Dockerfile",
-      "sha256": "55808adabb6df5f88245034d1767e9c7f6203d6c3597c4c98f33ec0493ae49b2"
+      "sha256": "f037ab098accbd261e3d6521854bdfaed0ae36bff440f1073c0c387fd5397417"
     },
     {
       "path": "backend/alembic.ini",
