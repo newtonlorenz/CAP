@@ -152,6 +152,14 @@ async def test_optional_process_uses_exact_pinned_item_and_never_guesses_printed
 ):
     process = review_process
     owner = process["owner"]
+    process["requirement"].title = process["requirement"].reference_id
+    wording = "\n".join(["Keep a synthetic oversight record for every decision & review."] * 40)
+    process["requirement"].text = "<p>Keep a <strong>synthetic oversight record</strong> for every decision &amp; review.</p>" * 40
+    section = await db_session.get(Requirement, process["requirement"].parent_id)
+    section.title = section.reference_id
+    section.text = "<p>Applicant &amp; <strong>scope</strong></p>"
+    process["item"].responsible_user_id = owner["user"].id
+    await db_session.commit()
     register = await create_register(client, owner, default_jurisdiction)
     row = await create_expectation(client, owner, register,
         source_reference=process["requirement"].reference_id)
@@ -162,7 +170,16 @@ async def test_optional_process_uses_exact_pinned_item_and_never_guesses_printed
         headers=owner["headers"], params={"q": process["requirement"].reference_id}))
     assert candidates["total"] == 1
     assert str(candidates["items"][0]["review_item_id"]) == str(process["item"].id)
+    candidate = candidates["items"][0]
+    assert candidate["requirement_text"] == wording[:1000]
+    assert candidate["requirement_text_truncated"] is True
+    assert candidate["requirement_context"] == [{"reference_id": "1", "title": "Applicant & scope"}]
+    assert candidate["set_name"] == "Annex A"
+    assert candidate["process_name"] == process["cycle"]["name"]
+    assert candidate["owner_name"] == owner["user"].full_name
+    assert candidate["version_number"] == process["version"].version_number
     row = await bind_targets(client, owner, row, [process["target"]])
+    assert "requirement_text" not in row["process_targets"][0], "Picker previews must not enlarge every register row"
     assert [(link["requirement_id"], link["requirement_set_version_id"]) for link in row["requirements"]] == [
         (str(process["requirement"].id), str(process["version"].id))]
     assert str(process["replacement"].id) not in str(row["requirements"])
@@ -341,6 +358,10 @@ async def test_process_source_access_and_assignment_cannot_be_bypassed_through_r
     await db_session.commit()
     assigned = await expectation_current(client, reviewer_actor, row)
     assert [item["evidence_id"] for item in collection(assigned)["items"]] == [evidence["id"]]
+    assigned_options = await checked(await client.get(f"{BASE}/expectations/{row['id']}/process-targets",
+        headers=reviewer_actor["headers"]))
+    assert [item["requirement_text"] for item in assigned_options["items"]] == [process["requirement"].text]
+    assert assigned_options["items"][0]["requirement_context"] == [], "Unassigned ancestor wording must stay hidden"
 
 
 async def test_licence_collection_reuses_the_included_approved_source_and_preserves_approved_archive(
@@ -351,6 +372,15 @@ async def test_licence_collection_reuses_the_included_approved_source_and_preser
     application, case_id = await sourced_application(client, owner, default_jurisdiction, process)
     register = await create_register(client, owner, default_jurisdiction)
     await bind_process(client, owner, register, application_id=application["id"])
+    process["document"].name = "Synthetic source Annex A"
+    await db_session.commit()
+    options = await checked(await client.get(f"{BASE}/registers/{register['id']}/process-targets",
+        headers=owner["headers"], params={"q": "registered name"}))
+    assert {item["field_key"] for item in options["items"]} == {"proof", "proof_alias"}
+    assert all(item["requirement_text"] == "Enter your registered name" for item in options["items"])
+    assert all(item["requirement_text_truncated"] is False for item in options["items"])
+    assert all(item["set_name"] == "Synthetic source Annex A" for item in options["items"])
+    assert all(item["process_name"] == application["name"] for item in options["items"])
     row = await create_expectation(client, owner, register)
     target = {"case_id": case_id, "field_key": "proof", **process["source_identity"]}
     row = await bind_targets(client, owner, row, [target])

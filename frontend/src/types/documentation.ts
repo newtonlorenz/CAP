@@ -16,6 +16,8 @@ export interface ProcessTarget {
   id?: string; available: boolean; kind?: 'review_item' | 'application_response'; review_item_id?: string; review_cycle_id?: string
   case_id?: string; field_key?: string; requirement_id?: string; requirement_set_version_id?: string
   reference_id?: string; title?: string; href?: string; owner_name?: string; case_name?: string; set_name?: string; version_number?: number
+  process_name?: string; requirement_text?: string; requirement_text_truncated?: boolean
+  requirement_context?: { reference_id: string; title: string }[]
   collection?: {
     application_status?: string; items: ProcessEvidence[]; readonly: boolean; can_edit?: boolean; unavailable?: boolean; warning?: string | null
     has_review_notes?: boolean; review_notes_summary?: string; shared_evidence_uri?: string; legacy_files_uri?: string; evidence_changed_at?: string | null

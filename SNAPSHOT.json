@@ -735,11 +735,11 @@
     },
     {
       "path": "backend/app/services/documentation_process_applications.py",
-      "sha256": "ac076e417d470add92e9d9964dd6d177f8b1d61eb0374417e759d98a1e1baabd"
+      "sha256": "5e3318a107be14fbbc11598b78159aa76f9123357199e41d6115943eb7300118"
     },
     {
       "path": "backend/app/services/documentation_processes.py",
-      "sha256": "c93976b8b53085f1afe7c8a111316131c99543f5fd7152fdfce96fea8a603d4b"
+      "sha256": "2e49e72edda161f2b681977c6059ad66e5bed928fee0efb65485a92310e67d96"
     },
     {
       "path": "backend/app/services/documentation_review.py",
@@ -1135,7 +1135,7 @@
     },
     {
       "path": "backend/tests/test_documentation_processes.py",
-      "sha256": "924403ca0eed67b040be72f44506fc8e5499a19bf1ed483317203609ca1dc035"
+      "sha256": "4074c7a7f7bbc8f48dcea38588ec90ac17f16d5ae27710f736a19b4705b702a8"
     },
     {
       "path": "backend/tests/test_documentation_register.py",
@@ -2575,7 +2575,7 @@
     },
     {
       "path": "frontend/src/components/documentation/ProcessTargetPicker.tsx",
-      "sha256": "dd0cd06681ec8cfe1d2d8d69973023acc61db0ef450462d68285f11d352da04f"
+      "sha256": "ec02cdc64acac8c708041a52120822ebc8891207390f56a33bab44b0406b0a9e"
     },
     {
       "path": "frontend/src/components/documentation/RegisterDocumentPreview.tsx",
@@ -3183,7 +3183,7 @@
     },
     {
       "path": "frontend/src/test/documentation_dialogs.test.tsx",
-      "sha256": "7068c1384a830a52e52de807bd1429eba7747600d44a912e80f9d40e5bfe611a"
+      "sha256": "2cd5a6ff897c9553f3aec444d06ffce9f158852befa3ece63c8516611e616e76"
     },
     {
       "path": "frontend/src/test/draft_navigation.test.tsx",
@@ -3423,7 +3423,7 @@
     },
     {
       "path": "frontend/src/types/documentation.ts",
-      "sha256": "7a7a7e679ca763aa3a3d0a477f759e8e94988ca4968fd4638655b4fa9da28775"
+      "sha256": "7dffcae0138179bf51f35e339a139070b87c1ac0506160b95f7cbd67feeca846"
     },
     {
       "path": "frontend/src/types/index.ts",

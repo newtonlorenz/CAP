@@ -196,6 +196,7 @@ async def application_case(db, application_id, case_id, register, user, action="
 
 
 async def application_targets(db, application_id, register, user, q="", skip=0, limit=100):
+    from app.services.documentation_processes import requirement_picker_text
     summary = await application_summary(db, application_id, register, user)
     cases = (
         await db.scalars(
@@ -216,6 +217,8 @@ async def application_targets(db, application_id, register, user, q="", skip=0, 
     source_context = await batch_field_sources(
         db, [field for fields in case_fields.values() for field in fields], register, user
     )
+    wording_by_id = {id_: requirement_picker_text(requirement.text)
+        for id_, requirement in source_context[0].items()}
     items = []
     needle = q.strip().casefold()
     for case in cases:
@@ -234,9 +237,10 @@ async def application_targets(db, application_id, register, user, q="", skip=0, 
                 if error.status_code in (404, 422):
                     continue
                 raise
+            wording = wording_by_id[requirement.id]
             if (
                 needle
-                and needle not in f"{case.name} {field.label} {requirement.reference_id}".casefold()
+                and needle not in f"{case.name} {field.label} {requirement.reference_id} {requirement.title or ''} {wording}".casefold()
             ):
                 continue
             items.append(
@@ -251,7 +255,10 @@ async def application_targets(db, application_id, register, user, q="", skip=0, 
                     "requirement_id": str(requirement.id),
                     "requirement_set_version_id": str(version.id),
                     "version_number": version.version_number,
-                    "set_name": field.source.document_name,
+                    "set_name": source_context[2][version.document_id].name or source_context[2][version.document_id].filename,
+                    "process_name": summary["name"],
+                    "requirement_text": wording[:1000],
+                    "requirement_text_truncated": len(wording) > 1000,
                     "reference_id": requirement.reference_id,
                     "href": application_href(application_id, case.id, field.key),
                     "application_status": summary["status"],
