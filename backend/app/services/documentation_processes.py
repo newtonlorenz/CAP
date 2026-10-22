@@ -1,8 +1,9 @@
 """Explicit process pointers and live projections of canonical owner collections."""
+import re
 import uuid
 
 from fastapi import HTTPException
-from sqlalchemy import delete, exists, func, or_, select
+from sqlalchemy import delete, exists, func, literal, or_, select
 
 from app.models.document import Document
 from app.models.user import User
@@ -12,6 +13,7 @@ from app.models.program import CertificationProject, RequirementSetVersion, Revi
 from app.models.requirement import Requirement
 from app.models.review import ReviewCycle, ReviewItem
 from app.services.access import access_clause, require_access, tenant_clause
+from app.services.review_assessment import plain_text
 
 
 def effective_process_register(register, expectation):
@@ -164,12 +166,92 @@ async def process_targets(db, register, user, q="", skip=0, limit=100):
         return {"items": [], "total": 0}
     cycle = await get_review_process(db, register.review_cycle_id, register, user)
     query = review_target_query(cycle, register, user)
-    if q:
-        query = query.where(or_(Requirement.reference_id.icontains(q, autoescape=True), Requirement.title.icontains(q, autoescape=True), Requirement.text.icontains(q, autoescape=True)))
-    total = await db.scalar(select(func.count()).select_from(query.subquery()))
-    items = (await db.execute(query.order_by(Requirement.document_id, Requirement.sort_order, Requirement.reference_id, ReviewItem.id).offset(skip).limit(limit))).all()
-    return {"items": [review_target_metadata(item, requirement, version, document, owner, cycle)
-        for item, requirement, version, document, owner in items], "total": total}
+    ordered = query.order_by(Requirement.document_id, Requirement.sort_order,
+        Requirement.reference_id, Requirement.id, ReviewItem.id)
+    needle = " ".join(q.casefold().split())
+    wordings = {}
+    if needle:
+        # Stream scalar source columns, not every ORM target or its evidence collection.
+        # Requirement ordering keeps duplicate review items adjacent for one normalization.
+        sources = await db.stream(ordered.with_only_columns(
+            ReviewItem.id.label("review_item_id"), Requirement.id.label("requirement_id"),
+            Requirement.reference_id, Requirement.title, Requirement.text,
+            maintain_column_froms=True).execution_options(yield_per=100))
+        total, selected_ids, previous_id, matches, wording = 0, [], None, False, ""
+        try:
+            async for batch in sources.partitions(100):
+                for source in batch:
+                    if source.requirement_id != previous_id:
+                        previous_id = source.requirement_id
+                        wording = requirement_picker_text(source.text)
+                        matches = any(needle in " ".join(value.casefold().split()) for value in (
+                            source.reference_id, source.title or "", wording))
+                    if matches:
+                        if skip <= total < skip + limit:
+                            selected_ids.append(source.review_item_id)
+                            wordings[source.requirement_id] = wording
+                        total += 1
+        finally:
+            await sources.close()
+        items = (await db.execute(ordered.where(ReviewItem.id.in_(selected_ids)))).all() if selected_ids else []
+    else:
+        total = await db.scalar(select(func.count()).select_from(query.subquery()))
+        items = (await db.execute(ordered.offset(skip).limit(limit))).all()
+    contexts = await review_picker_contexts(db, cycle, register, user, [row[1].id for row in items])
+    targets = []
+    for item, requirement, version, document, owner in items:
+        if requirement.id not in wordings:
+            wordings[requirement.id] = requirement_picker_text(requirement.text)
+        wording = wordings[requirement.id]
+        targets.append(dict(review_target_metadata(item, requirement, version, document, owner, cycle),
+            process_name=cycle.name, requirement_text=wording[:1000],
+            requirement_text_truncated=len(wording) > 1000,
+            requirement_context=contexts.get(requirement.id, [])))
+    return {"items": targets, "total": total}
+
+
+def requirement_picker_text(value):
+    """Keep paragraph/list boundaries and decode canonical rich text before shortening it."""
+    separated = re.sub(r"<\s*(?:br\b[^>]*|/(?:p|div|li|ul|ol)\s*)>", "\n", value, flags=re.I)
+    # Inline emphasis does not introduce spaces inside words or before punctuation.
+    text = plain_text(re.sub(r"<[^>]*>", "", separated))
+    return "\n".join(re.sub(r"[^\S\n]+", " ", line).strip() for line in text.splitlines())
+
+
+async def review_picker_contexts(db, cycle, register, user, requirement_ids):
+    """Read a bounded breadcrumb for the page, only through permitted pinned review items."""
+    if not requirement_ids:
+        return {}
+    visible = review_target_query(cycle, register, user).with_only_columns(
+        Requirement.id, Requirement.parent_id, Requirement.reference_id, Requirement.title,
+        Requirement.text, Requirement.document_id,
+        Requirement.requirement_set_version_id, maintain_column_froms=True).distinct().cte()
+    ancestors = select(visible, literal(0).label("depth")).where(
+        visible.c.id.in_(requirement_ids)).cte(recursive=True)
+    ancestors = ancestors.union_all(select(visible, ancestors.c.depth + 1).join(
+        ancestors, (visible.c.id == ancestors.c.parent_id)
+        & (visible.c.document_id == ancestors.c.document_id)
+        & (visible.c.requirement_set_version_id == ancestors.c.requirement_set_version_id)
+    ).where(ancestors.c.depth < 12))
+    rows = {row.id: row for row in (await db.execute(select(ancestors))).all()}
+    result = {}
+    for requirement_id in requirement_ids:
+        path, seen = [], {requirement_id}
+        current = rows.get(requirement_id)
+        while current and current.parent_id in rows and len(path) < 12:
+            parent = rows[current.parent_id]
+            if parent.id in seen or (parent.document_id, parent.requirement_set_version_id) != (
+                current.document_id, current.requirement_set_version_id):
+                break
+            seen.add(parent.id)
+            title = (parent.title or "").strip()
+            if not title or title == parent.reference_id:
+                title = requirement_picker_text(parent.text)
+            path.append({"reference_id": parent.reference_id,
+                "title": title[:160] + ("…" if len(title) > 160 else "")})
+            current = parent
+        result[requirement_id] = list(reversed(path))
+    return result
 
 
 async def prefetch_review_targets(db, register, mappings, user, cache, evidence_cache):

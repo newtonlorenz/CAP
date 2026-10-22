@@ -65,6 +65,47 @@ beforeEach(() => {
 })
 afterEach(cleanup)
 
+it('distinguishes repeated process references by wording, source, section and version and saves only the chosen identity', async () => {
+  const first = { ...target, title: target.reference_id, set_name: 'Synthetic SCP 02 · Annex A', version_number: 4,
+    owner_name: 'Synthetic Alice', process_name: 'Synthetic certification review',
+    requirement_text: 'Retain an oversight record.\nInclude each approved decision.', requirement_text_truncated: true,
+    requirement_context: [{ reference_id: '3', title: 'Governance' }, { reference_id: '3.1', title: 'Decision records' }],
+    href: '/review-cycles/cycle?mode=focus&item=item' }
+  const second = { ...first, review_item_id: 'other-item', requirement_id: 'other-requirement',
+    requirement_set_version_id: 'other-version', version_number: 2, set_name: 'Synthetic SCP 07 · Annex B',
+    requirement_text: 'Retain a supplier register.', requirement_text_truncated: false, requirement_context: [],
+    href: '/review-cycles/cycle?mode=focus&item=other-item' }
+  vi.mocked(api.get).mockResolvedValue({ data: { items: [first, second], total: 2 } })
+  vi.mocked(api.put).mockRejectedValueOnce(new Error('Synthetic save failure')).mockResolvedValueOnce({ data: row })
+  mount('mapping')
+  const firstChoice = await screen.findByRole('checkbox', { name: /Retain an oversight record/ })
+  const secondChoice = screen.getByRole('checkbox', { name: /Retain a supplier register/ })
+  expect(screen.getByText('3 Governance › 3.1 Decision records')).toBeInTheDocument()
+  expect(screen.getByText('Synthetic SCP 02 · Annex A · Version 4')).toBeInTheDocument()
+  expect(screen.getByText('Synthetic SCP 07 · Annex B · Version 2')).toBeInTheDocument()
+  expect(screen.getAllByText('Owner: Synthetic Alice')).toHaveLength(2)
+  expect(screen.getAllByText('Assessment requirement · Synthetic certification review')).toHaveLength(2)
+  const fullRequirement = screen.getAllByRole('link', { name: 'Open full requirement (new tab)' })[0]
+  expect(fullRequirement).toHaveAttribute('href', first.href)
+  expect(fullRequirement).toHaveAttribute('target', '_blank')
+  expect(screen.getByText('Wording preview. Open the full requirement to read all text.')).toBeInTheDocument()
+  fireEvent.click(firstChoice)
+  fireEvent.click(secondChoice)
+  fireEvent.click(firstChoice)
+  expect(firstChoice).not.toBeChecked()
+  expect(secondChoice).toBeChecked()
+  expect(screen.getByRole('heading', { name: 'Selected references (1)' })).toBeInTheDocument()
+  const save = screen.getByRole('button', { name: 'Save reference matches' })
+  fireEvent.click(save)
+  await screen.findByRole('alert')
+  expect(secondChoice).toBeChecked()
+  fireEvent.click(save)
+  await screen.findByText('Dialog closed')
+  expect(vi.mocked(api.put).mock.calls[1]).toEqual(['/documentation/expectations/row/process-targets', {
+    revision: 1, targets: [{ review_item_id: 'other-item', requirement_id: 'other-requirement', requirement_set_version_id: 'other-version' }],
+  }])
+})
+
 it('renders every audit reconciliation category and links unreviewed rows and unsuitable request evidence to their owners', async () => {
   const entry = { ...row, title: 'Synthetic policy awaiting review' }
   const request = { id: 'request', revision: 1, case_id: 'audit-form', case_name: 'Synthetic audit form',
