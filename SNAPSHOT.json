@@ -735,7 +735,7 @@
     },
     {
       "path": "backend/app/services/documentation_process_applications.py",
-      "sha256": "5e3318a107be14fbbc11598b78159aa76f9123357199e41d6115943eb7300118"
+      "sha256": "411e9385268310de488da618ef6f57766142072d38666a861b5344bee0630790"
     },
     {
       "path": "backend/app/services/documentation_processes.py",
@@ -1135,7 +1135,7 @@
     },
     {
       "path": "backend/tests/test_documentation_processes.py",
-      "sha256": "d0f7ce335dd98aa2f873653c47a10c11e69f601e1fcc4c40a68a858fe7e383ad"
+      "sha256": "78c24b44ad0a093b5e50ec53a56af1e5b2870590ebdc1a2490196f6e2e1db4e7"
     },
     {
       "path": "backend/tests/test_documentation_register.py",

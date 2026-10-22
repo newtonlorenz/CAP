@@ -220,7 +220,7 @@ async def application_targets(db, application_id, register, user, q="", skip=0, 
     wording_by_id = {id_: requirement_picker_text(requirement.text)
         for id_, requirement in source_context[0].items()}
     items = []
-    needle = q.strip().casefold()
+    needle = " ".join(q.casefold().split())
     for case in cases:
         try:
             await application_case(db, application_id, case.id, register, user)
@@ -240,7 +240,7 @@ async def application_targets(db, application_id, register, user, q="", skip=0, 
             wording = wording_by_id[requirement.id]
             if (
                 needle
-                and needle not in f"{case.name} {field.label} {requirement.reference_id} {requirement.title or ''} {wording}".casefold()
+                and needle not in " ".join(f"{case.name} {field.label} {requirement.reference_id} {requirement.title or ''} {wording}".casefold().split())
             ):
                 continue
             items.append(

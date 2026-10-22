@@ -385,15 +385,18 @@ async def test_licence_collection_reuses_the_included_approved_source_and_preser
 ):
     process = review_process
     owner = process["owner"]
+    process["requirement"].text = "<p>Enter your registered name</p><p>and address.<br>Retain the current record.</p>"
+    await db_session.commit()
     application, case_id = await sourced_application(client, owner, default_jurisdiction, process)
     register = await create_register(client, owner, default_jurisdiction)
     await bind_process(client, owner, register, application_id=application["id"])
     process["document"].name = "Synthetic source Annex A"
     await db_session.commit()
     options = await checked(await client.get(f"{BASE}/registers/{register['id']}/process-targets",
-        headers=owner["headers"], params={"q": "registered name"}))
+        headers=owner["headers"], params={"q": "  registered   name and address.  Retain  "}))
     assert {item["field_key"] for item in options["items"]} == {"proof", "proof_alias"}
-    assert all(item["requirement_text"] == "Enter your registered name" for item in options["items"])
+    assert all(item["requirement_text"] == "Enter your registered name\nand address.\nRetain the current record."
+        for item in options["items"])
     assert all(item["requirement_text_truncated"] is False for item in options["items"])
     assert all(item["set_name"] == "Synthetic source Annex A" for item in options["items"])
     assert all(item["process_name"] == application["name"] for item in options["items"])
