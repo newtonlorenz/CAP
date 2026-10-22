@@ -166,14 +166,43 @@ async def process_targets(db, register, user, q="", skip=0, limit=100):
         return {"items": [], "total": 0}
     cycle = await get_review_process(db, register.review_cycle_id, register, user)
     query = review_target_query(cycle, register, user)
-    if q:
-        query = query.where(or_(Requirement.reference_id.icontains(q, autoescape=True), Requirement.title.icontains(q, autoescape=True), Requirement.text.icontains(q, autoescape=True)))
-    total = await db.scalar(select(func.count()).select_from(query.subquery()))
-    items = (await db.execute(query.order_by(Requirement.document_id, Requirement.sort_order, Requirement.reference_id, ReviewItem.id).offset(skip).limit(limit))).all()
+    ordered = query.order_by(Requirement.document_id, Requirement.sort_order,
+        Requirement.reference_id, Requirement.id, ReviewItem.id)
+    needle = " ".join(q.casefold().split())
+    wordings = {}
+    if needle:
+        # Stream scalar source columns, not every ORM target or its evidence collection.
+        # Requirement ordering keeps duplicate review items adjacent for one normalization.
+        sources = await db.stream(ordered.with_only_columns(
+            ReviewItem.id.label("review_item_id"), Requirement.id.label("requirement_id"),
+            Requirement.reference_id, Requirement.title, Requirement.text,
+            maintain_column_froms=True).execution_options(yield_per=100))
+        total, selected_ids, previous_id, matches, wording = 0, [], None, False, ""
+        try:
+            async for batch in sources.partitions(100):
+                for source in batch:
+                    if source.requirement_id != previous_id:
+                        previous_id = source.requirement_id
+                        wording = requirement_picker_text(source.text)
+                        matches = any(needle in " ".join(value.casefold().split()) for value in (
+                            source.reference_id, source.title or "", wording))
+                    if matches:
+                        if skip <= total < skip + limit:
+                            selected_ids.append(source.review_item_id)
+                            wordings[source.requirement_id] = wording
+                        total += 1
+        finally:
+            await sources.close()
+        items = (await db.execute(ordered.where(ReviewItem.id.in_(selected_ids)))).all() if selected_ids else []
+    else:
+        total = await db.scalar(select(func.count()).select_from(query.subquery()))
+        items = (await db.execute(ordered.offset(skip).limit(limit))).all()
     contexts = await review_picker_contexts(db, cycle, register, user, [row[1].id for row in items])
     targets = []
     for item, requirement, version, document, owner in items:
-        wording = requirement_picker_text(requirement.text)
+        if requirement.id not in wordings:
+            wordings[requirement.id] = requirement_picker_text(requirement.text)
+        wording = wordings[requirement.id]
         targets.append(dict(review_target_metadata(item, requirement, version, document, owner, cycle),
             process_name=cycle.name, requirement_text=wording[:1000],
             requirement_text_truncated=len(wording) > 1000,

@@ -178,6 +178,20 @@ async def test_optional_process_uses_exact_pinned_item_and_never_guesses_printed
     assert candidate["process_name"] == process["cycle"]["name"]
     assert candidate["owner_name"] == owner["user"].full_name
     assert candidate["version_number"] == process["version"].version_number
+    duplicate = ReviewItem(id=uuid.UUID("ffffffff-ffff-ffff-ffff-ffffffffffff"),
+        review_cycle_id=process["item"].review_cycle_id, requirement_id=process["requirement"].id)
+    # A matching item on the later project baseline is not part of this pinned review.
+    process["replacement"].text = process["requirement"].text
+    excluded = ReviewItem(review_cycle_id=process["item"].review_cycle_id,
+        requirement_id=process["replacement"].id)
+    db_session.add_all([duplicate, excluded])
+    await db_session.commit()
+    for phrase in ("a synthetic oversight record", "DECISION & REVIEW"):
+        for skip, expected in ((0, [str(process["item"].id)]), (1, [str(duplicate.id)]), (2, [])):
+            page = await checked(await client.get(f"{BASE}/expectations/{row['id']}/process-targets",
+                headers=owner["headers"], params={"q": phrase, "skip": skip, "limit": 1}))
+            assert page["total"] == 2
+            assert [item["review_item_id"] for item in page["items"]] == expected
     row = await bind_targets(client, owner, row, [process["target"]])
     assert "requirement_text" not in row["process_targets"][0], "Picker previews must not enlarge every register row"
     assert [(link["requirement_id"], link["requirement_set_version_id"]) for link in row["requirements"]] == [
@@ -355,12 +369,14 @@ async def test_process_source_access_and_assignment_cannot_be_bypassed_through_r
         headers=reviewer_actor["headers"]))
     assert options == {"items": [], "total": 0}
     process["item"].assigned_reviewer_id = reviewer.id
+    process["requirement"].text = "<p>Enter your <strong>registered name</strong> &amp; address</p>"
     await db_session.commit()
     assigned = await expectation_current(client, reviewer_actor, row)
     assert [item["evidence_id"] for item in collection(assigned)["items"]] == [evidence["id"]]
     assigned_options = await checked(await client.get(f"{BASE}/expectations/{row['id']}/process-targets",
-        headers=reviewer_actor["headers"]))
-    assert [item["requirement_text"] for item in assigned_options["items"]] == [process["requirement"].text]
+        headers=reviewer_actor["headers"], params={"q": "your registered name & address"}))
+    assert assigned_options["total"] == 1
+    assert [item["requirement_text"] for item in assigned_options["items"]] == ["Enter your registered name & address"]
     assert assigned_options["items"][0]["requirement_context"] == [], "Unassigned ancestor wording must stay hidden"
 
 
