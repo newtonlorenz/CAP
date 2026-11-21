@@ -88,7 +88,12 @@ def _allowed_policy_ids(user, action):
         return expressions[action]
     root = aliased(ResourceAccess)
     allowed = (
-        select(root.id.label("id"), literal(0).label("depth"))
+        select(
+            root.id.label("id"),
+            root.resource_type.label("resource_type"),
+            root.resource_id.label("resource_id"),
+            literal(0).label("depth"),
+        )
         .where(
             tenant_clause(root, user), root.parent_id.is_(None), _own_permission(root, user, action)
         )
@@ -96,7 +101,12 @@ def _allowed_policy_ids(user, action):
     )
     child = aliased(ResourceAccess)
     allowed = allowed.union_all(
-        select(child.id, allowed.c.depth + 1)
+        select(
+            child.id,
+            child.resource_type,
+            child.resource_id,
+            allowed.c.depth + 1,
+        )
         .join(allowed, child.parent_id == allowed.c.id)
         .where(
             tenant_clause(child, user),
@@ -120,13 +130,13 @@ def access_clause(model, user, action="view"):
     legacy = legacy_permission(user, action)
     if action == "manage_access":
         legacy = model.created_by == user.id
+    allowed = _allowed_policy_ids(user, action)
     permitted = or_(
         and_(absent, legacy),
         exists(
-            select(policy.id).where(
-                match,
-                tenant_clause(policy, user),
-                policy.id.in_(select(_allowed_policy_ids(user, action).c.id)),
+            select(allowed.c.id).where(
+                allowed.c.resource_type == kind,
+                allowed.c.resource_id == model.id,
             )
         ),
     )
@@ -407,6 +417,8 @@ def inherited_clause(model, user, action, *, resolve=None):
     from app.models.documentation_integrations import (
         DocumentationImport, DocumentationImportRow, DocumentationSnapshot, DocumentationSuggestionRun,
     )
+    resolver_self = getattr(resolve, "__self__", None) if resolve is not access_clause else None
+    has_visible_cte = resolver_self is not None and hasattr(resolver_self, "visible")
     if model is DocumentationSnapshot:
         from app.models.preparation import PreparationEvidence
         source = aliased(DocumentationSnapshotSource)
@@ -423,28 +435,48 @@ def inherited_clause(model, user, action, *, resolve=None):
                 predicates.append(target.assigned_reviewer_id == user.id)
             if user.role == "assigned_reviewer" and target is ReviewItemEvidenceFile:
                 predicates.append(exists(select(ReviewItem.id).where(ReviewItem.id == target.review_item_id, ReviewItem.assigned_reviewer_id == user.id).correlate_except(ReviewItem)))
-            if hasattr(target, "organization_id"):
+            if hasattr(target, "organization_id") and not has_visible_cte:
                 predicates.append(tenant_clause(target, user))
             # Source IDs are non-null primary keys, so NOT IN retains the same
             # missing/denied-source rule without recursively nesting owner ACLs.
+            if has_visible_cte and len(predicates) == 1:
+                hidden.append(
+                    and_(
+                        column.is_not(None),
+                        column.not_in(select(resolver_self.visible(target).c.id)),
+                    )
+                )
+                continue
             allowed_sources = select(target.id).where(*predicates).correlate(None).cte()
             hidden.append(and_(column.is_not(None), column.not_in(select(allowed_sources.c.id))))
-        return and_(
-            exists(select(DocumentationRegister.id).where(
+        register_allowed = (
+            model.register_id.in_(select(resolver_self.visible(DocumentationRegister).c.id))
+            if has_visible_cte
+            else exists(select(DocumentationRegister.id).where(
                 DocumentationRegister.id == model.register_id, tenant_clause(DocumentationRegister, user),
-                resolve(DocumentationRegister, user, action)).correlate_except(DocumentationRegister)),
+                resolve(DocumentationRegister, user, action)).correlate_except(DocumentationRegister))
+        )
+        return and_(
+            register_allowed,
             ~exists(select(source.id).where(source.snapshot_id == model.id, or_(*hidden)).correlate_except(source)),
         )
     if model is SubmissionPackageArtifact:
-        parent_allowed = exists(select(SubmissionPackage.id).where(
-            SubmissionPackage.id == model.submission_package_id, resolve(SubmissionPackage, user, action)).correlate_except(SubmissionPackage))
+        parent_allowed = (
+            model.submission_package_id.in_(select(resolver_self.visible(SubmissionPackage).c.id))
+            if has_visible_cte
+            else exists(select(SubmissionPackage.id).where(
+                SubmissionPackage.id == model.submission_package_id, resolve(SubmissionPackage, user, action)).correlate_except(SubmissionPackage))
+        )
         source_action = "export" if action == "export" else "view"
         # Hoist the complete frozen-source audience out of the artifact's parent
         # predicate. Nested EXISTS otherwise exceed older SQLite parser stacks.
         # This is a SQL expression, evaluated with current grants on every query.
-        allowed_snapshots = select(DocumentationSnapshot.id).where(
-            resolve(DocumentationSnapshot, user, source_action)
-        ).correlate(None).cte()
+        if has_visible_cte and source_action == action:
+            allowed_snapshots = resolver_self.visible(DocumentationSnapshot)
+        else:
+            allowed_snapshots = select(DocumentationSnapshot.id).where(
+                resolve(DocumentationSnapshot, user, source_action)
+            ).correlate(None).cte()
         snapshot_allowed = model.documentation_snapshot_id.in_(select(allowed_snapshots.c.id))
         return and_(parent_allowed, or_(model.documentation_snapshot_id.is_(None), snapshot_allowed))
     mapping.update({
@@ -455,10 +487,10 @@ def inherited_clause(model, user, action, *, resolve=None):
     })
     if model is DocumentationExpectation:
         from app.services.documentation import expectation_clause
-        return expectation_clause(user, action)
+        return expectation_clause(user, action, resolve=resolve)
     if model is AuditorRequestMapping:
         from app.services.documentation import request_clause
-        return request_clause(user, action)
+        return request_clause(user, action, resolve=resolve)
     mapping.update({
         DocumentationCoverage: (DocumentationExpectation, DocumentationCoverage.expectation_id, False),
         DocumentationReference: (DocumentationExpectation, DocumentationReference.expectation_id, False),
@@ -496,19 +528,26 @@ def inherited_clause(model, user, action, *, resolve=None):
         shared = aliased(DocumentationAssessmentEvidence)
         shared_item = aliased(ReviewItem)
         shared_cycle = aliased(ReviewCycle)
+        evidence_denied = (
+            shared.evidence_id.not_in(select(resolver_self.visible(PreparationEvidence).c.id))
+            if has_visible_cte
+            else ~exists(select(PreparationEvidence.id).where(
+                PreparationEvidence.id == shared.evidence_id,
+                tenant_clause(PreparationEvidence, user),
+                resolve(PreparationEvidence, user, action)).correlate_except(PreparationEvidence))
+        )
         hidden_shared = exists(select(shared.evidence_id).select_from(shared)
             .join(shared_item, shared_item.id == shared.review_item_id)
             .join(shared_cycle, shared_cycle.id == shared_item.review_cycle_id)
-            .where(shared_cycle.snapshot_id == Snapshot.id,
-                ~exists(select(PreparationEvidence.id).where(
-                    PreparationEvidence.id == shared.evidence_id,
-                    tenant_clause(PreparationEvidence, user),
-                    resolve(PreparationEvidence, user, action)).correlate_except(PreparationEvidence)))
+            .where(shared_cycle.snapshot_id == Snapshot.id, evidence_denied)
             .correlate_except(shared, shared_item, shared_cycle))
         return and_(*clauses, ~hidden_shared)
     if model not in mapping:
         return True
     parent, foreign_key, nullable = mapping[model]
+    if has_visible_cte:
+        allowed = foreign_key.in_(select(resolver_self.visible(parent).c.id))
+        return or_(foreign_key.is_(None), allowed) if nullable else allowed
     predicates = [parent.id == foreign_key, resolve(parent, user, action)]
     if hasattr(parent, "organization_id"):
         predicates.append(tenant_clause(parent, user))
@@ -519,6 +558,8 @@ def inherited_clause(model, user, action, *, resolve=None):
 def manifest_access_clause(user, action="view", *, resolve=None):
     """Manifests retain the audience of the material they describe."""
     resolve = resolve or access_clause
+    resolver_self = getattr(resolve, "__self__", None) if resolve is not access_clause else None
+    has_visible_cte = resolver_self is not None and hasattr(resolver_self, "visible")
     from sqlalchemy import String, cast, func
 
     from app.models.program import CertificationProject, ExportManifest, SubmissionPackage
@@ -533,6 +574,22 @@ def manifest_access_clause(user, action="view", *, resolve=None):
     }
     clauses = []
     for kind, model in models.items():
+        if has_visible_cte:
+            ids = resolver_self.visible(model)
+            clauses.append(
+                and_(
+                    ExportManifest.scope_type == kind,
+                    exists(
+                        select(ids.c.id)
+                        .where(
+                            func.replace(cast(ids.c.id, String), "-", "")
+                            == func.replace(ExportManifest.scope_id, "-", "")
+                        )
+                        .correlate_except(ids)
+                    ),
+                )
+            )
+            continue
         match = func.replace(cast(model.id, String), "-", "") == func.replace(
             ExportManifest.scope_id, "-", ""
         )

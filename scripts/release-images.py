@@ -226,6 +226,8 @@ def build(args):
             if target:
                 command += ["--target", target]
             command += ["--build-arg", f"VCS_REF={revision if clean else 'unknown'}"]
+            if name == "frontend":
+                command += ["--build-arg", f"APP_VERSION={args.version}"]
             command += ["--tag", local_tag]
             command += ["--metadata-file", str(metadata_file)]
             command += ["--load"]

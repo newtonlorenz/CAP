@@ -335,11 +335,11 @@
     },
     {
       "path": "backend/app/api/change_management.py",
-      "sha256": "ced064ad5ccf5fd7c3d9b40691efdbe576ba300781e0b0a41a1f3f8858296bc2"
+      "sha256": "84e2722821d880a93a4e28ae4fdd6654cb11af7374210cb2aa195191d3db1d2a"
     },
     {
       "path": "backend/app/api/dashboard.py",
-      "sha256": "11d16bc6050a027107d5f5d9c131178a080dd7ebd09eb6dcffcc3282a4e0ddad"
+      "sha256": "ebf9e97b74b8c668bad73028a541626f461bac842482e567264631bc30be6109"
     },
     {
       "path": "backend/app/api/deps.py",
@@ -399,7 +399,7 @@
     },
     {
       "path": "backend/app/api/program.py",
-      "sha256": "d11f4d79c4f50a8157de2304b4e86fc8ea18113552817451c0edc3bf71377998"
+      "sha256": "285e7448e1c91c45d17873a4431c9422b0b5739440155bd2ca3db85113414e18"
     },
     {
       "path": "backend/app/api/reports.py",
@@ -651,11 +651,11 @@
     },
     {
       "path": "backend/app/services/access.py",
-      "sha256": "7ae1fc7ae7ec6489310be1805b9d8564baa8cdb369cb25cf50b6bd3f12a81396"
+      "sha256": "55632cb3e88dcd95f629f4767bceb5c3af30c150cbd4429876ec3b0a7dfce948"
     },
     {
       "path": "backend/app/services/access_audit.py",
-      "sha256": "00e0c97c23e7612437ddcac2e64e26d93867c47eff2d0795d122124493de3cd3"
+      "sha256": "2e181d1aa361d234356cf1359366a464afd92703653e3820ee762dd9bf670461"
     },
     {
       "path": "backend/app/services/ai_parser.py",
@@ -719,7 +719,7 @@
     },
     {
       "path": "backend/app/services/documentation.py",
-      "sha256": "ecf471ad6a9ba276a537bbdf91ca3706fd5d793bdf132d593f52ff1614573319"
+      "sha256": "24983412289fe1f91c4f2877a5283cb319c617168f01ad29c5fa600a451dcc3e"
     },
     {
       "path": "backend/app/services/documentation_export.py",
@@ -775,7 +775,7 @@
     },
     {
       "path": "backend/app/services/extraction_watchdog.py",
-      "sha256": "6ed11b7eb11cea2eae35a4cca4bb874a731efda58597aceda71427a4314dd98b"
+      "sha256": "bc36b4c592f8dfa3a4b855748ec1909bc114dc8992a2f4acd1480353093cff6c"
     },
     {
       "path": "backend/app/services/file_utils.py",
@@ -803,7 +803,7 @@
     },
     {
       "path": "backend/app/services/maintenance.py",
-      "sha256": "3f49282f927e98f58276b82c447dab9cf0ec74ee006e8fb9c47113ef508f6709"
+      "sha256": "2bdb2b32b77884983ac33ec1d48a315b5abfc790c3d47e511150a7042ddc756d"
     },
     {
       "path": "backend/app/services/ocr_service.py",
@@ -959,11 +959,11 @@
     },
     {
       "path": "backend/app/tasks/extraction.py",
-      "sha256": "551d24f3b646ee2c20ff93f7a83f8afb1375607675b31610106a210c6cefeeeb"
+      "sha256": "41ac100280ccb913c4a7dab2d6f909b43a3d6716a499546707f0a20dab92a461"
     },
     {
       "path": "backend/app/tasks/requirement_quality.py",
-      "sha256": "dc82328fdded3a901f293e669d8e3d4857575ef08a271e803919046c8e6543e2"
+      "sha256": "a40796fa9f2743e31a31293a6c29f2d33971defacd8d10b324caf7ddc00e4fdb"
     },
     {
       "path": "backend/app/templates/preparation-question-template.xlsx",
@@ -1119,7 +1119,7 @@
     },
     {
       "path": "backend/tests/test_deploy.py",
-      "sha256": "f4cbb1b49559f7d97d4320aec35b5dbe4c5b0fb54c36e687964887d50b96dfd4"
+      "sha256": "e941814eb287c09b73ed1226901e70fd93b05443a7d3d72d6c447acea76a5c61"
     },
     {
       "path": "backend/tests/test_documentation_integrations.py",
@@ -1383,7 +1383,7 @@
     },
     {
       "path": "backend/tests/test_security_remediation.py",
-      "sha256": "f2c76668146b901923ee5cf42936ec3bc1c9a828edf9e8645edffdaa1e31fc97"
+      "sha256": "73c618823726639d9295417c66d132cd4419134804f5fe5c59e0676e545b90c1"
     },
     {
       "path": "backend/tests/test_session_assurance.py",
@@ -1443,7 +1443,7 @@
     },
     {
       "path": "docker-compose.prod.yml",
-      "sha256": "11639606216e14b14b120242882050e7e27bdea71b417539797b50ca856d5569"
+      "sha256": "30efb9854e4adacc2617672749e2af9148f06bbba230d854fd4746bef5f698ce"
     },
     {
       "path": "docker-compose.site-content.yml",
@@ -1459,7 +1459,7 @@
     },
     {
       "path": "docker-compose.yml",
-      "sha256": "2a68c00585113660fe460786ea63749ce8dd6180bf558f0c7e64fd5998262945"
+      "sha256": "dea977a13967afcdffc408acf5a5e86b69305d4e71a38e6ebad314d3db38e838"
     },
     {
       "path": "docs/public/access-control.md",
@@ -2303,11 +2303,11 @@
     },
     {
       "path": "frontend/nginx.conf",
-      "sha256": "e878d2a24169a654de9ddf323ebd08d17b88db637afbd0a604543b388a6ea8c2"
+      "sha256": "4f842fbde0b9ed3ab22dcf4adbf3ebcd51337778bdbbe2b6b172badf4ef2dd45"
     },
     {
       "path": "frontend/nginx.conf.template",
-      "sha256": "b29c550cf9a10372ed2960bc0d441090c3af53bcf1dce1a3fbfbc7f7cf2d9a95"
+      "sha256": "3a1c32928e5400546f0f10f25d199d66a50747cbc8882a0376246c6e65d4656d"
     },
     {
       "path": "frontend/package-lock.json",
@@ -2487,7 +2487,7 @@
     },
     {
       "path": "frontend/src/components/access/AccessPanel.tsx",
-      "sha256": "6443293d1971d352e8b8d50af6d5d71e19d534c7af3fd14d25b4264f83ccfcf0"
+      "sha256": "6c1c61f13962f6ee67666c85a2d391217044497b1ff8e6f53f72c0de5fab2138"
     },
     {
       "path": "frontend/src/components/access/TeamsPanel.tsx",
@@ -2907,7 +2907,7 @@
     },
     {
       "path": "frontend/src/pages/AccessTeams.tsx",
-      "sha256": "288709b0c41a41d82110c0e4fe01d445b85b6c9cfd8c765d893f957c5eaabacc"
+      "sha256": "97b64430c5b8c59bab6f232955df3a003b0fd2e60e9f0920b99db1ada1ddf6a4"
     },
     {
       "path": "frontend/src/pages/AccountSettings.tsx",
@@ -2919,7 +2919,7 @@
     },
     {
       "path": "frontend/src/pages/Applications.tsx",
-      "sha256": "4cc8ccd2a9d7c5b9b0c85ec6fa87d6589d790cced43511158735937970cc1e07"
+      "sha256": "3a2a26ab6e669c37837b12e6c6cdf9d1af036f1b1d02abc99864ec27f972b001"
     },
     {
       "path": "frontend/src/pages/CertificationProjects.tsx",
@@ -2947,7 +2947,7 @@
     },
     {
       "path": "frontend/src/pages/Library.tsx",
-      "sha256": "8ee18fff4778a6c1a6917d61dd63d6d248db4234b8120e9fa074c82304c8356b"
+      "sha256": "09bb611bff2085498a73ffdbae5cc7d33545e9d2a48b110821ae2504de987a1f"
     },
     {
       "path": "frontend/src/pages/Login.tsx",
@@ -2963,7 +2963,7 @@
     },
     {
       "path": "frontend/src/pages/Preparation.tsx",
-      "sha256": "bb275560dc05c8e0f41e61488f4e787779de37e7dcc41258bb82996f6e023b75"
+      "sha256": "9dd7b9b5d7c7b073566d150e7ab89e39f9ecd9608db1f5a6470741524bc21b00"
     },
     {
       "path": "frontend/src/pages/ProgramWorkspace.tsx",
@@ -2983,7 +2983,7 @@
     },
     {
       "path": "frontend/src/pages/RequirementsSetEdit.tsx",
-      "sha256": "f573c45b61f4947261739fa77a3db43f6fc672d55fa76d003485cc87fba2a437"
+      "sha256": "0fadadf777e5059a5c06c9b2e58f10e7c30db04c4e4435becb81b73ab640916a"
     },
     {
       "path": "frontend/src/pages/RequirementsSetImport.tsx",
@@ -2995,11 +2995,11 @@
     },
     {
       "path": "frontend/src/pages/ReviewCycleDetail.tsx",
-      "sha256": "b3ac3c7cf7935059c4d79d7c9fd50848c48779370dd4363a25ff35b650407fd8"
+      "sha256": "305f0e0fb4543e96cb1fa0dd23e1119aa787804a1448b86c94ac7079ec012067"
     },
     {
       "path": "frontend/src/pages/ReviewCycles.tsx",
-      "sha256": "88de4bf22fbba54603ff5fd4a78477e82bff67b192710fc5a5ca1ffe8250b727"
+      "sha256": "4f98bfe2c749870648ef4b98594b24e77bfacbeb89c83987b2340a056b189c4f"
     },
     {
       "path": "frontend/src/pages/admin/ProductFeedback.tsx",
@@ -3535,15 +3535,15 @@
     },
     {
       "path": "scripts/deploy/common.sh",
-      "sha256": "09ce39503c016d35e35eab3b0a2b301e635786492d8c1c8efadd23e2717a6e82"
+      "sha256": "80569742ba67fa7dc493c831b4ff7ff564ce24ef8b415f85d40ffd710bd9be26"
     },
     {
       "path": "scripts/deploy/deploy.sh",
-      "sha256": "6b60006462c92e5fd1561c7da22cb31bec7787b255117b0bd7147192aadc3d6e"
+      "sha256": "0c45bd56efa034ccca531133c51aaa7224c6e8145e2c1d1bd94bea245f535fab"
     },
     {
       "path": "scripts/deploy/preflight.sh",
-      "sha256": "d53cb5854aa556519640107dcd9b934ecda893752f28c33c68b68ff34cfb2baa"
+      "sha256": "b0b15c7d9eb7182b7c5cbfe4f3c58c8de61d1380b7d87b860d76258f77373841"
     },
     {
       "path": "scripts/evaluate-jev-quality.py",
@@ -3567,7 +3567,7 @@
     },
     {
       "path": "scripts/release-images.py",
-      "sha256": "420d3591ee43c2193576909a149a0795db6b2a7c349c290f236152fd4923e876"
+      "sha256": "f39fb4a9255c2403e69a93e53fba3052a70520f9406bf10eb13f54c365e05765"
     },
     {
       "path": "scripts/run-e2e.py",

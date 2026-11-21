@@ -4,6 +4,32 @@ set -eu
 
 . "$(dirname "$0")/common.sh"
 
+PREFLIGHT_MODE=${CAP_DEPLOY_MODE:-full}
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --mode)
+      shift
+      PREFLIGHT_MODE=${1:-}
+      ;;
+    --mode=*)
+      PREFLIGHT_MODE=${1#--mode=}
+      ;;
+    *)
+      echo "Unknown preflight argument: $1" >&2
+      exit 1
+      ;;
+  esac
+  shift
+done
+
+case "$PREFLIGHT_MODE" in
+  auto|full|backend|frontend) ;;
+  *)
+    echo "Deploy mode must be one of: auto, full, backend, frontend" >&2
+    exit 1
+    ;;
+esac
+
 require_cmd docker
 require_compose_files
 require_file "$ENV_FILE"
@@ -81,7 +107,9 @@ if [ -n "$bootstrap_email" ] || [ -n "$bootstrap_name" ] || [ -n "$bootstrap_pas
 fi
 
 compose config >/dev/null
-compose build backend >/dev/null
-compose run --rm --no-deps backend python -m app.deploy validate-config >/dev/null
+if [ "$PREFLIGHT_MODE" != "frontend" ]; then
+  compose build backend >/dev/null
+  compose run --rm --no-deps backend python -m app.deploy validate-config >/dev/null
+fi
 
-echo "Preflight checks passed for $ENV_FILE"
+echo "Preflight checks passed for $ENV_FILE (mode=$PREFLIGHT_MODE)"

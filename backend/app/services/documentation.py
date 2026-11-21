@@ -42,28 +42,52 @@ def check_revision(item, revision):
         raise HTTPException(409, "This record has changed. Reload before saving.")
 
 
-def expectation_clause(user, action="view"):
+def expectation_clause(user, action="view", *, resolve=None):
+    resolve = resolve or access_clause
+    resolver_self = getattr(resolve, "__self__", None) if resolve is not access_clause else None
+    if resolver_self is not None and hasattr(resolver_self, "visible"):
+        register = DocumentationExpectation.register_id.in_(
+            select(resolver_self.visible(DocumentationRegister).c.id)
+        )
+        project = DocumentationExpectation.project_id.in_(
+            select(resolver_self.visible(CertificationProject).c.id)
+        )
+        return register & or_(DocumentationExpectation.project_id.is_(None), project)
     register = exists(select(DocumentationRegister.id).where(
         DocumentationRegister.id == DocumentationExpectation.register_id,
-        tenant_clause(DocumentationRegister, user), access_clause(DocumentationRegister, user, action),
+        tenant_clause(DocumentationRegister, user), resolve(DocumentationRegister, user, action),
     ))
     project = exists(select(CertificationProject.id).where(
         CertificationProject.id == DocumentationExpectation.project_id,
-        tenant_clause(CertificationProject, user), access_clause(CertificationProject, user, action),
+        tenant_clause(CertificationProject, user), resolve(CertificationProject, user, action),
     ))
     return register & or_(DocumentationExpectation.project_id.is_(None), project)
 
 
-def request_clause(user, action="view"):
+def request_clause(user, action="view", *, resolve=None):
+    resolve = resolve or access_clause
+    resolver_self = getattr(resolve, "__self__", None) if resolve is not access_clause else None
+    if resolver_self is not None and hasattr(resolver_self, "visible"):
+        return (
+            AuditorRequestMapping.register_id.in_(
+                select(resolver_self.visible(DocumentationRegister).c.id)
+            )
+            & AuditorRequestMapping.case_id.in_(
+                select(resolver_self.visible(PreparationCase).c.id)
+            )
+            & AuditorRequestMapping.project_id.in_(
+                select(resolver_self.visible(CertificationProject).c.id)
+            )
+        )
     return exists(select(DocumentationRegister.id).where(
         DocumentationRegister.id == AuditorRequestMapping.register_id,
-        tenant_clause(DocumentationRegister, user), access_clause(DocumentationRegister, user, action),
+        tenant_clause(DocumentationRegister, user), resolve(DocumentationRegister, user, action),
     )) & exists(select(PreparationCase.id).where(
         PreparationCase.id == AuditorRequestMapping.case_id,
-        tenant_clause(PreparationCase, user), access_clause(PreparationCase, user, action),
+        tenant_clause(PreparationCase, user), resolve(PreparationCase, user, action),
     )) & exists(select(CertificationProject.id).where(
         CertificationProject.id == AuditorRequestMapping.project_id,
-        tenant_clause(CertificationProject, user), access_clause(CertificationProject, user, action),
+        tenant_clause(CertificationProject, user), resolve(CertificationProject, user, action),
     ))
 
 

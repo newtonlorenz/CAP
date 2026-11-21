@@ -214,6 +214,9 @@ def audit_access_clause(user):
         "snapshot": Snapshot,
         "export_manifest": ExportManifest,
     }
+    kinds_by_model = {}
+    for kind, model in models.items():
+        kinds_by_model.setdefault(model, []).append(kind)
     case_ids = sources.full(PreparationCase)
     # Deleted protected entities fail closed; their historical payload may still
     # contain confidential text even though there is no current row to check.
@@ -230,5 +233,13 @@ def audit_access_clause(user):
                 .correlate(AuditLog)
             ),
         ),
-        *(and_(AuditLog.entity_type == kind, visible(model)) for kind, model in models.items()),
+        *(
+            and_(
+                AuditLog.entity_type == kinds[0]
+                if len(kinds) == 1
+                else AuditLog.entity_type.in_(tuple(kinds)),
+                visible(model),
+            )
+            for model, kinds in kinds_by_model.items()
+        ),
     )

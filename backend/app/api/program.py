@@ -1,5 +1,6 @@
 import json
 import uuid
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -143,8 +144,25 @@ def _project_workspace_link(project_id: uuid.UUID, section: Optional[str] = None
     return f"{path}&section={section}" if section else path
 
 
-def _org_filter(query, model, current_user: User):
-    return apply_org_scope(query, model, current_user)
+def _org_filter(query, model, current_user: User, action: str = "view"):
+    return apply_org_scope(query, model, current_user, action)
+
+
+async def _paginate_query(
+    db: AsyncSession,
+    query,
+    *,
+    order_by,
+    skip: int,
+    limit: int,
+):
+    skip = max(skip, 0)
+    limit = min(max(limit, 1), 1000)
+    total = int(
+        (await db.scalar(select(func.count()).select_from(query.order_by(None).subquery()))) or 0
+    )
+    rows = (await db.execute(query.order_by(order_by).offset(skip).limit(limit))).scalars().all()
+    return rows, total
 
 
 def _seed_project_milestones(db: AsyncSession, project_id: uuid.UUID) -> None:
@@ -159,12 +177,15 @@ def _seed_project_milestones(db: AsyncSession, project_id: uuid.UUID) -> None:
         )
 
 
-async def _load_project_baseline_versions(
+async def _load_project_baseline_versions_map(
     db: AsyncSession,
-    project_id: uuid.UUID,
-) -> tuple[list[ProjectBaselineVersion], list[uuid.UUID]]:
+    project_ids: list[uuid.UUID],
+) -> dict[uuid.UUID, tuple[list[ProjectBaselineVersion], list[uuid.UUID]]]:
+    if not project_ids:
+        return {}
     baseline_result = await db.execute(
         select(
+            CertificationProjectRequirementBaseline.project_id,
             CertificationProjectRequirementBaseline.document_id,
             CertificationProjectRequirementBaseline.requirement_set_version_id,
             RequirementSetVersion.version_number,
@@ -177,13 +198,22 @@ async def _load_project_baseline_versions(
             == CertificationProjectRequirementBaseline.requirement_set_version_id,
         )
         .outerjoin(Document, Document.id == CertificationProjectRequirementBaseline.document_id)
-        .where(CertificationProjectRequirementBaseline.project_id == project_id)
+        .where(CertificationProjectRequirementBaseline.project_id.in_(project_ids))
         .order_by(Document.name.asc(), Document.filename.asc())
     )
-    baseline_versions: list[ProjectBaselineVersion] = []
-    requirement_set_ids: list[uuid.UUID] = []
-    for document_id, version_id, version_number, set_name, filename in baseline_result.all():
-        baseline_versions.append(
+    grouped: dict[uuid.UUID, tuple[list[ProjectBaselineVersion], list[uuid.UUID]]] = {
+        pid: ([], []) for pid in project_ids
+    }
+    for (
+        project_id,
+        document_id,
+        version_id,
+        version_number,
+        set_name,
+        filename,
+    ) in baseline_result.all():
+        versions, req_set_ids = grouped.setdefault(project_id, ([], []))
+        versions.append(
             ProjectBaselineVersion(
                 document_id=document_id,
                 requirement_set_version_id=version_id,
@@ -191,19 +221,40 @@ async def _load_project_baseline_versions(
                 set_name=set_name or filename,
             )
         )
-        requirement_set_ids.append(document_id)
-    return baseline_versions, requirement_set_ids
+        req_set_ids.append(document_id)
+    return grouped
+
+
+async def _load_project_baseline_versions(
+    db: AsyncSession,
+    project_id: uuid.UUID,
+) -> tuple[list[ProjectBaselineVersion], list[uuid.UUID]]:
+    grouped = await _load_project_baseline_versions_map(db, [project_id])
+    return grouped.get(project_id, ([], []))
+
+
+async def _build_project_responses(
+    db: AsyncSession,
+    projects: list[CertificationProject],
+) -> list[CertificationProjectResponse]:
+    if not projects:
+        return []
+    grouped = await _load_project_baseline_versions_map(db, [project.id for project in projects])
+    results: list[CertificationProjectResponse] = []
+    for project in projects:
+        baseline_versions, requirement_set_ids = grouped.get(project.id, ([], []))
+        response = CertificationProjectResponse.model_validate(project).model_dump()
+        response["baseline_versions"] = [item.model_dump() for item in baseline_versions]
+        response["requirement_set_ids"] = requirement_set_ids
+        results.append(CertificationProjectResponse(**response))
+    return results
 
 
 async def _build_project_response(
     db: AsyncSession,
     project: CertificationProject,
 ) -> CertificationProjectResponse:
-    baseline_versions, requirement_set_ids = await _load_project_baseline_versions(db, project.id)
-    response = CertificationProjectResponse.model_validate(project).model_dump()
-    response["baseline_versions"] = [item.model_dump() for item in baseline_versions]
-    response["requirement_set_ids"] = requirement_set_ids
-    return CertificationProjectResponse(**response)
+    return (await _build_project_responses(db, [project]))[0]
 
 
 async def _resolve_project_baseline_targets(
@@ -334,7 +385,7 @@ async def _get_project_for_user(
     project_id: uuid.UUID,
 ) -> CertificationProject:
     query = _org_filter(
-        select(CertificationProject).where(CertificationProject.id == project_id, access_clause(CertificationProject, current_user, "view")),
+        select(CertificationProject).where(CertificationProject.id == project_id),
         CertificationProject,
         current_user,
     )
@@ -443,6 +494,98 @@ def _submission_package_response(package: SubmissionPackage) -> SubmissionPackag
     return SubmissionPackageResponse(**data)
 
 
+@dataclass
+class _ProjectWorkspacePrefetch:
+    baseline_counts: dict[uuid.UUID, int] = field(default_factory=dict)
+    active_submission_cycle_by_project: dict[uuid.UUID, ReviewCycle] = field(default_factory=dict)
+    submission_cycles_by_id: dict[uuid.UUID, ReviewCycle] = field(default_factory=dict)
+    review_item_counts_by_cycle: dict[uuid.UUID, int] = field(default_factory=dict)
+    latest_package_by_project: dict[uuid.UUID, SubmissionPackage] = field(default_factory=dict)
+    locked_package_counts_by_project: dict[uuid.UUID, int] = field(default_factory=dict)
+    required_artifacts_by_package: dict[uuid.UUID, list[SubmissionPackageArtifact]] = field(
+        default_factory=dict
+    )
+
+
+async def _prefetch_project_workspace_context(
+    db: AsyncSession,
+    project_ids: list[uuid.UUID],
+) -> _ProjectWorkspacePrefetch:
+    ctx = _ProjectWorkspacePrefetch()
+    if not project_ids:
+        return ctx
+
+    baseline_rows = await db.execute(
+        select(
+            CertificationProjectRequirementBaseline.project_id,
+            func.count(CertificationProjectRequirementBaseline.document_id),
+        )
+        .where(CertificationProjectRequirementBaseline.project_id.in_(project_ids))
+        .group_by(CertificationProjectRequirementBaseline.project_id)
+    )
+    for proj_id, count in baseline_rows.all():
+        ctx.baseline_counts[proj_id] = int(count or 0)
+
+    cycle_rows = await db.execute(
+        select(ReviewCycle).where(
+            and_(
+                ReviewCycle.certification_project_id.in_(project_ids),
+                ReviewCycle.cycle_type == "submission",
+            )
+        )
+    )
+    active_cycle_ids: list[uuid.UUID] = []
+    for cycle in cycle_rows.scalars().all():
+        ctx.submission_cycles_by_id[cycle.id] = cycle
+        if (
+            cycle.status != "archived"
+            and cycle.certification_project_id is not None
+            and cycle.certification_project_id not in ctx.active_submission_cycle_by_project
+        ):
+            ctx.active_submission_cycle_by_project[cycle.certification_project_id] = cycle
+            active_cycle_ids.append(cycle.id)
+
+    if active_cycle_ids:
+        item_count_rows = await db.execute(
+            select(ReviewItem.review_cycle_id, func.count(ReviewItem.id))
+            .where(ReviewItem.review_cycle_id.in_(active_cycle_ids))
+            .group_by(ReviewItem.review_cycle_id)
+        )
+        for cycle_id, count in item_count_rows.all():
+            ctx.review_item_counts_by_cycle[cycle_id] = int(count or 0)
+
+    package_rows = await db.execute(
+        select(SubmissionPackage)
+        .where(SubmissionPackage.project_id.in_(project_ids))
+        .order_by(SubmissionPackage.created_at.desc())
+    )
+    latest_package_ids: list[uuid.UUID] = []
+    for pkg in package_rows.scalars().all():
+        if pkg.status == "locked":
+            ctx.locked_package_counts_by_project[pkg.project_id] = (
+                ctx.locked_package_counts_by_project.get(pkg.project_id, 0) + 1
+            )
+        if pkg.project_id not in ctx.latest_package_by_project:
+            ctx.latest_package_by_project[pkg.project_id] = pkg
+            latest_package_ids.append(pkg.id)
+
+    if latest_package_ids:
+        artifact_rows = await db.execute(
+            select(SubmissionPackageArtifact).where(
+                and_(
+                    SubmissionPackageArtifact.submission_package_id.in_(latest_package_ids),
+                    SubmissionPackageArtifact.required.is_(True),
+                )
+            )
+        )
+        for artifact in artifact_rows.scalars().all():
+            ctx.required_artifacts_by_package.setdefault(
+                artifact.submission_package_id, []
+            ).append(artifact)
+
+    return ctx
+
+
 async def _get_project_submission_cycle(
     db: AsyncSession,
     project_id: uuid.UUID,
@@ -463,21 +606,28 @@ async def _build_submission_package_gate_check(
     db: AsyncSession,
     package: SubmissionPackage,
     project: CertificationProject,
+    *,
+    prefetch: Optional[_ProjectWorkspacePrefetch] = None,
 ) -> SubmissionPackageGateCheckResponse:
     blocking_reasons: list[str] = []
     cycle: Optional[ReviewCycle] = None
 
     if package.review_cycle_id is not None:
-        cycle_result = await db.execute(
-            select(ReviewCycle).where(
-                and_(
-                    ReviewCycle.id == package.review_cycle_id,
-                    ReviewCycle.certification_project_id == project.id,
-                    ReviewCycle.cycle_type == "submission",
+        if prefetch is not None:
+            candidate = prefetch.submission_cycles_by_id.get(package.review_cycle_id)
+            if candidate is not None and candidate.certification_project_id == project.id:
+                cycle = candidate
+        else:
+            cycle_result = await db.execute(
+                select(ReviewCycle).where(
+                    and_(
+                        ReviewCycle.id == package.review_cycle_id,
+                        ReviewCycle.certification_project_id == project.id,
+                        ReviewCycle.cycle_type == "submission",
+                    )
                 )
             )
-        )
-        cycle = cycle_result.scalar_one_or_none()
+            cycle = cycle_result.scalar_one_or_none()
         if cycle is None:
             blocking_reasons.append("Linked submission review cycle is not valid for this project.")
     else:
@@ -502,15 +652,18 @@ async def _build_submission_package_gate_check(
             "Submission package snapshot does not match submission review cycle snapshot."
         )
 
-    required_result = await db.execute(
-        select(SubmissionPackageArtifact).where(
-            and_(
-                SubmissionPackageArtifact.submission_package_id == package.id,
-                SubmissionPackageArtifact.required.is_(True),
+    if prefetch is not None:
+        required_artifacts = prefetch.required_artifacts_by_package.get(package.id, [])
+    else:
+        required_result = await db.execute(
+            select(SubmissionPackageArtifact).where(
+                and_(
+                    SubmissionPackageArtifact.submission_package_id == package.id,
+                    SubmissionPackageArtifact.required.is_(True),
+                )
             )
         )
-    )
-    required_artifacts = required_result.scalars().all()
+        required_artifacts = required_result.scalars().all()
     missing_required_artifacts = [
         artifact.name for artifact in required_artifacts
         if not artifact.included or not ((artifact.file_path or "").strip() or (artifact.link_url or "").strip())
@@ -563,6 +716,8 @@ async def _build_stage_transition_checks(
     db: AsyncSession,
     project: CertificationProject,
     stage: str,
+    *,
+    prefetch: Optional[_ProjectWorkspacePrefetch] = None,
 ) -> list[ProgramStageCheck]:
     project_link = _project_workspace_link(project.id, {
         "intake": "baseline", "scoping": "review", "gap_assessment": "review",
@@ -570,12 +725,15 @@ async def _build_stage_transition_checks(
     }.get(stage))
 
     if stage == "intake":
-        baseline_count_result = await db.execute(
-            select(func.count(CertificationProjectRequirementBaseline.document_id)).where(
-                CertificationProjectRequirementBaseline.project_id == project.id
+        if prefetch is not None:
+            baseline_count = prefetch.baseline_counts.get(project.id, 0)
+        else:
+            baseline_count_result = await db.execute(
+                select(func.count(CertificationProjectRequirementBaseline.document_id)).where(
+                    CertificationProjectRequirementBaseline.project_id == project.id
+                )
             )
-        )
-        baseline_count = int(baseline_count_result.scalar() or 0)
+            baseline_count = int(baseline_count_result.scalar() or 0)
         passed = baseline_count > 0
         return [
             ProgramStageCheck(
@@ -594,7 +752,11 @@ async def _build_stage_transition_checks(
         ]
 
     if stage == "scoping":
-        cycle = await _get_project_submission_cycle(db, project.id)
+        cycle = (
+            prefetch.active_submission_cycle_by_project.get(project.id)
+            if prefetch is not None
+            else await _get_project_submission_cycle(db, project.id)
+        )
         passed = cycle is not None
         return [
             ProgramStageCheck(
@@ -613,7 +775,11 @@ async def _build_stage_transition_checks(
         ]
 
     if stage == "gap_assessment":
-        cycle = await _get_project_submission_cycle(db, project.id)
+        cycle = (
+            prefetch.active_submission_cycle_by_project.get(project.id)
+            if prefetch is not None
+            else await _get_project_submission_cycle(db, project.id)
+        )
         if cycle is None:
             return [
                 ProgramStageCheck(
@@ -626,10 +792,13 @@ async def _build_stage_transition_checks(
                     cta_path=project_link,
                 )
             ]
-        item_count_result = await db.execute(
-            select(func.count(ReviewItem.id)).where(ReviewItem.review_cycle_id == cycle.id)
-        )
-        item_count = int(item_count_result.scalar() or 0)
+        if prefetch is not None:
+            item_count = prefetch.review_item_counts_by_cycle.get(cycle.id, 0)
+        else:
+            item_count_result = await db.execute(
+                select(func.count(ReviewItem.id)).where(ReviewItem.review_cycle_id == cycle.id)
+            )
+            item_count = int(item_count_result.scalar() or 0)
         passed = item_count > 0
         return [
             ProgramStageCheck(
@@ -646,7 +815,11 @@ async def _build_stage_transition_checks(
         ]
 
     if stage == "remediation":
-        cycle = await _get_project_submission_cycle(db, project.id)
+        cycle = (
+            prefetch.active_submission_cycle_by_project.get(project.id)
+            if prefetch is not None
+            else await _get_project_submission_cycle(db, project.id)
+        )
         if cycle is None:
             return [
                 ProgramStageCheck(
@@ -700,7 +873,11 @@ async def _build_stage_transition_checks(
         ]
 
     if stage == "pre_audit":
-        package = await _get_latest_project_package(db, project.id)
+        package = (
+            prefetch.latest_package_by_project.get(project.id)
+            if prefetch is not None
+            else await _get_latest_project_package(db, project.id)
+        )
         if package is None:
             return [
                 ProgramStageCheck(
@@ -713,7 +890,9 @@ async def _build_stage_transition_checks(
                     cta_path=project_link,
                 )
             ]
-        gate_check = await _build_submission_package_gate_check(db, package, project)
+        gate_check = await _build_submission_package_gate_check(
+            db, package, project, prefetch=prefetch
+        )
         blocking_reason = (
             "; ".join(gate_check.blocking_reasons[:2]) if gate_check.blocking_reasons else None
         )
@@ -734,15 +913,18 @@ async def _build_stage_transition_checks(
         ]
 
     if stage == "submission":
-        locked_count_result = await db.execute(
-            select(func.count(SubmissionPackage.id)).where(
-                and_(
-                    SubmissionPackage.project_id == project.id,
-                    SubmissionPackage.status == "locked",
+        if prefetch is not None:
+            locked_count = prefetch.locked_package_counts_by_project.get(project.id, 0)
+        else:
+            locked_count_result = await db.execute(
+                select(func.count(SubmissionPackage.id)).where(
+                    and_(
+                        SubmissionPackage.project_id == project.id,
+                        SubmissionPackage.status == "locked",
+                    )
                 )
             )
-        )
-        locked_count = int(locked_count_result.scalar() or 0)
+            locked_count = int(locked_count_result.scalar() or 0)
         has_handoff_marker = (
             project.completed_at is not None
             or project.status == "completed"
@@ -805,10 +987,16 @@ async def _build_stage_transition_checks(
 async def _build_project_stage_state_summary(
     db: AsyncSession,
     project: CertificationProject,
+    *,
+    prefetch: Optional[_ProjectWorkspacePrefetch] = None,
 ) -> tuple[list[ProgramStageState], ProgramStageReadiness, list[ProgramGateBlocker]]:
+    if prefetch is None:
+        prefetch = await _prefetch_project_workspace_context(db, [project.id])
     checks_by_stage: dict[str, list[ProgramStageCheck]] = {}
     for stage in PROJECT_STAGES:
-        checks_by_stage[stage] = await _build_stage_transition_checks(db, project, stage)
+        checks_by_stage[stage] = await _build_stage_transition_checks(
+            db, project, stage, prefetch=prefetch
+        )
 
     current_stage = project.stage if project.stage in PROJECT_STAGE_INDEX else PROJECT_STAGES[0]
     current_index = PROJECT_STAGE_INDEX.get(current_stage, 0)
@@ -855,9 +1043,19 @@ async def _build_project_stage_state_summary(
 async def _build_project_workspace_deep_links(
     db: AsyncSession,
     project: CertificationProject,
+    *,
+    prefetch: Optional[_ProjectWorkspacePrefetch] = None,
 ) -> ProgramWorkspaceProjectDeepLinks:
-    cycle = await _get_project_submission_cycle(db, project.id)
-    package = await _get_latest_project_package(db, project.id)
+    cycle = (
+        prefetch.active_submission_cycle_by_project.get(project.id)
+        if prefetch is not None
+        else await _get_project_submission_cycle(db, project.id)
+    )
+    package = (
+        prefetch.latest_package_by_project.get(project.id)
+        if prefetch is not None
+        else await _get_latest_project_package(db, project.id)
+    )
     return ProgramWorkspaceProjectDeepLinks(
         project=_project_workspace_link(project.id),
         review_cycle=f"/review-cycles/{cycle.id}" if cycle is not None else None,
@@ -979,16 +1177,16 @@ async def list_controls(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    limit = min(max(limit, 1), 1000)
-    count_query = select(Control)
+    query = select(Control)
     if jurisdiction_id:
-        count_query = count_query.where(Control.jurisdiction_id == jurisdiction_id)
+        query = query.where(Control.jurisdiction_id == jurisdiction_id)
 
-    all_rows = await db.execute(count_query.order_by(Control.code))
-    items = all_rows.scalars().all()
+    rows, total = await _paginate_query(
+        db, query, order_by=Control.code, skip=skip, limit=limit
+    )
     return {
-        "items": [ControlResponse.model_validate(item) for item in items[skip : skip + limit]],
-        "total": len(items),
+        "items": [ControlResponse.model_validate(item) for item in rows],
+        "total": total,
     }
 
 
@@ -1046,16 +1244,16 @@ async def list_obligations(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    limit = min(max(limit, 1), 1000)
     query = select(Obligation)
     if jurisdiction_id:
         query = query.where(Obligation.jurisdiction_id == jurisdiction_id)
 
-    result = await db.execute(query.order_by(Obligation.code))
-    rows = result.scalars().all()
+    rows, total = await _paginate_query(
+        db, query, order_by=Obligation.code, skip=skip, limit=limit
+    )
     return {
-        "items": [ObligationResponse.model_validate(item) for item in rows[skip : skip + limit]],
-        "total": len(rows),
+        "items": [ObligationResponse.model_validate(item) for item in rows],
+        "total": total,
     }
 
 
@@ -1114,20 +1312,18 @@ async def list_crosswalks(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    limit = min(max(limit, 1), 1000)
     query = select(ControlCrosswalk)
     if source_control_id is not None:
         query = query.where(ControlCrosswalk.source_control_id == source_control_id)
     if target_obligation_id is not None:
         query = query.where(ControlCrosswalk.target_obligation_id == target_obligation_id)
 
-    result = await db.execute(query.order_by(ControlCrosswalk.created_at.desc()))
-    rows = result.scalars().all()
+    rows, total = await _paginate_query(
+        db, query, order_by=ControlCrosswalk.created_at.desc(), skip=skip, limit=limit
+    )
     return {
-        "items": [
-            ControlCrosswalkResponse.model_validate(item) for item in rows[skip : skip + limit]
-        ],
-        "total": len(rows),
+        "items": [ControlCrosswalkResponse.model_validate(item) for item in rows],
+        "total": total,
     }
 
 
@@ -1184,9 +1380,7 @@ async def list_certification_projects(
     current_user: User = Depends(get_current_user),
 ):
     limit = min(max(limit, 1), 1000)
-    query = _org_filter(select(CertificationProject), CertificationProject, current_user).where(
-        access_clause(CertificationProject, current_user, "view")
-    )
+    query = _org_filter(select(CertificationProject), CertificationProject, current_user)
     if jurisdiction_id is not None:
         query = query.where(CertificationProject.jurisdiction_id == jurisdiction_id)
     if stage:
@@ -1194,14 +1388,17 @@ async def list_certification_projects(
     if status:
         query = query.where(CertificationProject.status == status)
 
-    result = await db.execute(query.order_by(CertificationProject.created_at.desc()))
-    rows = result.scalars().all()
-    items: list[CertificationProjectResponse] = []
-    for project in rows[skip : skip + limit]:
-        items.append(await _build_project_response(db, project))
+    rows, total = await _paginate_query(
+        db,
+        query,
+        order_by=CertificationProject.created_at.desc(),
+        skip=skip,
+        limit=limit,
+    )
+    items = await _build_project_responses(db, list(rows))
     return {
         "items": items,
-        "total": len(rows),
+        "total": total,
     }
 
 
@@ -1213,24 +1410,29 @@ async def get_program_workspace_summary(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = _org_filter(select(CertificationProject), CertificationProject, current_user).where(
-        access_clause(CertificationProject, current_user, "view")
-    )
+    query = _org_filter(select(CertificationProject), CertificationProject, current_user)
     if jurisdiction_id is not None:
         query = query.where(CertificationProject.jurisdiction_id == jurisdiction_id)
     if project_id is not None:
         query = query.where(CertificationProject.id == project_id)
 
-    result = await db.execute(query.order_by(CertificationProject.created_at.desc()))
+    result = await db.execute(query.order_by(CertificationProject.created_at.desc()).limit(limit))
     projects = result.scalars().all()
     if project_id is not None and not projects:
         raise HTTPException(status_code=404, detail="Certification project not found")
 
+    prefetch = await _prefetch_project_workspace_context(
+        db, [project.id for project in projects]
+    )
     items: list[ProgramWorkspaceProjectSummary] = []
     next_actions: list[ProgramWorkspaceAction] = []
-    for project in projects[:limit]:
-        stage_states, readiness, blockers = await _build_project_stage_state_summary(db, project)
-        deep_links = await _build_project_workspace_deep_links(db, project)
+    for project in projects:
+        stage_states, readiness, blockers = await _build_project_stage_state_summary(
+            db, project, prefetch=prefetch
+        )
+        deep_links = await _build_project_workspace_deep_links(
+            db, project, prefetch=prefetch
+        )
         items.append(
             ProgramWorkspaceProjectSummary(
                 project_id=project.id,
@@ -1526,7 +1728,7 @@ async def get_certification_project(
     current_user: User = Depends(get_current_user),
 ):
     query = _org_filter(
-        select(CertificationProject).where(CertificationProject.id == project_id, access_clause(CertificationProject, current_user, "view")),
+        select(CertificationProject).where(CertificationProject.id == project_id),
         CertificationProject,
         current_user,
     )
@@ -2301,11 +2503,12 @@ async def list_submission_packages(
     if status:
         query = query.where(SubmissionPackage.status == status)
 
-    result = await db.execute(query.order_by(SubmissionPackage.created_at.desc()))
-    rows = result.scalars().all()
+    rows, total = await _paginate_query(
+        db, query, order_by=SubmissionPackage.created_at.desc(), skip=skip, limit=limit
+    )
     return {
-        "items": [_submission_package_response(item) for item in rows[skip : skip + limit]],
-        "total": len(rows),
+        "items": [_submission_package_response(item) for item in rows],
+        "total": total,
     }
 
 
@@ -2958,13 +3161,12 @@ async def list_maintenance_plans(
     if status:
         query = query.where(MaintenancePlan.status == status)
 
-    result = await db.execute(query.order_by(MaintenancePlan.created_at.desc()))
-    rows = result.scalars().all()
+    rows, total = await _paginate_query(
+        db, query, order_by=MaintenancePlan.created_at.desc(), skip=skip, limit=limit
+    )
     return {
-        "items": [
-            MaintenancePlanResponse.model_validate(item) for item in rows[skip : skip + limit]
-        ],
-        "total": len(rows),
+        "items": [MaintenancePlanResponse.model_validate(item) for item in rows],
+        "total": total,
     }
 
 
@@ -3176,13 +3378,12 @@ async def list_maintenance_events(
     if maintenance_plan_id is not None:
         query = query.where(MaintenanceEvent.maintenance_plan_id == maintenance_plan_id)
 
-    result = await db.execute(query.order_by(MaintenanceEvent.created_at.desc()))
-    rows = result.scalars().all()
+    rows, total = await _paginate_query(
+        db, query, order_by=MaintenanceEvent.created_at.desc(), skip=skip, limit=limit
+    )
     return {
-        "items": [
-            MaintenanceEventResponse.model_validate(item) for item in rows[skip : skip + limit]
-        ],
-        "total": len(rows),
+        "items": [MaintenanceEventResponse.model_validate(item) for item in rows],
+        "total": total,
     }
 
 
@@ -3197,9 +3398,7 @@ async def list_evidence_items(
     current_user: User = Depends(get_current_user),
 ):
     limit = min(max(limit, 1), 1000)
-    query = _org_filter(select(EvidenceItem), EvidenceItem, current_user).where(
-        access_clause(EvidenceItem, current_user, "view")
-    )
+    query = _org_filter(select(EvidenceItem), EvidenceItem, current_user)
     if requirement_id is not None:
         query = query.where(EvidenceItem.requirement_id == requirement_id)
     if review_status:
@@ -3208,11 +3407,12 @@ async def list_evidence_items(
         now = datetime.now(timezone.utc)
         query = query.where(EvidenceItem.valid_to.is_not(None), EvidenceItem.valid_to < now)
 
-    result = await db.execute(query.order_by(EvidenceItem.created_at.desc()))
-    rows = result.scalars().all()
+    rows, total = await _paginate_query(
+        db, query, order_by=EvidenceItem.created_at.desc(), skip=skip, limit=limit
+    )
     return {
-        "items": [EvidenceItemResponse.model_validate(item) for item in rows[skip : skip + limit]],
-        "total": len(rows),
+        "items": [EvidenceItemResponse.model_validate(item) for item in rows],
+        "total": total,
     }
 
 
@@ -3432,19 +3632,16 @@ async def list_evidence_validations(
     query = select(EvidenceValidation).join(
         EvidenceItem, EvidenceItem.id == EvidenceValidation.evidence_item_id
     )
-    query = _org_filter(query, EvidenceItem, current_user).where(
-        access_clause(EvidenceItem, current_user, "view")
-    )
+    query = _org_filter(query, EvidenceItem, current_user)
     if evidence_item_id is not None:
         query = query.where(EvidenceValidation.evidence_item_id == evidence_item_id)
 
-    result = await db.execute(query.order_by(EvidenceValidation.created_at.desc()))
-    rows = result.scalars().all()
+    rows, total = await _paginate_query(
+        db, query, order_by=EvidenceValidation.created_at.desc(), skip=skip, limit=limit
+    )
     return {
-        "items": [
-            EvidenceValidationResponse.model_validate(item) for item in rows[skip : skip + limit]
-        ],
-        "total": len(rows),
+        "items": [EvidenceValidationResponse.model_validate(item) for item in rows],
+        "total": total,
     }
 
 
@@ -3497,13 +3694,12 @@ async def list_integration_connections(
     if enabled is not None:
         query = query.where(IntegrationConnection.enabled == enabled)
 
-    result = await db.execute(query.order_by(IntegrationConnection.created_at.desc()))
-    rows = result.scalars().all()
+    rows, total = await _paginate_query(
+        db, query, order_by=IntegrationConnection.created_at.desc(), skip=skip, limit=limit
+    )
     return {
-        "items": [
-            IntegrationConnectionResponse.model_validate(item) for item in rows[skip : skip + limit]
-        ],
-        "total": len(rows),
+        "items": [IntegrationConnectionResponse.model_validate(item) for item in rows],
+        "total": total,
     }
 
 
@@ -3618,13 +3814,12 @@ async def list_export_manifests(
     if scope_id:
         query = query.where(ExportManifest.scope_id == scope_id)
 
-    result = await db.execute(query.order_by(ExportManifest.created_at.desc()))
-    rows = result.scalars().all()
+    rows, total = await _paginate_query(
+        db, query, order_by=ExportManifest.created_at.desc(), skip=skip, limit=limit
+    )
     return {
-        "items": [
-            ExportManifestResponse.model_validate(item) for item in rows[skip : skip + limit]
-        ],
-        "total": len(rows),
+        "items": [ExportManifestResponse.model_validate(item) for item in rows],
+        "total": total,
     }
 
 
@@ -3644,9 +3839,10 @@ async def create_export_manifest(
         elif body.scope_type == "submission_package":
             await _require_package_access(db, current_user, scope_id, "export")
         else:
-            from app.services.access import access_clause
             model = Snapshot if body.scope_type == "snapshot" else ReviewCycle
-            result = await db.scalar(_org_filter(select(model.id).where(model.id == scope_id), model, current_user).where(access_clause(model, current_user, "export")))
+            result = await db.scalar(
+                _org_filter(select(model.id).where(model.id == scope_id), model, current_user, "export")
+            )
             if result is None:
                 raise HTTPException(404, "Not found")
     signature = sign_manifest(body.scope_type, body.scope_id, body.payload)

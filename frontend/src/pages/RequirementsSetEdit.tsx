@@ -240,6 +240,7 @@ export default function RequirementsSetEdit() {
       return response.data
     },
     enabled: showAddRequirementModal,
+    staleTime: 300000,
   })
 
   const prepareEditQuery = useQuery({

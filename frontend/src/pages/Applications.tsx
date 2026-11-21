@@ -69,7 +69,7 @@ export default function Applications() {
   useEffect(() => {
     if (resourceJurisdiction && resourceJurisdiction !== jurisdictionId) setJurisdictionId(resourceJurisdiction)
   }, [resourceJurisdiction, jurisdictionId, setJurisdictionId])
-  const users = useQuery({ queryKey: ['preparation', 'users'], queryFn: async () => (await api.get<PaginatedResponse<UserMention>>('/users/mentions?limit=1000')).data, staleTime: 300000 })
+  const users = useQuery({ queryKey: ['mention-users'], queryFn: async () => (await api.get<PaginatedResponse<UserMention>>('/users/mentions?limit=1000')).data, staleTime: 300000 })
   const projects = useQuery({ queryKey: ['preparation', 'projects'], queryFn: async () => (await api.get<PaginatedResponse<CertificationProject>>('/certification-projects?limit=1000')).data, enabled: Boolean(caseId) || tab === 'forms', staleTime: 300000 })
   const navigate = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params)

@@ -78,27 +78,6 @@ async def get_dashboard(
 ):
     now = datetime.now(UTC)
 
-    latest_status = select(
-        RequirementStatus.requirement_id.label("requirement_id"),
-        RequirementStatus.status.label("status"),
-        RequirementStatus.assigned_to.label("assigned_to"),
-        RequirementStatus.changed_at.label("changed_at"),
-        RequirementStatus.comment.label("comment"),
-        func.row_number()
-        .over(
-            partition_by=RequirementStatus.requirement_id,
-            order_by=(RequirementStatus.changed_at.desc(), RequirementStatus.id.desc()),
-        )
-        .label("rn"),
-    ).subquery()
-
-    join_latest = and_(latest_status.c.requirement_id == Requirement.id, latest_status.c.rn == 1)
-    status_expr = func.coalesce(latest_status.c.status, literal("not_started"))
-    assigned_to_expr = latest_status.c.assigned_to
-    review_progress_predicate = review_progress_eligible_condition(
-        Requirement.requirement_type, func.coalesce(ReviewItem.assessment_status, status_expr)
-    )
-
     requirement_filters = [
         Requirement.active.is_(True),
         org_clause(Requirement, current_user),
@@ -106,6 +85,33 @@ async def get_dashboard(
     ]
     if jurisdiction_id is not None:
         requirement_filters.append(Requirement.jurisdiction_id == jurisdiction_id)
+
+    scoped_requirement_ids = select(Requirement.id).where(*requirement_filters)
+
+    latest_status = (
+        select(
+            RequirementStatus.requirement_id.label("requirement_id"),
+            RequirementStatus.status.label("status"),
+            RequirementStatus.assigned_to.label("assigned_to"),
+            RequirementStatus.changed_at.label("changed_at"),
+            RequirementStatus.comment.label("comment"),
+            func.row_number()
+            .over(
+                partition_by=RequirementStatus.requirement_id,
+                order_by=(RequirementStatus.changed_at.desc(), RequirementStatus.id.desc()),
+            )
+            .label("rn"),
+        )
+        .where(RequirementStatus.requirement_id.in_(scoped_requirement_ids))
+        .subquery()
+    )
+
+    join_latest = and_(latest_status.c.requirement_id == Requirement.id, latest_status.c.rn == 1)
+    status_expr = func.coalesce(latest_status.c.status, literal("not_started"))
+    assigned_to_expr = latest_status.c.assigned_to
+    review_progress_predicate = review_progress_eligible_condition(
+        Requirement.requirement_type, func.coalesce(ReviewItem.assessment_status, status_expr)
+    )
 
     review_cycle_filters = [org_clause(ReviewCycle, current_user)]
     document_filters = [org_clause(Document, current_user)]
@@ -742,64 +748,96 @@ async def get_dashboard(
 
         return None
 
-    recent_activity: list[AuditActivityItem] = []
-    for a in activity_result.scalars().all():
-        title = None
-        destination = None
+    activity_rows = activity_result.scalars().all()
+    entity_uuids_by_type: dict[str, set[uuid.UUID]] = {}
+    parsed_entity_uuid: dict[str, uuid.UUID | None] = {}
+    for a in activity_rows:
         try:
             entity_uuid = uuid.UUID(a.entity_id)
         except (ValueError, TypeError):
             entity_uuid = None
-        if entity_uuid and a.entity_type in {"review_item", "review_item_comment"}:
-            query = (
+        parsed_entity_uuid[a.entity_id] = entity_uuid
+        if entity_uuid is not None:
+            entity_uuids_by_type.setdefault(a.entity_type, set()).add(entity_uuid)
+
+    activity_lookup: dict[tuple[str, uuid.UUID], tuple[str | None, str | None]] = {}
+    if "review_item" in entity_uuids_by_type:
+        rows = (
+            await db.execute(
                 select(ReviewItem, Requirement, ReviewCycle)
                 .join(Requirement, Requirement.id == ReviewItem.requirement_id)
                 .join(ReviewCycle, ReviewCycle.id == ReviewItem.review_cycle_id)
                 .where(
+                    ReviewItem.id.in_(entity_uuids_by_type["review_item"]),
                     org_clause(ReviewCycle, current_user),
                     org_clause(Requirement, current_user),
                 )
             )
-            if a.entity_type == "review_item_comment":
-                query = query.join(
-                    ReviewItemComment, ReviewItemComment.review_item_id == ReviewItem.id
-                ).where(ReviewItemComment.id == entity_uuid)
-            else:
-                query = query.where(ReviewItem.id == entity_uuid)
-            record = (await db.execute(query)).first()
-            if record:
-                item, requirement, cycle = record
-                title = f"{requirement.reference_id} · {requirement.title or cycle.name}"
-                destination = f"/review-cycles/{cycle.id}?mode=focus&item={item.id}"
-        elif entity_uuid and a.entity_type in {
-            "requirement",
-            "document",
-            "requirement_set",
-            "review_cycle",
-            "review_package",
-            "certification_project",
-            "application",
-            "preparation_case",
-        }:
-            model = {
-                "requirement": Requirement,
-                "document": Document,
-                "requirement_set": Document,
-                "review_cycle": ReviewCycle,
-                "review_package": ReviewCycle,
-                "certification_project": CertificationProject,
-                "application": Application,
-                "preparation_case": PreparationCase,
-            }[a.entity_type]
-            record = await db.scalar(
-                select(model).where(model.id == entity_uuid, org_clause(model, current_user))
+        ).all()
+        for item, requirement, cycle in rows:
+            activity_lookup[("review_item", item.id)] = (
+                f"{requirement.reference_id} · {requirement.title or cycle.name}",
+                f"/review-cycles/{cycle.id}?mode=focus&item={item.id}",
             )
-            if record:
-                title = (
-                    f"{record.reference_id} · {record.title or 'Requirement'}"
-                    if isinstance(record, Requirement)
-                    else record.name or getattr(record, "filename", None)
+
+    if "review_item_comment" in entity_uuids_by_type:
+        rows = (
+            await db.execute(
+                select(ReviewItemComment.id, ReviewItem, Requirement, ReviewCycle)
+                .join(ReviewItem, ReviewItem.id == ReviewItemComment.review_item_id)
+                .join(Requirement, Requirement.id == ReviewItem.requirement_id)
+                .join(ReviewCycle, ReviewCycle.id == ReviewItem.review_cycle_id)
+                .where(
+                    ReviewItemComment.id.in_(entity_uuids_by_type["review_item_comment"]),
+                    org_clause(ReviewCycle, current_user),
+                    org_clause(Requirement, current_user),
                 )
+            )
+        ).all()
+        for comment_id, item, requirement, cycle in rows:
+            activity_lookup[("review_item_comment", comment_id)] = (
+                f"{requirement.reference_id} · {requirement.title or cycle.name}",
+                f"/review-cycles/{cycle.id}?mode=focus&item={item.id}",
+            )
+
+    model_entity_types = (
+        (Requirement, ("requirement",)),
+        (Document, ("document", "requirement_set")),
+        (ReviewCycle, ("review_cycle", "review_package")),
+        (CertificationProject, ("certification_project",)),
+        (Application, ("application",)),
+        (PreparationCase, ("preparation_case",)),
+    )
+    for model, entity_types in model_entity_types:
+        ids = {
+            entity_id
+            for entity_type in entity_types
+            for entity_id in entity_uuids_by_type.get(entity_type, ())
+        }
+        if not ids:
+            continue
+        records = (
+            await db.scalars(
+                select(model).where(model.id.in_(ids), org_clause(model, current_user))
+            )
+        ).all()
+        for record in records:
+            record_title = (
+                f"{record.reference_id} · {record.title or 'Requirement'}"
+                if isinstance(record, Requirement)
+                else record.name or getattr(record, "filename", None)
+            )
+            for entity_type in entity_types:
+                activity_lookup[(entity_type, record.id)] = (record_title, None)
+
+    recent_activity: list[AuditActivityItem] = []
+    for a in activity_rows:
+        entity_uuid = parsed_entity_uuid.get(a.entity_id)
+        title, destination = (
+            activity_lookup.get((a.entity_type, entity_uuid), (None, None))
+            if entity_uuid is not None
+            else (None, None)
+        )
         recent_activity.append(
             AuditActivityItem(
                 id=str(a.id),
@@ -978,6 +1016,7 @@ async def get_dashboard(
                 EvidenceNote.requirement_id.label("requirement_id"),
                 func.count(EvidenceNote.id).label("notes_count"),
             )
+            .where(EvidenceNote.requirement_id.in_(scoped_requirement_ids))
             .group_by(EvidenceNote.requirement_id)
             .subquery()
         )
@@ -986,6 +1025,7 @@ async def get_dashboard(
                 EvidenceFile.requirement_id.label("requirement_id"),
                 func.count(EvidenceFile.id).label("files_count"),
             )
+            .where(EvidenceFile.requirement_id.in_(scoped_requirement_ids))
             .group_by(EvidenceFile.requirement_id)
             .subquery()
         )
@@ -994,6 +1034,7 @@ async def get_dashboard(
                 EvidenceLink.requirement_id.label("requirement_id"),
                 func.count(EvidenceLink.id).label("links_count"),
             )
+            .where(EvidenceLink.requirement_id.in_(scoped_requirement_ids))
             .group_by(EvidenceLink.requirement_id)
             .subquery()
         )

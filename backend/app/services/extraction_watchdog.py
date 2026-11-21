@@ -1,9 +1,7 @@
 import asyncio
 import logging
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-from app.config import settings
+from app.database import async_session
 from app.services.extraction_jobs import reconcile_jobs
 from app.services.quality_jobs import reconcile_quality_jobs
 
@@ -11,8 +9,7 @@ log = logging.getLogger(__name__)
 
 
 def _get_session_factory():
-    engine = create_async_engine(settings.database_url)
-    return async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    return async_session
 
 
 async def run_extraction_watchdog(poll_interval_seconds: int = 60) -> None:
@@ -26,4 +23,5 @@ async def run_extraction_watchdog(poll_interval_seconds: int = 60) -> None:
                 log.exception("Extraction reconciliation failed; will try again")
             await asyncio.sleep(poll_interval_seconds)
     finally:
-        await session_factory.kw["bind"].dispose()
+        if session_factory is not async_session and "bind" in getattr(session_factory, "kw", {}):
+            await session_factory.kw["bind"].dispose()

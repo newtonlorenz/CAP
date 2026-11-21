@@ -34,7 +34,7 @@ function PolicyEditor({ policy }: { policy: AccessPolicy }) {
   const canManage = policy.effective_permissions.includes('manage_access')
   const dirty = visibility !== policy.visibility || grantValues(grants) !== grantValues(policy.grants) || reason !== ''
   useDraftNavigationGuard(!saved && (dirty || busy))
-  const users = useQuery({ queryKey: ['access', 'users'], queryFn: async () => (await api.get<PaginatedResponse<UserMention>>('/users/mentions?limit=1000')).data })
+  const users = useQuery({ queryKey: ['mention-users'], queryFn: async () => (await api.get<PaginatedResponse<UserMention>>('/users/mentions?limit=1000')).data, staleTime: 300000 })
   const teams = useQuery({ queryKey: ['access', 'teams'], queryFn: accessApi.teams })
   const save = async () => {
     setBusy(true); setError('')

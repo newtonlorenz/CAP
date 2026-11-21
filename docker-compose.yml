@@ -23,10 +23,10 @@ services:
     env_file: .env
     environment:
       REDIS_URL: redis://redis:6379/0
-      # Dev/test bootstrap admin. Created on startup if missing.
-      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-dev-admin@example.com}
-      BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-Dev Admin}
-      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:?Set BOOTSTRAP_ADMIN_PASSWORD to a non-default local password}
+      # Optional dev/test bootstrap admin. Prefer `python -m app.setup` for first-time setup.
+      BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_NAME: ${BOOTSTRAP_ADMIN_NAME:-}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
     depends_on:
       - db
       - redis

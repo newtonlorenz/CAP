@@ -9,6 +9,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.config import settings
+from app.database import engine_kwargs
 from app.models.document import Document
 from app.models.extraction import ExtractionRun, ExtractionRunDiagnostic
 from app.models.requirement import ExtractedRequirement
@@ -104,7 +105,7 @@ def _merge_requirement_candidates(primary: list[dict], secondary: list[dict]) ->
 
 def _get_session_factory():
     """Create a fresh engine and session factory for this task."""
-    engine = create_async_engine(settings.database_url)
+    engine = create_async_engine(settings.database_url, **engine_kwargs)
     factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     factory._task_owned_engine = engine
     return factory

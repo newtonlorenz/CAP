@@ -6,6 +6,7 @@ from typing import Optional
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.tenant import apply_org_scope
 from app.models.document import Document
 from app.models.program import (
     CertificationProjectRequirementBaseline,
@@ -62,12 +63,8 @@ def _plan_name(document: Document) -> str:
     return f"Maintenance plan: {base}"
 
 
-def _org_filter(query, model, current_user: User):
-    query = query.where(access_clause(model, current_user, "view"))
-    org_id = current_user.organization_id
-    if org_id is None:
-        return query.where(model.organization_id.is_(None))
-    return query.where(model.organization_id == org_id)
+def _org_filter(query, model, current_user: User, action: str = "view"):
+    return apply_org_scope(query, model, current_user, action)
 
 
 async def ensure_maintenance_plan_for_document(

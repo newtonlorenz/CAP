@@ -36,7 +36,7 @@ export default function Library() {
   const canManage = user?.role === 'admin' || user?.role === 'manager'
   const canEdit = canManage || user?.role === 'contributor'
   const users = useQuery({
-    queryKey: ['preparation', 'users'],
+    queryKey: ['mention-users'],
     queryFn: async () => (await api.get<PaginatedResponse<UserMention>>('/users/mentions?limit=1000')).data,
     enabled: section === 'forms', staleTime: 300000,
   })

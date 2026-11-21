@@ -278,6 +278,8 @@ def test_public_dev_credentials_are_not_defaulted():
     e2e_seed = (ROOT / "backend/app/seed_e2e.py").read_text()
 
     assert "BOOTSTRAP_ADMIN_PASSWORD:-adminpass" not in compose
+    assert "BOOTSTRAP_ADMIN_PASSWORD:?" not in compose
+    assert "dev-admin@example.com" not in compose
     assert "adminpass123" not in login
     assert 'ADMIN_PASSWORD = "adminpass123"' not in e2e_seed
     assert "VITE_TEST_ADMIN_PASSWORD" not in compose
@@ -285,3 +287,24 @@ def test_public_dev_credentials_are_not_defaulted():
     assert "VITE_TEST_ADMIN_EMAIL" not in compose
     assert "VITE_TEST_ADMIN_EMAIL" not in login
     assert "VITE_ALLOW_ALL_HOSTS === 'true'" in vite
+
+
+def test_nginx_static_asset_location_preserves_security_headers():
+    nginx_template = (ROOT / "frontend/nginx.conf.template").read_text()
+    static_block = nginx_template.split(r"location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$", 1)[1]
+    for header in (
+        'add_header Cache-Control "public, max-age=3600" always;',
+        'add_header X-Content-Type-Options "nosniff" always;',
+        'add_header X-Frame-Options "DENY" always;',
+        'add_header Referrer-Policy "no-referrer" always;',
+        'add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;',
+        "add_header Content-Security-Policy ",
+    ):
+        assert header in static_block
+
+
+def test_extraction_watchdog_reuses_shared_async_session():
+    from app.database import async_session
+    from app.services.extraction_watchdog import _get_session_factory
+
+    assert _get_session_factory() is async_session

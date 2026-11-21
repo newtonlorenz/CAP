@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, require_role
+from app.api.tenant import apply_org_scope
 from app.config import settings
 from app.database import get_db
 from app.models.audit import AuditLog
@@ -70,11 +71,8 @@ from app.services.change_readiness import (
 router = APIRouter(prefix="/api/v1/change-management", tags=["change-management"])
 
 
-def _org_filter(query, model, current_user: User):
-    org_id = current_user.organization_id
-    if org_id is None:
-        return query.where(model.organization_id.is_(None))
-    return query.where(model.organization_id == org_id)
+def _org_filter(query, model, current_user: User, action: str = "view"):
+    return apply_org_scope(query, model, current_user, action)
 
 
 def _utcnow() -> datetime:

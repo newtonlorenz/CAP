@@ -2,13 +2,23 @@
 
 set -eu
 
-SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
+if [ -n "${CAP_REPO_ROOT:-}" ]; then
+  REPO_ROOT=$(CDPATH= cd -- "$CAP_REPO_ROOT" && pwd)
+  SCRIPT_DIR="$REPO_ROOT/scripts/deploy"
+elif [ -f "$(dirname -- "$0")/common.sh" ]; then
+  SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+  REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
+else
+  REPO_ROOT=$(pwd)
+  SCRIPT_DIR="$REPO_ROOT/scripts/deploy"
+fi
 EDGE_MODE=${CAP_EDGE_MODE:-external}
 DEFAULT_COMPOSE_FILE="$REPO_ROOT/docker-compose.prod.yml"
 DEFAULT_EDGE_COMPOSE_FILE="$REPO_ROOT/docker-compose.edge.yml"
 RAW_COMPOSE_FILE=${COMPOSE_FILE:-}
+RAW_COMPOSE_OVERLAYS=${CAP_COMPOSE_OVERLAYS:-}
 RAW_ENV_FILE=${CAP_ENV_FILE:-.env.production}
+DOCKER_CONTEXT_NAME=${CAP_DOCKER_CONTEXT:-${DOCKER_CONTEXT:-}}
 
 case "$EDGE_MODE" in
   external|bundled) ;;
@@ -25,11 +35,20 @@ resolve_repo_path() {
   esac
 }
 
+resolve_overlay_path() {
+  case "$1" in
+    structured) printf '%s\n' "$REPO_ROOT/docker-compose.structured.yml" ;;
+    ocr) printf '%s\n' "$REPO_ROOT/docker-compose.ocr.yml" ;;
+    structured-ocr) printf '%s\n' "$REPO_ROOT/docker-compose.structured-ocr.yml" ;;
+    site-content) printf '%s\n' "$REPO_ROOT/docker-compose.site-content.yml" ;;
+    edge) printf '%s\n' "$DEFAULT_EDGE_COMPOSE_FILE" ;;
+    *) resolve_repo_path "$1" ;;
+  esac
+}
+
 if [ -n "$RAW_COMPOSE_FILE" ]; then
-  COMPOSE_FILE=$(resolve_repo_path "$RAW_COMPOSE_FILE")
   COMPOSE_FILE_SOURCE=override
 else
-  COMPOSE_FILE=$DEFAULT_COMPOSE_FILE
   COMPOSE_FILE_SOURCE=default
 fi
 
@@ -39,6 +58,37 @@ case "$RAW_ENV_FILE" in
 esac
 
 export CAP_ENV_FILE="$ENV_FILE"
+
+compose_file_list() {
+  if [ "$COMPOSE_FILE_SOURCE" = "override" ]; then
+    old_ifs=$IFS
+    IFS=:
+    for entry in $RAW_COMPOSE_FILE; do
+      if [ -n "$entry" ]; then
+        resolve_repo_path "$entry"
+      fi
+    done
+    IFS=$old_ifs
+  else
+    printf '%s\n' "$DEFAULT_COMPOSE_FILE"
+    if [ "$EDGE_MODE" = "bundled" ]; then
+      printf '%s\n' "$DEFAULT_EDGE_COMPOSE_FILE"
+    fi
+  fi
+
+  if [ -n "$RAW_COMPOSE_OVERLAYS" ]; then
+    old_ifs=$IFS
+    IFS=,
+    for overlay in $RAW_COMPOSE_OVERLAYS; do
+      if [ -n "$overlay" ]; then
+        resolve_overlay_path "$overlay"
+      fi
+    done
+    IFS=$old_ifs
+  fi
+}
+
+COMPOSE_FILE=$(compose_file_list | head -n 1)
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -55,21 +105,41 @@ require_file() {
 }
 
 require_compose_files() {
-  require_file "$COMPOSE_FILE"
-  if [ "$COMPOSE_FILE_SOURCE" = "default" ] && [ "$EDGE_MODE" = "bundled" ]; then
-    require_file "$DEFAULT_EDGE_COMPOSE_FILE"
-  fi
+  for file in $(compose_file_list); do
+    require_file "$file"
+  done
 }
 
 env_value() {
   key=$1
-  awk -F= -v key="$key" '
+  awk -v key="$key" '
     /^[[:space:]]*#/ { next }
-    index($0, key "=") == 1 {
-      value = substr($0, length(key) + 2)
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", value)
-      print value
-      exit
+    {
+      line = $0
+      sub(/^[[:space:]]*export[[:space:]]+/, "", line)
+      sub(/^[[:space:]]+/, "", line)
+      if (index(line, key "=") != 1) {
+        next
+      }
+      value = substr(line, length(key) + 2)
+      sub(/^[[:space:]]+/, "", value)
+      if (value ~ /^"/) {
+        sub(/^"/, "", value)
+        sub(/"[[:space:]]*(#.*)?$/, "", value)
+      } else if (value ~ /^\x27/) {
+        sub(/^\x27/, "", value)
+        sub(/\x27[[:space:]]*(#.*)?$/, "", value)
+      } else {
+        sub(/[[:space:]]+#.*$/, "", value)
+        sub(/[[:space:]]+$/, "", value)
+      }
+      found = 1
+      last = value
+    }
+    END {
+      if (found) {
+        print last
+      }
     }
   ' "$ENV_FILE"
 }
@@ -83,18 +153,33 @@ require_nonempty_env() {
   fi
 }
 
+docker_cmd() {
+  if [ -n "$DOCKER_CONTEXT_NAME" ]; then
+    docker --context "$DOCKER_CONTEXT_NAME" "$@"
+  else
+    docker "$@"
+  fi
+}
+
 compose() {
-  if [ "$COMPOSE_FILE_SOURCE" = "override" ]; then
-    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
-    return
-  fi
+  set -- --env-file "$ENV_FILE" "$@"
+  files=$(compose_file_list)
+  reversed=""
+  for file in $files; do
+    reversed="$file $reversed"
+  done
+  for file in $reversed; do
+    set -- -f "$file" "$@"
+  done
+  docker_cmd compose "$@"
+}
 
-  if [ "$EDGE_MODE" = "bundled" ]; then
-    docker compose -f "$COMPOSE_FILE" -f "$DEFAULT_EDGE_COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
-    return
+service_image_id() {
+  service=$1
+  container_id=$(compose ps -q "$service" 2>/dev/null || true)
+  if [ -n "$container_id" ]; then
+    docker_cmd inspect --format '{{.Image}}' "$container_id" 2>/dev/null || true
   fi
-
-  docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
 }
 
 wait_for_service() {
@@ -105,7 +190,7 @@ wait_for_service() {
   while :; do
     container_id=$(compose ps -q "$service")
     if [ -n "$container_id" ]; then
-      status=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$container_id")
+      status=$(docker_cmd inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$container_id")
       case "$status" in
         healthy|running)
           return 0
@@ -148,10 +233,10 @@ retry_curl() {
 
     now=$(date +%s)
     if [ $((now - start_time)) -ge "$timeout_seconds" ]; then
-      echo "Timed out waiting for URL: $url" >&2
+      echo "Smoke check failed for URL: $url" >&2
       return 1
     fi
 
-    sleep 3
+    sleep 2
   done
 }

@@ -55,10 +55,16 @@ server {
 
     location ${FRONTEND_BASE_PATH} {
         try_files $uri $uri/ ${FRONTEND_BASE_PATH}index.html;
-    }
 
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-        expires 1h;
-        add_header Cache-Control "public, max-age=3600";
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+            try_files $uri =404;
+            expires 1h;
+            add_header Cache-Control "public, max-age=3600" always;
+            add_header X-Content-Type-Options "nosniff" always;
+            add_header X-Frame-Options "DENY" always;
+            add_header Referrer-Policy "no-referrer" always;
+            add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+            add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+        }
     }
 }

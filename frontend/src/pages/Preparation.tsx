@@ -59,7 +59,7 @@ export default function Preparation({
     enabled: Boolean(caseId),
   })
   const usersQuery = useQuery({
-    queryKey: ['preparation', 'users'],
+    queryKey: ['mention-users'],
     queryFn: async () =>
       (
         await api.get<PaginatedResponse<UserMention>>(

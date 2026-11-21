@@ -104,6 +104,7 @@ export default function ReviewCycles() {
       return response.data
     },
     enabled: showCreateModal,
+    staleTime: 300000,
   })
 
   const createMutation = useMutation({

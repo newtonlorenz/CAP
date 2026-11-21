@@ -297,6 +297,7 @@ export default function ReviewCycleDetail() {
       return response.data
     },
     enabled: !!user,
+    staleTime: 300000,
   })
 
   useEffect(() => {

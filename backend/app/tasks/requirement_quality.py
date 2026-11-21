@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.config import settings
+from app.database import engine_kwargs
 from app.models.document import Document
 from app.models.extraction import ExtractionRun
 from app.models.requirement import ExtractedRequirement
@@ -25,7 +26,7 @@ def check_requirement_quality_task(run_id):
 async def check_quality(run_id, session_factory=None):
     own_engine = None
     if session_factory is None:
-        own_engine = create_async_engine(settings.database_url)
+        own_engine = create_async_engine(settings.database_url, **engine_kwargs)
         session_factory = async_sessionmaker(
             own_engine, class_=AsyncSession, expire_on_commit=False
         )
